@@ -34,6 +34,7 @@ add_executable(
   src/ostringstream.cpp
   src/ostrstream.cpp
   src/sprintf.cpp
+  src/utilformat.cpp
   # Libraries:
   src/fpconv/fpconv.c
   src/gay/dtoa.c
@@ -46,5 +47,7 @@ add_executable(
   src/double-conversion/double-conversion.cc
   src/double-conversion/fast-dtoa.cc
   src/double-conversion/fixed-dtoa.cc
-  src/double-conversion/strtod.cc)
+  src/double-conversion/strtod.cc
+  src/util/string_cvt.cpp
+)
 target_include_directories(dtoa-benchmark PRIVATE src)

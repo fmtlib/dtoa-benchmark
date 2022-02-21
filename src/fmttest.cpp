@@ -3,7 +3,7 @@
 #include "fmt/compile.h"
 
 void dtoa_fmt(double value, char* buffer) {
-  buffer = fmt::format_to(buffer, FMT_COMPILE("{}"), value);
+  buffer = fmt::format_to(buffer, FMT_COMPILE("{:.17}"), value);
   *buffer = '\0';
 }
 

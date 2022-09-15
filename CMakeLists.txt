@@ -26,6 +26,7 @@ add_executable(
   src/ryutest.cpp
   src/doubleconvtest.cpp
   src/fmttest.cpp
+  src/boosttest.cpp
   src/fpconvtest.cpp
   src/gaytest.cpp
   src/grisu2btest.cpp

@@ -26,13 +26,14 @@ add_executable(
   src/ryutest.cpp
   src/doubleconvtest.cpp
   src/fmttest.cpp
+  src/dtoa_puff.cpp
   src/fpconvtest.cpp
   src/gaytest.cpp
   src/grisu2btest.cpp
-  src/milotest.cpp
+  #src/milotest.cpp
   src/null.cpp
   src/ostringstream.cpp
-  src/ostrstream.cpp
+  #src/ostrstream.cpp
   src/sprintf.cpp
   # Libraries:
   src/fpconv/fpconv.c

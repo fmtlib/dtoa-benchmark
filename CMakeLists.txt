@@ -26,7 +26,8 @@ add_executable(
   src/ryutest.cpp
   src/doubleconvtest.cpp
   src/fmttest.cpp
-  src/dtoa_puff.cpp
+  #src/dtoa_puff.cpp
+  src/dragonbox_test.cpp
   src/fpconvtest.cpp
   src/gaytest.cpp
   src/grisu2btest.cpp
@@ -40,6 +41,7 @@ add_executable(
   src/gay/dtoa.c
   src/gay/g_fmt.c
   src/grisu/grisu2b_59_56.c
+  src/dragonbox/dragonbox_to_chars.cpp
   src/double-conversion/bignum-dtoa.cc
   src/double-conversion/bignum.cc
   src/double-conversion/cached-powers.cc

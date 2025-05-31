@@ -22,11 +22,19 @@
 
 #include "chrono.h"  // formatbuf
 
+#ifdef _MSVC_STL_UPDATE
+#  define FMT_MSVC_STL_UPDATE _MSVC_STL_UPDATE
+#elif defined(_MSC_VER) && _MSC_VER < 1912  // VS 15.5
+#  define FMT_MSVC_STL_UPDATE _MSVC_LANG
+#else
+#  define FMT_MSVC_STL_UPDATE 0
+#endif
+
 FMT_BEGIN_NAMESPACE
 namespace detail {
 
-// Generate a unique explicit instantion in every translation unit using a tag
-// type in an anonymous namespace.
+// Generate a unique explicit instantiation in every translation unit using a
+// tag type in an anonymous namespace.
 namespace {
 struct file_access_tag {};
 }  // namespace
@@ -35,7 +43,7 @@ class file_access {
   friend auto get_file(BufType& obj) -> FILE* { return obj.*FileMemberPtr; }
 };
 
-#if FMT_MSC_VERSION
+#if FMT_MSVC_STL_UPDATE
 template class file_access<file_access_tag, std::filebuf,
                            &std::filebuf::_Myfile>;
 auto get_file(std::filebuf&) -> FILE*;
@@ -109,7 +117,7 @@ inline void vprint(std::ostream& os, string_view fmt, format_args args) {
   auto buffer = memory_buffer();
   detail::vformat_to(buffer, fmt, args);
   FILE* f = nullptr;
-#if FMT_MSC_VERSION && FMT_USE_RTTI
+#if FMT_MSVC_STL_UPDATE && FMT_USE_RTTI
   if (auto* buf = dynamic_cast<std::filebuf*>(os.rdbuf()))
     f = detail::get_file(*buf);
 #elif defined(_WIN32) && defined(__GLIBCXX__) && FMT_USE_RTTI
@@ -142,7 +150,7 @@ inline void vprint(std::ostream& os, string_view fmt, format_args args) {
 FMT_EXPORT template <typename... T>
 void print(std::ostream& os, format_string<T...> fmt, T&&... args) {
   fmt::vargs<T...> vargs = {{args...}};
-  if (detail::use_utf8) return vprint(os, fmt.str, vargs);
+  if (detail::const_check(detail::use_utf8)) return vprint(os, fmt.str, vargs);
   auto buffer = memory_buffer();
   detail::vformat_to(buffer, fmt.str, vargs);
   detail::write_buffer(os, buffer);
@@ -150,7 +158,8 @@ void print(std::ostream& os, format_string<T...> fmt, T&&... args) {
 
 FMT_EXPORT template <typename... T>
 void println(std::ostream& os, format_string<T...> fmt, T&&... args) {
-  fmt::print(os, "{}\n", fmt::format(fmt, std::forward<T>(args)...));
+  fmt::print(os, FMT_STRING("{}\n"),
+             fmt::format(fmt, std::forward<T>(args)...));
 }
 
 FMT_END_NAMESPACE

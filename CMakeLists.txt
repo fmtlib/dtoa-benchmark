@@ -19,8 +19,6 @@ endif ()
 
 project(DTOA_BENCHMARK C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-
 add_executable(
   dtoa-benchmark
   src/main.cpp
@@ -56,3 +54,4 @@ add_executable(
   src/double-conversion/strtod.cc)
 
 target_include_directories(dtoa-benchmark PRIVATE src)
+target_compile_features(my_app PUBLIC cxx_std_17)

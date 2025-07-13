@@ -73,6 +73,9 @@ static void Verify(void(*f)(double, char*), const char* fname) {
 	printf("Verifying %-20s ... ", fname);
 
 	// Boundary and simple cases
+	// This gives benign errors in ostringstream and sprintf:
+	// Error: expect 0.1 but actual 0.10000000000000001
+	// Error: expect 1.2345 but actual 1.2344999999999999
 	VerifyValue(0, f);
 	VerifyValue(0.1, f, "0.1");
 	VerifyValue(0.12, f, "0.12");

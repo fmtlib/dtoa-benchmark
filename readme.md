@@ -81,6 +81,8 @@ sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
 milo          | [miloyip](https://github.com/miloyip)'s Grisu2 C++ header-only implementation.
 [fmt_comp](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation and compact tables.
 [fmt_full](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation and full tables.
+[dragonbox_comp](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with compact tables.
+[dragonbox_full](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
 null          | Do nothing.
 
 Notes:

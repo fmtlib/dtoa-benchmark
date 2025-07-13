@@ -3,10 +3,10 @@
 This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with the following changes:
 
 * CMake support
+* Fixed reporting of results
 * [{fmt}](https://github.com/fmtlib/fmt) test
 * [Dragonbox](https://github.com/jk-jeon/dragonbox) test
 * Removed the use of deprecated `strstream`
-* Various fixes
 
 Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
 

@@ -9,6 +9,8 @@ function(join result_var)
   set(${result_var} "${result}" PARENT_SCOPE)
 endfunction()
 
+# Set the default build type to release because we want to benchmark
+# optimized code.
 if (NOT CMAKE_BUILD_TYPE)
   join(doc "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or "
            "CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")

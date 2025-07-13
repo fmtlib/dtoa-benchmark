@@ -44,6 +44,7 @@
 #  include <cmath>    // std::signbit
 #  include <cstddef>  // std::byte
 #  include <cstdint>  // uint32_t
+#  include <cstdlib>  // std::malloc, std::free
 #  include <cstring>  // std::memcpy
 #  include <limits>   // std::numeric_limits
 #  include <new>      // std::bad_alloc
@@ -115,6 +116,33 @@
 #  define FMT_NOINLINE __attribute__((noinline))
 #else
 #  define FMT_NOINLINE
+#endif
+
+// Detect constexpr std::string.
+#if !FMT_USE_CONSTEVAL
+#  define FMT_USE_CONSTEXPR_STRING 0
+#elif defined(__cpp_lib_constexpr_string) && \
+    __cpp_lib_constexpr_string >= 201907L
+#  if FMT_CLANG_VERSION && FMT_GLIBCXX_RELEASE
+// clang + libstdc++ are able to work only starting with gcc13.3
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=113294
+#    if FMT_GLIBCXX_RELEASE < 13
+#      define FMT_USE_CONSTEXPR_STRING 0
+#    elif FMT_GLIBCXX_RELEASE == 13 && __GLIBCXX__ < 20240521
+#      define FMT_USE_CONSTEXPR_STRING 0
+#    else
+#      define FMT_USE_CONSTEXPR_STRING 1
+#    endif
+#  else
+#    define FMT_USE_CONSTEXPR_STRING 1
+#  endif
+#else
+#  define FMT_USE_CONSTEXPR_STRING 0
+#endif
+#if FMT_USE_CONSTEXPR_STRING
+#  define FMT_CONSTEXPR_STRING constexpr
+#else
+#  define FMT_CONSTEXPR_STRING
 #endif
 
 // GCC 4.9 doesn't support qualified names in specializations.
@@ -526,6 +554,8 @@ FMT_CONSTEXPR auto fill_n(OutputIt out, Size count, const T& value)
 template <typename T, typename Size>
 FMT_CONSTEXPR20 auto fill_n(T* out, Size count, char value) -> T* {
   if (is_constant_evaluated()) return fill_n<T*, Size, T>(out, count, value);
+  static_assert(sizeof(T) == 1,
+                "sizeof(T) must be 1 to use char for initialization");
   std::memset(out, value, to_unsigned(count));
   return out + count;
 }
@@ -629,21 +659,9 @@ FMT_CONSTEXPR void for_each_codepoint(string_view s, F f) {
   } while (buf_ptr < buf + num_chars_left);
 }
 
-template <typename Char>
-inline auto compute_width(basic_string_view<Char> s) -> size_t {
-  return s.size();
-}
-
-// Computes approximate display width of a UTF-8 string.
-FMT_CONSTEXPR inline auto compute_width(string_view s) -> size_t {
-  size_t num_code_points = 0;
-  // It is not a lambda for compatibility with C++14.
-  struct count_code_points {
-    size_t* count;
-    FMT_CONSTEXPR auto operator()(uint32_t cp, string_view) const -> bool {
-      *count += to_unsigned(
-          1 +
-          (cp >= 0x1100 &&
+FMT_CONSTEXPR inline auto display_width_of(uint32_t cp) noexcept -> size_t {
+  return to_unsigned(
+      1 + (cp >= 0x1100 &&
            (cp <= 0x115f ||  // Hangul Jamo init. consonants
             cp == 0x2329 ||  // LEFT-POINTING ANGLE BRACKET
             cp == 0x232a ||  // RIGHT-POINTING ANGLE BRACKET
@@ -661,32 +679,6 @@ FMT_CONSTEXPR inline auto compute_width(string_view s) -> size_t {
             (cp >= 0x1f300 && cp <= 0x1f64f) ||
             // Supplemental Symbols and Pictographs:
             (cp >= 0x1f900 && cp <= 0x1f9ff))));
-      return true;
-    }
-  };
-  // We could avoid branches by using utf8_decode directly.
-  for_each_codepoint(s, count_code_points{&num_code_points});
-  return num_code_points;
-}
-
-template <typename Char>
-inline auto code_point_index(basic_string_view<Char> s, size_t n) -> size_t {
-  return min_of(n, s.size());
-}
-
-// Calculates the index of the nth code point in a UTF-8 string.
-inline auto code_point_index(string_view s, size_t n) -> size_t {
-  size_t result = s.size();
-  const char* begin = s.begin();
-  for_each_codepoint(s, [begin, &n, &result](uint32_t, string_view sv) {
-    if (n != 0) {
-      --n;
-      return true;
-    }
-    result = to_unsigned(sv.begin() - begin);
-    return false;
-  });
-  return result;
 }
 
 template <typename T> struct is_integral : std::is_integral<T> {};
@@ -731,6 +723,9 @@ struct is_fast_float : bool_constant<std::numeric_limits<T>::is_iec559 &&
 template <typename T> struct is_fast_float<T, false> : std::false_type {};
 
 template <typename T>
+using fast_float_t = conditional_t<sizeof(T) == sizeof(double), double, float>;
+
+template <typename T>
 using is_double_double = bool_constant<std::numeric_limits<T>::digits == 106>;
 
 #ifndef FMT_USE_FULL_CACHE_DRAGONBOX
@@ -745,12 +740,12 @@ template <typename T> struct allocator : private std::decay<void> {
 
   T* allocate(size_t n) {
     FMT_ASSERT(n <= max_value<size_t>() / sizeof(T), "");
-    T* p = static_cast<T*>(malloc(n * sizeof(T)));
+    T* p = static_cast<T*>(std::malloc(n * sizeof(T)));
     if (!p) FMT_THROW(std::bad_alloc());
     return p;
   }
 
-  void deallocate(T* p, size_t) { free(p); }
+  void deallocate(T* p, size_t) { std::free(p); }
 };
 
 }  // namespace detail
@@ -2117,33 +2112,98 @@ FMT_CONSTEXPR FMT_INLINE auto write(OutputIt out, T value,
   return write_int<Char>(out, make_write_int_arg(value, specs.sign()), specs);
 }
 
-inline auto convert_precision_to_size(string_view s, size_t precision)
-    -> size_t {
-  size_t display_width = 0;
-  size_t num_code_points = 0;
-  for_each_codepoint(s, [&](uint32_t, string_view sv) {
-    display_width += compute_width(sv);
-    // Stop when display width exceeds precision.
-    if (display_width > precision) return false;
-    ++num_code_points;
-    return true;
+template <typename Char, typename OutputIt,
+          FMT_ENABLE_IF(std::is_same<Char, char>::value)>
+FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
+                         const format_specs& specs) -> OutputIt {
+  bool is_debug = specs.type() == presentation_type::debug;
+  if (specs.precision < 0 && specs.width == 0) {
+    auto&& it = reserve(out, s.size());
+    return is_debug ? write_escaped_string(it, s) : copy<char>(s, it);
+  }
+
+  size_t display_width_limit =
+      specs.precision < 0 ? SIZE_MAX : to_unsigned(specs.precision);
+  size_t display_width =
+      !is_debug || specs.precision == 0 ? 0 : 1;  // Account for opening '"'.
+  size_t size = !is_debug || specs.precision == 0 ? 0 : 1;
+  for_each_codepoint(s, [&](uint32_t cp, string_view sv) {
+    if (is_debug && needs_escape(cp)) {
+      counting_buffer<char> buf;
+      write_escaped_cp(basic_appender<char>(buf),
+                       find_escape_result<char>{sv.begin(), sv.end(), cp});
+      // We're reinterpreting bytes as display width. That's okay
+      // because write_escaped_cp() only writes ASCII characters.
+      size_t cp_width = buf.count();
+      if (display_width + cp_width <= display_width_limit) {
+        display_width += cp_width;
+        size += cp_width;
+        // If this is the end of the string, account for closing '"'.
+        if (display_width < display_width_limit && sv.end() == s.end()) {
+          ++display_width;
+          ++size;
+        }
+        return true;
+      }
+
+      size += display_width_limit - display_width;
+      display_width = display_width_limit;
+      return false;
+    }
+
+    size_t cp_width = display_width_of(cp);
+    if (cp_width + display_width <= display_width_limit) {
+      display_width += cp_width;
+      size += sv.size();
+      // If this is the end of the string, account for closing '"'.
+      if (is_debug && display_width < display_width_limit &&
+          sv.end() == s.end()) {
+        ++display_width;
+        ++size;
+      }
+      return true;
+    }
+
+    return false;
   });
-  return code_point_index(s, num_code_points);
+
+  struct bounded_output_iterator {
+    reserve_iterator<OutputIt> underlying_iterator;
+    size_t bound;
+
+    FMT_CONSTEXPR auto operator*() -> bounded_output_iterator& { return *this; }
+    FMT_CONSTEXPR auto operator++() -> bounded_output_iterator& {
+      return *this;
+    }
+    FMT_CONSTEXPR auto operator++(int) -> bounded_output_iterator& {
+      return *this;
+    }
+    FMT_CONSTEXPR auto operator=(char c) -> bounded_output_iterator& {
+      if (bound > 0) {
+        *underlying_iterator++ = c;
+        --bound;
+      }
+      return *this;
+    }
+  };
+
+  return write_padded<char>(
+      out, specs, size, display_width, [=](reserve_iterator<OutputIt> it) {
+        return is_debug
+                   ? write_escaped_string(bounded_output_iterator{it, size}, s)
+                         .underlying_iterator
+                   : copy<char>(s.data(), s.data() + size, it);
+      });
 }
 
-template <typename Char, FMT_ENABLE_IF(!std::is_same<Char, char>::value)>
-auto convert_precision_to_size(basic_string_view<Char>, size_t precision)
-    -> size_t {
-  return precision;
-}
-
-template <typename Char, typename OutputIt>
+template <typename Char, typename OutputIt,
+          FMT_ENABLE_IF(!std::is_same<Char, char>::value)>
 FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
                          const format_specs& specs) -> OutputIt {
   auto data = s.data();
   auto size = s.size();
   if (specs.precision >= 0 && to_unsigned(specs.precision) < size)
-    size = convert_precision_to_size(s, to_unsigned(specs.precision));
+    size = to_unsigned(specs.precision);
 
   bool is_debug = specs.type() == presentation_type::debug;
   if (is_debug) {
@@ -2152,22 +2212,19 @@ FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
     size = buf.count();
   }
 
-  size_t width = 0;
-  if (specs.width != 0) {
-    width =
-        is_debug ? size : compute_width(basic_string_view<Char>(data, size));
-  }
   return write_padded<Char>(
-      out, specs, size, width, [=](reserve_iterator<OutputIt> it) {
+      out, specs, size, [=](reserve_iterator<OutputIt> it) {
         return is_debug ? write_escaped_string(it, s)
                         : copy<Char>(data, data + size, it);
       });
 }
+
 template <typename Char, typename OutputIt>
 FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
                          const format_specs& specs, locale_ref) -> OutputIt {
   return write<Char>(out, s, specs);
 }
+
 template <typename Char, typename OutputIt>
 FMT_CONSTEXPR auto write(OutputIt out, const Char* s, const format_specs& specs,
                          locale_ref) -> OutputIt {
@@ -2392,7 +2449,7 @@ FMT_CONSTEXPR20 auto write_fixed(OutputIt out, const DecimalFP& f,
   using iterator = reserve_iterator<OutputIt>;
 
   int exp = f.exponent + significand_size;
-  int size = significand_size + (s != sign::none ? 1 : 0);
+  long long size = significand_size + (s != sign::none ? 1 : 0);
   if (f.exponent >= 0) {
     // 1234e5 -> 123400000[.0+]
     size += f.exponent;
@@ -2466,7 +2523,7 @@ FMT_CONSTEXPR20 auto do_write_float(OutputIt out, const DecimalFP& f,
 
   // Write value in the exponential format.
   int num_zeros = 0;
-  int size = significand_size + (s != sign::none ? 1 : 0);
+  long long size = significand_size + (s != sign::none ? 1 : 0);
   if (specs.alt()) {
     num_zeros = max_of(specs.precision - significand_size, 0);
     size += num_zeros;
@@ -2769,7 +2826,7 @@ class bigint {
     bigits_.resize(to_unsigned(num_bigits + exp_difference));
     for (int i = num_bigits - 1, j = i + exp_difference; i >= 0; --i, --j)
       bigits_[j] = bigits_[i];
-    memset(bigits_.data(), 0, to_unsigned(exp_difference) * sizeof(bigit));
+    fill_n(bigits_.data(), to_unsigned(exp_difference), 0U);
     exp_ -= exp_difference;
   }
 
@@ -3355,8 +3412,7 @@ FMT_CONSTEXPR20 auto write(OutputIt out, T value, format_specs specs,
       precision = 6;
     } else if (is_fast_float<T>::value && !is_constant_evaluated()) {
       // Use Dragonbox for the shortest format.
-      using floaty = conditional_t<sizeof(T) >= sizeof(double), double, float>;
-      auto dec = dragonbox::to_decimal(static_cast<floaty>(value));
+      auto dec = dragonbox::to_decimal(static_cast<fast_float_t<T>>(value));
       return write_float<Char>(out, dec, specs, s, exp_upper, loc);
     }
   }
@@ -3394,12 +3450,11 @@ FMT_CONSTEXPR20 auto write(OutputIt out, T value) -> OutputIt {
   if (is_constant_evaluated()) return write<Char>(out, value, format_specs());
 
   auto s = detail::signbit(value) ? sign::minus : sign::none;
-  using float_type = conditional_t<sizeof(T) == sizeof(double), double, float>;
-  auto mask = exponent_mask<float_type>();
+  auto mask = exponent_mask<fast_float_t<T>>();
   if ((bit_cast<decltype(mask)>(value) & mask) == mask)
     return write_nonfinite<Char>(out, std::isnan(value), {}, s);
 
-  auto dec = dragonbox::to_decimal<float_type>(value);
+  auto dec = dragonbox::to_decimal(static_cast<fast_float_t<T>>(value));
   int significand_size = count_digits(dec.significand);
   int exp = dec.exponent + significand_size - 1;
   if (use_fixed(exp, detail::exp_upper<T>())) {
@@ -3416,7 +3471,7 @@ FMT_CONSTEXPR20 auto write(OutputIt out, T value) -> OutputIt {
   if (s != sign::none) *it++ = Char('-');
   // Insert a decimal point after the first digit and add an exponent.
   it = write_significand(it, dec.significand, significand_size, 1,
-                         has_decimal_point ? '.' : Char());
+                         has_decimal_point ? Char('.') : Char());
   *it++ = Char('e');
   it = write_exponent<Char>(exp, it);
   return base_iterator(out, it);
@@ -3893,13 +3948,14 @@ constexpr auto format_as(Enum e) noexcept -> underlying_t<Enum> {
 }  // namespace enums
 
 #ifdef __cpp_lib_byte
-template <> struct formatter<std::byte> : formatter<unsigned> {
+template <typename Char>
+struct formatter<std::byte, Char> : formatter<unsigned, Char> {
   static auto format_as(std::byte b) -> unsigned char {
     return static_cast<unsigned char>(b);
   }
   template <typename Context>
   auto format(std::byte b, Context& ctx) const -> decltype(ctx.out()) {
-    return formatter<unsigned>::format(format_as(b), ctx);
+    return formatter<unsigned, Char>::format(format_as(b), ctx);
   }
 };
 #endif
@@ -4251,7 +4307,7 @@ FMT_NODISCARD FMT_INLINE auto format(format_string<T...> fmt, T&&... args)
  *     std::string answer = fmt::to_string(42);
  */
 template <typename T, FMT_ENABLE_IF(std::is_integral<T>::value)>
-FMT_NODISCARD auto to_string(T value) -> std::string {
+FMT_NODISCARD FMT_CONSTEXPR_STRING auto to_string(T value) -> std::string {
   // The buffer should be large enough to store the number including the sign
   // or "false" for bool.
   char buffer[max_of(detail::digits10<T>() + 2, 5)];
@@ -4259,13 +4315,15 @@ FMT_NODISCARD auto to_string(T value) -> std::string {
 }
 
 template <typename T, FMT_ENABLE_IF(detail::use_format_as<T>::value)>
-FMT_NODISCARD auto to_string(const T& value) -> std::string {
+FMT_NODISCARD FMT_CONSTEXPR_STRING auto to_string(const T& value)
+    -> std::string {
   return to_string(format_as(value));
 }
 
 template <typename T, FMT_ENABLE_IF(!std::is_integral<T>::value &&
                                     !detail::use_format_as<T>::value)>
-FMT_NODISCARD auto to_string(const T& value) -> std::string {
+FMT_NODISCARD FMT_CONSTEXPR_STRING auto to_string(const T& value)
+    -> std::string {
   auto buffer = memory_buffer();
   detail::write<char>(appender(buffer), value);
   return {buffer.data(), buffer.size()};

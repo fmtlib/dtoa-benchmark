@@ -39,11 +39,6 @@ add_executable(
   src/sprintf.cpp
 
   # Libraries:
-  src/fpconv/fpconv.c
-  src/gay/dtoa.c
-  src/gay/g_fmt.c
-  src/grisu/grisu2b_59_56.c
-  src/dragonbox/dragonbox_to_chars.cpp
   src/double-conversion/bignum-dtoa.cc
   src/double-conversion/bignum.cc
   src/double-conversion/cached-powers.cc
@@ -51,7 +46,14 @@ add_executable(
   src/double-conversion/double-conversion.cc
   src/double-conversion/fast-dtoa.cc
   src/double-conversion/fixed-dtoa.cc
-  src/double-conversion/strtod.cc)
+  src/double-conversion/strtod.cc
+  src/dragonbox/dragonbox_to_chars.cpp
+  src/fmt/src/format.cc
+  src/fpconv/fpconv.c
+  src/gay/dtoa.c
+  src/gay/g_fmt.c
+  src/grisu/grisu2b_59_56.c
+)
 
-target_include_directories(dtoa-benchmark PRIVATE src)
-target_compile_features(my_app PUBLIC cxx_std_17)
+target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
+target_compile_features(dtoa-benchmark PUBLIC cxx_std_17)

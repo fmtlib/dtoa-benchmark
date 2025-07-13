@@ -1,6 +1,6 @@
 <html>
 <head>
-<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
+<script src="https://code.jquery.com/jquery-1.8.2.js"></script>
 <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">

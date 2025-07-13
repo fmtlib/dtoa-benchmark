@@ -1,15 +1,15 @@
 <html>
 <head>
-<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-<script src="http://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['controls', 'charteditor']}]}"></script>
-<script src="http://jquery-csv.googlecode.com/git/src/jquery.csv.js"></script>
+<script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script>
-$(function() {
-	google.load("visualization", "1", {packages:["corechart"]});
-
+	google.load("visualization", "1", {packages:["corechart", "table"]});
+  google.setOnLoadCallback(drawChart);
+  function drawChart() {
     var csv = $('#textInput').val();
     var data = $.csv.toArrays(csv, {
         onParseValue: $.csv.hooks.castToScalar
@@ -118,13 +118,13 @@ $(function() {
 
   // Add configurations
   var thisConfig = "unknown_mac64_clang7.0";
-  var configurations = ["corei7920@2.67_cygwin32_gcc4.8","corei7920@2.67_cygwin64_gcc4.8","corei7920@2.67_win32_vc2013","corei7920@2.67_win64_vc2013","unknown_mac32_clang7.0","unknown_mac64_clang7.0"];
+  var configurations = ["apple-m1-pro_mac64_clang17.0","corei7920@2.67_cygwin32_gcc4.8","corei7920@2.67_cygwin64_gcc4.8","corei7920@2.67_win32_vc2013","corei7920@2.67_win64_vc2013","unknown_mac32_clang7.0","unknown_mac64_clang10.0","unknown_mac64_clang12.0","unknown_mac64_clang7.0"];
 
   for (var i in configurations) {
     var c = configurations[i];
     $("#configuration").append($("<li>", {class : (c == thisConfig ? "active" : "")}).append($("<a>", {href: c + ".html"}).append(c)));
   }
-});
+}
 
 function drawTable(type, timeData) {
 	var data = google.visualization.arrayToDataTable(timeData);

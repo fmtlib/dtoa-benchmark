@@ -21,11 +21,7 @@
 #			define OS "ios32"
 #		endif
 #	elif TARGET_OS_MAC
-#       ifdef __amd64__
-#	    	define OS "mac64"
-#		else
-#			define OS "mac32"
-#		endif
+#	    define OS "mac64"
 #   endif
 #endif
 

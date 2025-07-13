@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.5.0)
 
 # Joins arguments and places the results in ${result_var}.
 function(join result_var)
@@ -22,6 +22,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(
   dtoa-benchmark
   src/main.cpp
+
   # Tests:
   src/ryutest.cpp
   src/doubleconvtest.cpp
@@ -37,6 +38,7 @@ add_executable(
   src/ostringstream.cpp
   #src/ostrstream.cpp
   src/sprintf.cpp
+
   # Libraries:
   src/fpconv/fpconv.c
   src/gay/dtoa.c

@@ -1,3 +1,6 @@
+// A simple double to string converter:
+// https://vitaut.net/posts/2024/simple-dtoa/.
+//
 // Copyright (c) 2024, Victor Zverovich
 // License: https://github.com/fmtlib/fmt/blob/master/LICENSE
 

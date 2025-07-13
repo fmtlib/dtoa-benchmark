@@ -42,7 +42,6 @@ The following are results measured on a MacBook Pro (2.8 GHz Quad-Core Intel Cor
 Function      | Time (ns)  | Speedup 
 --------------|-----------:|-------:
 ostringstream |	1,187.735|	0.75x
-ostrstream    |	1,048.512|	0.85x
 sprint        |	887.735  |	1.00x
 fpconv        |	119.024  |	7.46x
 grisu2        |	101.082  |	8.78x

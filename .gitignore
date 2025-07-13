@@ -1,2 +1,5 @@
+.vscode
+CMakeFiles
+CMakeCache.txt
 result/result.csv
 result/result.html

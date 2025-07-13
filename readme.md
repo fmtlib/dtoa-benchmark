@@ -38,31 +38,33 @@ Each digit group is run for 100 times. The minimum time duration is measured for
 2. Build: `make`
 3. Run benchmark: `./dtoa-benchmark`
 4. The results in CSV format will be written to the file `result/<cpu>_<os>_<compiler>.csv`.
-5. Run GNU `make` in `dtoa-benchmark/result` to generate results in HTML.
+5. Run GNU `make` in `result` to generate results in HTML.
 
 ## Results
 
-The following are results measured on a MacBook Pro (2.8 GHz Quad-Core Intel Core i7), where `dtoa()` is compiled by clang 12.0.0 (clang-1200.0.32.2) and run on macOS. The speedup is based on `sprintf()`.
+The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa()` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS. The speedup is based on `sprintf()`.
 
-Function      | Time (ns)  | Speedup 
---------------|-----------:|-------:
-ostringstream |	1,187.735|	0.75x
-sprint        |	887.735  |	1.00x
-fpconv        |	119.024  |	7.46x
-grisu2        |	101.082  |	8.78x
-doubleconv    |	84.359   |	10.52x
-milo          |	64.100   |	13.85x
-ryu           |	43.541   |	20.39x
-fmt           |	40.712   |	21.81x
-null          |	1.200    |	739.78x
+| Function          | Time (ns) | Speedup   |
+|-------------------|----------:|----------:|
+| ostringstream     | 864.341   | 0.84x     |
+| sprintf           | 726.271   | 1.00x     |
+| doubleconv        | 81.812    | 8.88x     |
+| fpconv            | 60.241    | 12.06x    |
+| grisu2            | 56.947    | 12.75x    |
+| ryu               | 35.206    | 20.63x    |
+| fmt_comp          | 29.547    | 24.58x    |
+| dragonbox_comp    | 23.776    | 30.55x    |
+| fmt_full          | 22.071    | 32.91x    |
+| dragonbox_full    | 18.888    | 38.45x    |
+| null              | 0.906     | 801.73x   |
 
-![unknown_mac64_clang12.0_randomdigit_time](https://user-images.githubusercontent.com/576385/97088504-13931600-15e6-11eb-9746-1639c0ce7fbe.png)
+![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/032ce868-b89f-4984-b7fd-1e8d12a0c0c7)
 
-![unknown_mac64_clang12.0_randomdigit_timedigit](https://user-images.githubusercontent.com/576385/97088514-358c9880-15e6-11eb-8b35-0011de065101.png)
+![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/05a735c1-d189-4ddd-b3c3-3a20d7396e82)
 
 Note that the `null` implementation does nothing. It measures the overheads of looping and function call.
 
-Some results of various configurations are located at `dtoa-benchmark/result`. They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
+Some results of various configurations are located at [`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
 
 * [apple-m1-pro_mac64_clang17.0](https://fmtlib.github.io/dtoa-benchmark/result/apple-m1-pro_mac64_clang17.0.html)
 

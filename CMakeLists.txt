@@ -26,6 +26,7 @@ add_executable(
   src/ryutest.cpp
   src/doubleconvtest.cpp
   src/fmttest.cpp
+  src/fmttest_full.cpp
   #src/dtoa_puff.cpp
   src/dragonbox_test.cpp
   src/fpconvtest.cpp

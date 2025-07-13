@@ -303,7 +303,7 @@ body { padding-top: 70px; }
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="https://github.com/miloyip/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
+      <a class="navbar-brand" href="https://github.com/fmtlib/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->

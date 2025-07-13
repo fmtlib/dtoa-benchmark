@@ -64,10 +64,7 @@ Note that the `null` implementation does nothing. It measures the overheads of l
 
 Some results of various configurations are located at `dtoa-benchmark/result`. They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
 
-* [corei7920@2.67_win32_vc2013](http://rawgit.com/miloyip/dtoa-benchmark/master/result/corei7920@2.67_win32_vc2013.html)
-* [corei7920@2.67_win64_vc2013](http://rawgit.com/miloyip/dtoa-benchmark/master/result/corei7920@2.67_win64_vc2013.html)
-* [corei7920@2.67_cygwin32_gcc4.8](http://rawgit.com/miloyip/dtoa-benchmark/master/result/corei7920@2.67_cygwin32_gcc4.8.html)
-* [corei7920@2.67_cygwin64_gcc4.8](http://rawgit.com/miloyip/dtoa-benchmark/master/result/corei7920@2.67_cygwin64_gcc4.8.html)
+* [apple-m1-pro_mac64_clang17.0](http://rawgit.com/miloyip/dtoa-benchmark/master/result/apple-m1-pro_mac64_clang17.0.html)
 
 ## Implementations
 

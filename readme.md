@@ -85,7 +85,7 @@ null          | Do nothing.
 
 Notes:
 
-1. `tostring()` is not tested as it does not fulfill the roundtrip requirement.
+1. `std::to_string()` is not tested as it does not fulfill the roundtrip requirement (until C++26).
 
 2. Grisu2 is chosen because it can generate better human-readable number and >99.9% of results are in shortest. Grisu3 needs another `dtoa()` implementation for not meeting the shortest requirement.
 

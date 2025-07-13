@@ -1,6 +1,12 @@
 # dtoa Benchmark
 
-This is a fork of Milo Yip's dtoa benchmark with CMake support and fixed reporting.
+This is a fork of Milo Yip's dtoa benchmark with the following changes:
+
+* CMake support
+* [{fmt}](https://github.com/fmtlib/fmt) test
+* [Dragonbox](https://github.com/jk-jeon/dragonbox) test
+* Removed the use of deprecated `strstream`
+* Various fixes
 
 Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
 
@@ -69,7 +75,6 @@ Some results of various configurations are located at `dtoa-benchmark/result`. T
 Function      | Description
 --------------|-----------
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
-ostrstream    | `std::ostrstream` in C++ standard library with `setprecision(17)`.
 sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
 [gay](http://www.netlib.org/fp/) | David M. Gay's `dtoa()` C implementation.
 [grisu2](http://florian.loitsch.com/publications/bench.tar.gz?attredirects=0)        | Florian Loitsch's Grisu2 C implementation [1].

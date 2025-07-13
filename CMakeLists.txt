@@ -33,6 +33,7 @@ add_executable(
   src/fpconvtest.cpp
   src/gaytest.cpp
   src/grisu2btest.cpp
+  # Disabled since it's very similar to fpconv.
   #src/milotest.cpp
   src/null.cpp
   src/ostringstream.cpp

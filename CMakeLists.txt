@@ -56,4 +56,17 @@ add_executable(
 )
 
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
-target_compile_features(dtoa-benchmark PUBLIC cxx_std_17)
+target_compile_features(dtoa-benchmark PRIVATE cxx_std_17)
+
+if (APPLE)
+  execute_process(
+    COMMAND sysctl -n machdep.cpu.brand_string
+    OUTPUT_VARIABLE CPU_NAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  string(REPLACE " " "-" CPU_NAME "${CPU_NAME}")
+  string(TOLOWER "${CPU_NAME}" CPU_NAME)
+else ()
+  set(CPU_NAME "unknown")
+endif ()
+target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")

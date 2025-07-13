@@ -37,7 +37,7 @@ Each digit group is run for 100 times. The minimum time duration is measured for
 1. Configure: `cmake .`
 2. Build: `make`
 3. Run benchmark: `./dtoa-benchmark`
-4. The results in CSV format will be written to `dtoa-benchmark/result`.
+4. The results in CSV format will be written to the file `<machine>_<os>_<compiler>.csv`.
 5. Run GNU `make` in `dtoa-benchmark/result` to generate results in HTML.
 
 ## Results

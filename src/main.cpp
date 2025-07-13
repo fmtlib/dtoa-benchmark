@@ -328,9 +328,9 @@ void BenchAll() {
 		fclose(fp);
 		fp = fopen("../../result/" RESULT_FILENAME, "w");
 	}
-	else if ((fp = fopen("../result/template.php", "r")) != NULL) {
+	else if ((fp = fopen("result/template.php", "r")) != NULL) {
 		fclose(fp);
-		fp = fopen("../result/" RESULT_FILENAME, "w");
+		fp = fopen("result/" RESULT_FILENAME, "w");
 	}
 	else
 		fp = fopen(RESULT_FILENAME, "w");

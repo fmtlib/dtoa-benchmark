@@ -64,7 +64,7 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa(
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping and function call.
 * `sprintf` and `ostringstream` don't generate the shortest representation, e.g. `0.1` is formatted as `0.10000000000000001`.
-* `ryu` and `dragonbox_*` only produce exponential format, e.g. `0.1` is formatted as `1E-1`.
+* `ryu` and `dragonbox_*` only produce the output in the exponential format, e.g. `0.1` is formatted as `1E-1`.
 
 Some results of various configurations are located at [`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
 

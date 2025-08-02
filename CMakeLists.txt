@@ -72,4 +72,9 @@ else ()
 endif ()
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 
-add_custom_target(run-benchmark COMMAND dtoa-benchmark DEPENDS dtoa-benchmark)
+add_custom_target(
+  run-benchmark
+  COMMAND dtoa-benchmark
+  COMMAND cmake -P convert-results.cmake
+  DEPENDS dtoa-benchmark
+)

@@ -43,8 +43,6 @@ add_executable(
   src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
   src/fpconv/fpconv.c
-  src/gay/dtoa.c
-  src/gay/g_fmt.c
   src/grisu/grisu2b_59_56.c
 )
 

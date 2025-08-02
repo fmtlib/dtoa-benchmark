@@ -76,5 +76,8 @@ add_custom_target(
   run-benchmark
   COMMAND dtoa-benchmark
   COMMAND cmake -P convert-results.cmake
+  # Run in the source directory because we want results to be in the source
+  # result directory.
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   DEPENDS dtoa-benchmark
 )

@@ -71,3 +71,5 @@ else ()
   set(CPU_NAME "unknown")
 endif ()
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
+
+add_custom_target(run-benchmark COMMAND dtoa-benchmark DEPENDS dtoa-benchmark)

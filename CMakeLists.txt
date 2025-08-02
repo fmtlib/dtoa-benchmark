@@ -40,8 +40,8 @@ add_executable(
   src/double-conversion/fast-dtoa.cc
   src/double-conversion/fixed-dtoa.cc
   src/double-conversion/strtod.cc
-  src/dragonbox/dragonbox_to_chars.cpp
-  src/fmt/src/format.cc
+  src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
+  src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
   src/fpconv/fpconv.c
   src/gay/dtoa.c
   src/gay/g_fmt.c

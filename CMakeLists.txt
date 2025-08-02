@@ -1,20 +1,12 @@
 cmake_minimum_required(VERSION 3.5.0)
 
-# Joins arguments and places the results in ${result_var}.
-function(join result_var)
-  set(result )
-  foreach (arg ${ARGN})
-    set(result "${result}${arg}")
-  endforeach ()
-  set(${result_var} "${result}" PARENT_SCOPE)
-endfunction()
-
-# Set the default build type to release because we want to benchmark
+# Set the default build type to Release because we want to benchmark
 # optimized code.
 if (NOT CMAKE_BUILD_TYPE)
-  join(doc "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or "
-           "CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING ${doc})
+  set(none "None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used)")
+  set(other "Debug Release RelWithDebInfo MinSizeRel")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: ${none} ${other}.")
 endif ()
 
 project(DTOA_BENCHMARK C CXX)

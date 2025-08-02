@@ -61,7 +61,10 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa(
 
 ![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/05a735c1-d189-4ddd-b3c3-3a20d7396e82)
 
-Note that the `null` implementation does nothing. It measures the overheads of looping and function call.
+Notes:
+* The `null` implementation does nothing. It measures the overheads of looping and function call.
+* `sprintf` and `ostringstream` don't generate the shortest representation, e.g. `0.1` is formatted as `0.10000000000000001`.
+* `ryu` and `dragonbox_*` only produce exponential format, e.g. `0.1` is formatted as `1E-1`.
 
 Some results of various configurations are located at [`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
 

@@ -23,7 +23,6 @@ add_executable(
   #src/dtoa_puff.cpp
   src/dragonbox_test.cpp
   src/fpconvtest.cpp
-  src/gaytest.cpp
   src/grisu2btest.cpp
   # Disabled since it's very similar to fpconv.
   #src/milotest.cpp

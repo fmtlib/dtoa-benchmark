@@ -1,6 +1,6 @@
 .vscode
 CMakeFiles
 CMakeCache.txt
+Makefile
 cmake_install.cmake
-result/result.csv
-result/result.html
+dtoa-benchmark

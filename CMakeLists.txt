@@ -29,6 +29,7 @@ add_executable(
   src/null.cpp
   src/ostringstream.cpp
   src/sprintf.cpp
+  src/xjb64_test.cpp
 
   # Libraries:
   src/double-conversion/bignum-dtoa.cc

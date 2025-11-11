@@ -17,9 +17,12 @@
 #include "double-conversion/double-conversion.h"
 
 const unsigned kVerifyRandomCount = 100000;
-const unsigned kIterationForRandom = 100;
-const unsigned kIterationPerDigit = 10;
-const unsigned kTrial = 10;
+// const unsigned kIterationForRandom = 100;
+// const unsigned kIterationPerDigit = 10;
+// const unsigned kTrial = 10;
+const unsigned kIterationForRandom = 1;
+const unsigned kIterationPerDigit = 1;
+const unsigned kTrial = 3;
 
 class Random {
 public:
@@ -176,7 +179,7 @@ public:
 		return singleton.mData;
 	}
 
-	static const size_t kCount = 1000;
+	static const size_t kCount = 1000 * 100;
 
 private:
 	RandomData() :
@@ -241,7 +244,7 @@ public:
 	}
 
 	static const int kMaxDigit = 17;
-	static const size_t kCount = 1000;
+	static const size_t kCount = 1000 * 100;
 
 private:
 	RandomDigitData() :

@@ -43,23 +43,33 @@ The results in CSV format will be written to the file `result/<cpu>_<os>_<compil
 
 The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa()` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS. The speedup is based on `sprintf()`.
 
+Function	Time (ns)	Speedup
+ostringstream	875.881	0.84x
+sprintf	735.583	1.00x
+doubleconv	84.102	8.75x
+fpconv	63.091	11.66x
+grisu2	59.064	12.45x
+ryu	36.949	19.91x
+fmt	22.345	32.92x
+dragonbox	20.626	35.66x
+null	0.931	790.45x
+
+
 | Function          | Time (ns) | Speedup   |
 |-------------------|----------:|----------:|
-| ostringstream     | 864.341   | 0.84x     |
-| sprintf           | 726.271   | 1.00x     |
-| doubleconv        | 81.812    | 8.88x     |
-| fpconv            | 60.241    | 12.06x    |
-| grisu2            | 56.947    | 12.75x    |
-| ryu               | 35.206    | 20.63x    |
-| fmt_comp          | 29.547    | 24.58x    |
-| dragonbox_comp    | 23.776    | 30.55x    |
-| fmt_full          | 22.071    | 32.91x    |
-| dragonbox_full    | 18.888    | 38.45x    |
-| null              | 0.906     | 801.73x   |
+| ostringstream     | 875.881   | 0.84x     |
+| sprintf           | 735.583   | 1.00x     |
+| doubleconv        | 84.102    | 8.75x     |
+| fpconv            | 63.091    | 11.66x    |
+| grisu2            | 59.064    | 12.45x    |
+| ryu               | 36.949    | 19.91x    |
+| fmt               | 22.345    | 32.92x    |
+| dragonbox         | 20.626    | 35.66x    |
+| null              | 0.931     | 790.45x   |
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/032ce868-b89f-4984-b7fd-1e8d12a0c0c7)
+![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/a05c0dcf-de88-42be-baa0-6ed54caa2efa)
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/05a735c1-d189-4ddd-b3c3-3a20d7396e82)
+![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/2b432b8f-1fc4-4a42-8a09-2867123f14fe)
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping and function call.

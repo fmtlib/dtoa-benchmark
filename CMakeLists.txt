@@ -29,6 +29,7 @@ add_executable(
   src/ostringstream.cpp
   src/sprintf.cpp
   src/xjb64_test.cpp
+  src/schubfach_test.cpp
 
   # Libraries:
   src/double-conversion/bignum-dtoa.cc
@@ -43,10 +44,11 @@ add_executable(
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
   src/fpconv/fpconv.c
   src/grisu/grisu2b_59_56.c
+  src/schubfach/schubfach.cc
 )
 
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
-target_compile_features(dtoa-benchmark PRIVATE cxx_std_17)
+target_compile_features(dtoa-benchmark PRIVATE cxx_std_20)
 
 if (APPLE)
   execute_process(

@@ -77,7 +77,7 @@ Notes:
 * `sprintf` and `ostringstream` don't generate the shortest representation,
   e.g. `0.1` is formatted as `0.10000000000000001`.
 * `ryu`, `dragonbox` and `schubfach` only produce the output in the exponential
-  format, e.g. `0.1` is formatted as `1E-1`.
+  format, e.g. `0.1` is formatted as `1E-1` or similar.
 
 Some results of various configurations are located at [`result`](
 https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be

@@ -22,9 +22,10 @@ add_executable(
   src/fmt-test.cpp
   src/null-test.cpp
   src/ostringstream-test.cpp
-  #src/puff-test.cpp
+  src/puff-test.cpp
   src/schubfach-test.cpp
   src/sprintf-test.cpp
+  src/to_chars-test.cpp
   #src/xjb-test.cpp
   # Grisu2 variants are disabled since they don't guarantee correctness.
   #src/milo-test.cpp

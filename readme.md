@@ -7,6 +7,7 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 * [{fmt}](https://github.com/fmtlib/fmt) test
 * [Dragonbox](https://github.com/jk-jeon/dragonbox) test
 * Removed the use of deprecated `strstream`
+* Disabled Grisu2 by default since it doesn't guarantee correctness
 
 Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
 
@@ -49,7 +50,6 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa(
 | sprintf           | 735.583   | 1.00x     |
 | doubleconv        | 84.102    | 8.75x     |
 | fpconv            | 63.091    | 11.66x    |
-| grisu2            | 59.064    | 12.45x    |
 | ryu               | 36.949    | 19.91x    |
 | fmt               | 22.345    | 32.92x    |
 | dragonbox         | 20.626    | 35.66x    |

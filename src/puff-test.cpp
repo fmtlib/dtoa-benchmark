@@ -5,21 +5,11 @@
 // License: https://github.com/fmtlib/fmt/blob/master/LICENSE
 
 #include "test.h"
-#include <charconv>
-#include <limits>
-#include <math.h>
-#include <stdint.h>
-#include <string.h>
-#include <fmt/format.h>
 
-namespace std {
-to_chars_result to_chars(char* first, char*, uint32_t value, int = 10) {
-  auto end = fmt::detail::format_decimal(
-    first, value, fmt::detail::count_digits(value));
-  *end = 0;
-  return {end};
-}
-}
+#include <charconv>  // std::to_chars
+#include <limits>    // std::numeric_limits
+#include <stdint.h>  // uint32_t
+#include <string.h>  // memcpy
 
 // A fixed-point decimal number.
 struct decimal {

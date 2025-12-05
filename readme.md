@@ -55,14 +55,14 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa(
 | dragonbox         | 20.626    | 35.66x    |
 | null              | 0.931     | 790.45x   |
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/a05c0dcf-de88-42be-baa0-6ed54caa2efa)
+![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/2e569d6e-fa4d-472b-9d69-6a1df4d9c980)
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/2b432b8f-1fc4-4a42-8a09-2867123f14fe)
+![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/b5afe0f9-fd85-47f5-8dc7-7aae05bd58d4)
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping and function call.
 * `sprintf` and `ostringstream` don't generate the shortest representation, e.g. `0.1` is formatted as `0.10000000000000001`.
-* `ryu` and `dragonbox_*` only produce the output in the exponential format, e.g. `0.1` is formatted as `1E-1`.
+* `ryu`, `dragonbox` and `schubfach` only produce the output in the exponential format, e.g. `0.1` is formatted as `1E-1`.
 
 Some results of various configurations are located at [`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be accessed online, with interactivity provided by [Google Charts](https://developers.google.com/chart/):
 

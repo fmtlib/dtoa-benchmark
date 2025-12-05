@@ -66,10 +66,9 @@ The speedup is based on `sprintf`.
 | dragonbox     | 20.790    | 42.12x  |
 | null          | 0.936     | 935.03x |
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_time](
-https://github.com/user-attachments/assets/2e569d6e-fa4d-472b-9d69-6a1df4d9c980)
+<img width="872" height="391" alt="image" src="https://github.com/user-attachments/assets/71fbc772-0579-4683-8e30-e358d4c4fef1" />
 
-![apple-m1-pro_mac64_clang17.0_randomdigit_timedigit](https://github.com/user-attachments/assets/b5afe0f9-fd85-47f5-8dc7-7aae05bd58d4)
+<img width="1011" height="763" alt="image" src="https://github.com/user-attachments/assets/e4a37bca-2808-4aac-a8f1-715920b3735d" />
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping

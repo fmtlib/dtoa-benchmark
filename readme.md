@@ -44,16 +44,17 @@ The results in CSV format will be written to the file `result/<cpu>_<os>_<compil
 
 The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa()` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS. The speedup is based on `sprintf()`.
 
-| Function          | Time (ns) | Speedup   |
-|-------------------|----------:|----------:|
-| ostringstream     | 875.881   | 0.84x     |
-| sprintf           | 735.583   | 1.00x     |
-| doubleconv        | 84.102    | 8.75x     |
-| fpconv            | 63.091    | 11.66x    |
-| ryu               | 36.949    | 19.91x    |
-| fmt               | 22.345    | 32.92x    |
-| dragonbox         | 20.626    | 35.66x    |
-| null              | 0.931     | 790.45x   |
+| Function      | Time (ns) | Speedup |
+|---------------|----------:|--------:|
+| ostringstream | 875.625   | 1.00x   |
+| sprintf       | 735.428   | 1.19x   |
+| doubleconv    | 83.249    | 10.52x  |
+| fpconv        | 63.095    | 13.88x  |
+| ryu           | 37.163    | 23.56x  |
+| schubfach     | 24.555    | 35.66x  |
+| fmt           | 22.360    | 39.16x  |
+| dragonbox     | 20.790    | 42.12x  |
+| null          | 0.936     | 935.03x |
 
 ![apple-m1-pro_mac64_clang17.0_randomdigit_time](https://github.com/user-attachments/assets/2e569d6e-fa4d-472b-9d69-6a1df4d9c980)
 

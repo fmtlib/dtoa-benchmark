@@ -21,15 +21,10 @@ add_executable(
   src/fmttest.cpp
   #src/dtoa_puff.cpp
   src/dragonbox_test.cpp
-  src/fpconvtest.cpp
-  # Disabled since it doesn't guarantee correctness.
-  #src/grisu2btest.cpp
-  # Disabled since it's very similar to fpconv.
-  #src/milotest.cpp
   src/null.cpp
   src/ostringstream.cpp
   src/sprintf.cpp
-  src/xjb64_test.cpp
+  #src/xjb64_test.cpp
   src/schubfach_test.cpp
 
   # Libraries:
@@ -43,10 +38,15 @@ add_executable(
   src/double-conversion/strtod.cc
   src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
-  src/fpconv/fpconv.c
-  src/grisu/grisu2b_59_56.c
   src/schubfach/schubfach.cc
-)
+
+  # Grisu2 variants are disabled since they don't guarantee correctness.
+  #src/fpconvtest.cpp
+  #src/grisu2btest.cpp
+  #src/milotest.cpp
+  #src/fpconv/fpconv.c
+  #src/grisu/grisu2b_59_56.c
+  )
 
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
 target_compile_features(dtoa-benchmark PRIVATE cxx_std_20)

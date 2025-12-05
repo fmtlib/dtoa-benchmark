@@ -8,7 +8,7 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 * Added [Dragonbox](https://github.com/jk-jeon/dragonbox)
 * Added [Schubfach](https://github.com/vitaut/schubfach)
 * Removed the use of deprecated `strstream`
-* Disabled Grisu2 since it doesn't guarantee correctness
+* Disabled Grisu2 implementations since they don't guarantee correctness
 
 Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
 
@@ -50,7 +50,6 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where `dtoa(
 | ostringstream | 875.625   | 1.00x   |
 | sprintf       | 735.428   | 1.19x   |
 | doubleconv    | 83.249    | 10.52x  |
-| fpconv        | 63.095    | 13.88x  |
 | ryu           | 37.163    | 23.56x  |
 | schubfach     | 24.555    | 35.66x  |
 | fmt           | 22.360    | 39.16x  |
@@ -77,7 +76,6 @@ Function      | Description
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
 sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
 [doubleconv](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
-[fpconv](https://github.com/night-shift/fpconv)        | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
 [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
 [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++

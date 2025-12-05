@@ -41,10 +41,8 @@ add_executable(
   src/schubfach/schubfach.cc
 
   # Grisu2 variants are disabled since they don't guarantee correctness.
-  #src/fpconvtest.cpp
   #src/grisu2btest.cpp
   #src/milotest.cpp
-  #src/fpconv/fpconv.c
   #src/grisu/grisu2b_59_56.c
   )
 

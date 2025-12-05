@@ -57,14 +57,16 @@ The speedup is based on `sprintf`.
 
 | Function      | Time (ns) | Speedup |
 |---------------|----------:|--------:|
-| ostringstream | 875.625   | 1.00x   |
-| sprintf       | 735.428   | 1.19x   |
-| doubleconv    | 83.249    | 10.52x  |
-| ryu           | 37.163    | 23.56x  |
-| schubfach     | 24.555    | 35.66x  |
-| fmt           | 22.360    | 39.16x  |
-| dragonbox     | 20.790    | 42.12x  |
-| null          | 0.936     | 935.03x |
+| ostringstream | 872.266   | 1.00x   |
+| sprintf       | 734.468   | 1.19x   |
+| puff          | 629.306   | 1.39x   |
+| doubleconv    | 84.213    | 10.36x  |
+| to_chars      | 42.864    | 20.35x  |
+| ryu           | 37.278    | 23.40x  |
+| schubfach     | 24.728    | 35.27x  |
+| fmt           | 22.299    | 39.12x  |
+| dragonbox     | 20.636    | 42.27x  |
+| null          | 0.930     | 937.92x |
 
 <img width="872" height="391" alt="image" src="https://github.com/user-attachments/assets/71fbc772-0579-4683-8e30-e358d4c4fef1" />
 

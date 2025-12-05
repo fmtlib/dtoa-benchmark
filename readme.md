@@ -4,10 +4,11 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 
 * CMake support
 * Fixed reporting of results
-* [{fmt}](https://github.com/fmtlib/fmt) test
-* [Dragonbox](https://github.com/jk-jeon/dragonbox) test
+* Added [{fmt}](https://github.com/fmtlib/fmt)
+* Added [Dragonbox](https://github.com/jk-jeon/dragonbox)
+* Added [Schubfach](https://github.com/vitaut/schubfach)
 * Removed the use of deprecated `strstream`
-* Disabled Grisu2 by default since it doesn't guarantee correctness
+* Disabled Grisu2 since it doesn't guarantee correctness
 
 Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
 
@@ -80,6 +81,7 @@ sprintf       | `sprintf()` in C standard library with `"%.17g"` format.
 [fpconv](https://github.com/night-shift/fpconv)        | [night-shift](https://github.com/night-shift)'s  Grisu2 C implementation.
 [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
 [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
+[schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
 null          | Do nothing.
 
 Notes:

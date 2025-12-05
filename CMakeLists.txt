@@ -41,9 +41,7 @@ add_executable(
   src/schubfach/schubfach.cc
 
   # Grisu2 variants are disabled since they don't guarantee correctness.
-  #src/grisu2btest.cpp
   #src/milotest.cpp
-  #src/grisu/grisu2b_59_56.c
   )
 
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)

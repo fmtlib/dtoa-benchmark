@@ -4,12 +4,13 @@
 // Copyright (c) 2024, Victor Zverovich
 // License: https://github.com/fmtlib/fmt/blob/master/LICENSE
 
-#include "test.h"
+#include <stdint.h>  // uint32_t
+#include <string.h>  // memcpy
 
 #include <charconv>  // std::to_chars
 #include <limits>    // std::numeric_limits
-#include <stdint.h>  // uint32_t
-#include <string.h>  // memcpy
+
+#include "test.h"
 
 // A fixed-point decimal number.
 struct decimal {
@@ -49,7 +50,7 @@ struct decimal {
     int offset = 0;
     if ((*bigits >> n) == 0 && *bigits != 0) {
       offset = 1;
-	    --num_bigits;
+      --num_bigits;
       --fraction_start;
       borrow = uint64_t(*bigits) * bigit_bound >> n;
     }
@@ -76,7 +77,7 @@ struct decimal {
       }
       bigits[num_bigits++] = v % bigit_bound;
       int i = 0;
-      int bits_per_iteration = 29; // 2**29 fits in one bigit.
+      int bits_per_iteration = 29;  // 2**29 fits in one bigit.
       for (; i <= exp - bits_per_iteration; i += bits_per_iteration)
         shift_left(bits_per_iteration);
       if (i != exp) shift_left(exp - i);
@@ -92,7 +93,7 @@ struct decimal {
       }
       bigits[num_bigits++] = v % bigit_bound;
       int i = 0;
-      int bits_per_iteration = 9; // 10**9 can only be shifted left 9 bits.
+      int bits_per_iteration = 9;  // 10**9 can only be shifted left 9 bits.
       for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
         shift_right(bits_per_iteration);
       if (i != exp) shift_right(i - exp);
@@ -128,8 +129,8 @@ void dtoa(char* buf, double val, int precision) {
   };
   if (count > precision) {
     char digit = buf[precision];
-    if (digit > '5' || digit == '5' &&
-        ((buf[precision - 1] % 2) == 1 || has_nonzero())) {
+    if (digit > '5' ||
+        digit == '5' && ((buf[precision - 1] % 2) == 1 || has_nonzero())) {
       int i = precision - 1;
       for (; i >= 0 && buf[i] == '9'; --i) buf[i] = '0';
       if (i >= 0) {
@@ -156,8 +157,6 @@ void dtoa(char* buf, double val, int precision) {
   *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
 }
 
-void dtoa_puff(double value, char* buffer) {
-  dtoa(buffer, value, 17);
-}
+void dtoa_puff(double value, char* buffer) { dtoa(buffer, value, 17); }
 
 REGISTER_TEST(puff);

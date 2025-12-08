@@ -22,7 +22,7 @@ add_executable(
   src/fmt-test.cpp
   src/null-test.cpp
   src/ostringstream-test.cpp
-  src/puff-test.cpp
+  #src/puff-test.cpp
   src/schubfach-test.cpp
   src/sprintf-test.cpp
   src/to_chars-test.cpp

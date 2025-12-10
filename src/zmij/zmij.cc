@@ -705,7 +705,7 @@ inline auto digits2(size_t value) noexcept -> const char* {
   return &data[value * 2];
 }
 
-// The idea of branchless trailing zero removal is by Yaoyuan Guo (ibireme).
+// The idea of branchless trailing zero removal is by Alexander Bolz.
 const char num_trailing_zeros[] =
     "\2\0\0\0\0\0\0\0\0\0\1\0\0\0\0\0\0\0\0\0"
     "\1\0\0\0\0\0\0\0\0\0\1\0\0\0\0\0\0\0\0\0"
@@ -723,7 +723,7 @@ struct div_mod_result {
 template <int num_digits>
 inline auto divmod100(uint32_t value) noexcept -> div_mod_result {
   static_assert(num_digits == 3 || num_digits == 4, "wrong number of digits");
-  constexpr int exp = num_digits == 3 ? 12 : 19;
+  constexpr int exp = 19;  // Don't use 12 for 3 digits since it's slower.
   assert(value < (num_digits == 3 ? 1'000 : 10'000));
   constexpr int sig = (1 << exp) / 100 + 1;
   uint32_t div = (value * sig) >> exp;  // value / 100
@@ -791,12 +791,10 @@ void write(char* buffer, uint64_t dec_sig, int dec_exp) noexcept {
     dec_exp = -dec_exp;
   }
   *buffer++ = sign;
-  if (dec_exp >= 100) {
-    auto [a, bb] = divmod100<3>(dec_exp);
-    *buffer++ = '0' + a;
-    dec_exp = bb;
-  }
-  memcpy(buffer, digits2(dec_exp), 2);
+  auto [a, bb] = divmod100<3>(dec_exp);
+  *buffer = '0' + a;
+  buffer += dec_exp >= 100;
+  memcpy(buffer, digits2(bb), 2);
   buffer[2] = '\0';
 }
 
@@ -860,11 +858,11 @@ void zmij::dtoa(double value, char* buffer) noexcept {
   constexpr int dec_exp_min = -292;
   auto [pow10_hi, pow10_lo] = pow10_significands[-dec_exp - dec_exp_min];
 
-  // round(log2(10) * 2**log2_pow10_exp) + 1
+  // log2_pow10_sig = round(log2(10) * 2**log2_pow10_exp) + 1
   constexpr int log2_pow10_sig = 217'707, log2_pow10_exp = 16;
 
   assert(dec_exp >= -350 && dec_exp <= 350);
-  // floor(log2(10**-dec_exp))
+  // pow10_bin_exp = floor(log2(10**-dec_exp))
   int pow10_bin_exp = -dec_exp * log2_pow10_sig >> log2_pow10_exp;
   // pow10 = ((pow10_hi << 63) | pow10_lo) * 2**(pow10_bin_exp - 126 + 1)
 
@@ -876,30 +874,24 @@ void zmij::dtoa(double value, char* buffer) noexcept {
   //   3 * 2**60 / 100 = 3.45...e+16 (shift = 4)
   int shift = bin_exp + pow10_bin_exp + 2;
 
-  uint64_t scaled_sig =
-      umul192_upper64_modified(pow10_hi, pow10_lo, bin_sig_shifted << shift);
-
   // Compute the estimates of lower and upper bounds of the rounding interval
   // by multiplying them by the power of 10 and applying modified rounding.
-  lower = umul192_upper64_modified(pow10_hi, pow10_lo, lower << shift);
-  upper = umul192_upper64_modified(pow10_hi, pow10_lo, upper << shift);
-
-  uint64_t dec_sig_under = scaled_sig >> 2;
   uint64_t bin_sig_lsb = bin_sig & 1;
-  if (dec_sig_under >= 10) {
-    // Compute the significands of the under- and overestimate.
-    uint64_t dec_sig_under2 = 10 * (dec_sig_under / 10);
-    uint64_t dec_sig_over2 = dec_sig_under2 + 10;
-    // Check if the under- and overestimates are in the interval.
-    bool under_in = lower + bin_sig_lsb <= dec_sig_under2 << 2;
-    bool over_in = (dec_sig_over2 << 2) + bin_sig_lsb <= upper;
-    if (under_in != over_in)
-      return write(buffer, under_in ? dec_sig_under2 : dec_sig_over2, dec_exp);
-  }
+  lower = umul192_upper64_modified(pow10_hi, pow10_lo, lower << shift) +
+          bin_sig_lsb;
+  upper = umul192_upper64_modified(pow10_hi, pow10_lo, upper << shift) -
+          bin_sig_lsb;
 
+  // The idea of using a single shorter candidate is by Cassio Neri.
+  uint64_t shorter = 10 * ((upper >> 2) / 10);
+  if ((shorter << 2) >= lower) return write(buffer, shorter, dec_exp);
+
+  uint64_t scaled_sig =
+      umul192_upper64_modified(pow10_hi, pow10_lo, bin_sig_shifted << shift);
+  uint64_t dec_sig_under = scaled_sig >> 2;
   uint64_t dec_sig_over = dec_sig_under + 1;
-  bool under_in = lower + bin_sig_lsb <= dec_sig_under << 2;
-  bool over_in = (dec_sig_over << 2) + bin_sig_lsb <= upper;
+  bool under_in = lower <= (dec_sig_under << 2);
+  bool over_in = (dec_sig_over << 2) <= upper;
   if (under_in != over_in) {
     // Only one of dec_sig_under or dec_sig_over are in the rounding interval.
     return write(buffer, under_in ? dec_sig_under : dec_sig_over, dec_exp);

@@ -2,13 +2,14 @@
 // Copyright (c) 2025 - present, Victor Zverovich
 // Distributed under the MIT license (see LICENSE).
 
-#include "zmij.h"
+#if __has_include("zmij.h")
+#  include "zmij.h"
+#endif
 
 #include <assert.h>  // assert
 #include <stdint.h>  // uint64_t
 #include <string.h>  // memcpy
 
-#include <bit>     // std::bit_cast
 #include <limits>  // std::numeric_limits
 
 namespace {
@@ -17,9 +18,9 @@ struct uint128 {
   uint64_t hi;
   uint64_t lo;
 
-  explicit operator uint64_t() const noexcept { return lo; }
+  [[maybe_unused]] explicit operator uint64_t() const noexcept { return lo; }
 
-  auto operator>>(int shift) const noexcept -> uint128 {
+  [[maybe_unused]] auto operator>>(int shift) const noexcept -> uint128 {
     assert(shift >= 64 && shift < 128);
     return {0, hi >> (shift - 64)};
   }
@@ -723,18 +724,22 @@ struct div_mod_result {
 template <int num_digits>
 inline auto divmod100(uint32_t value) noexcept -> div_mod_result {
   static_assert(num_digits == 3 || num_digits == 4, "wrong number of digits");
-  constexpr int exp = 19;  // Don't use 12 for 3 digits since it's slower.
+  constexpr int exp = 19;  // 19 is faster than 12 for 3 digits.
   assert(value < (num_digits == 3 ? 1'000 : 10'000));
   constexpr int sig = (1 << exp) / 100 + 1;
   uint32_t div = (value * sig) >> exp;  // value / 100
   return {div, value - div * 100};
 }
 
+inline void write2digits(char* buffer, uint32_t value) noexcept {
+  memcpy(buffer, digits2(value), 2);
+}
+
 // Writes 4 digits and removes trailing zeros.
 auto write4digits(char* buffer, uint32_t value) noexcept -> char* {
   auto [aa, bb] = divmod100<4>(value);
-  memcpy(buffer + 0, digits2(aa), 2);
-  memcpy(buffer + 2, digits2(bb), 2);
+  write2digits(buffer + 0, aa);
+  write2digits(buffer + 2, bb);
   return buffer + 4 - num_trailing_zeros[bb] -
          (bb == 0) * num_trailing_zeros[aa];
 }
@@ -752,10 +757,10 @@ auto write_significand(char* buffer, uint64_t value) noexcept -> char* {
   uint32_t cc = abbcc % 100;
   auto [a, bb] = divmod100<3>(abb);
 
-  *buffer = '0' + a;
+  *buffer = char('0' + a);
   buffer += a != 0;
-  memcpy(buffer + 0, digits2(bb), 2);
-  memcpy(buffer + 2, digits2(cc), 2);
+  write2digits(buffer + 0, bb);
+  write2digits(buffer + 2, cc);
   buffer += 4;
 
   if (ffgghhii == 0) {
@@ -766,10 +771,10 @@ auto write_significand(char* buffer, uint64_t value) noexcept -> char* {
   uint32_t ffgg = ffgghhii / 10'000;
   uint32_t hhii = ffgghhii % 10'000;
   auto [ff, gg] = divmod100<4>(ffgg);
-  memcpy(buffer + 0, digits2(dd), 2);
-  memcpy(buffer + 2, digits2(ee), 2);
-  memcpy(buffer + 4, digits2(ff), 2);
-  memcpy(buffer + 6, digits2(gg), 2);
+  write2digits(buffer + 0, dd);
+  write2digits(buffer + 2, ee);
+  write2digits(buffer + 4, ff);
+  write2digits(buffer + 6, gg);
   if (hhii != 0) return write4digits(buffer + 8, hhii);
   return buffer + 8 - num_trailing_zeros[gg] -
          (gg == 0) * num_trailing_zeros[ff];
@@ -791,17 +796,20 @@ void write(char* buffer, uint64_t dec_sig, int dec_exp) noexcept {
     dec_exp = -dec_exp;
   }
   *buffer++ = sign;
-  auto [a, bb] = divmod100<3>(dec_exp);
-  *buffer = '0' + a;
+  auto [a, bb] = divmod100<3>(uint32_t(dec_exp));
+  *buffer = char('0' + a);
   buffer += dec_exp >= 100;
-  memcpy(buffer, digits2(bb), 2);
+  write2digits(buffer, bb);
   buffer[2] = '\0';
 }
 
 }  // namespace
 
-void zmij::dtoa(double value, char* buffer) noexcept {
-  uint64_t bits = std::bit_cast<uint64_t>(value);
+namespace zmij {
+
+void dtoa(double value, char* buffer) noexcept {
+  uint64_t bits = 0;
+  memcpy(&bits, &value, sizeof(value));
   *buffer = '-';
   buffer += bits >> 63;
 
@@ -824,7 +832,7 @@ void zmij::dtoa(double value, char* buffer) noexcept {
     }
     // Handle subnormals.
     bin_sig ^= implicit_bit;
-    ++bin_exp;
+    bin_exp = 1;
     regular = true;
   }
   bin_sig ^= implicit_bit;
@@ -890,15 +898,14 @@ void zmij::dtoa(double value, char* buffer) noexcept {
       umul192_upper64_modified(pow10_hi, pow10_lo, bin_sig_shifted << shift);
   uint64_t dec_sig_under = scaled_sig >> 2;
   uint64_t dec_sig_over = dec_sig_under + 1;
-  bool under_in = lower <= (dec_sig_under << 2);
-  bool over_in = (dec_sig_over << 2) <= upper;
-  if (under_in != over_in) {
-    // Only one of dec_sig_under or dec_sig_over are in the rounding interval.
-    return write(buffer, under_in ? dec_sig_under : dec_sig_over, dec_exp);
-  }
 
-  // Both dec_sig_under and dec_sig_over are in the interval - pick the closest.
-  int cmp = scaled_sig - ((dec_sig_under + dec_sig_over) << 1);
-  bool under_closer = cmp < 0 || cmp == 0 && (dec_sig_under & 1) == 0;
-  return write(buffer, under_closer ? dec_sig_under : dec_sig_over, dec_exp);
+  // Pick the closest of dec_sig_under and dec_sig_over and check if it's in
+  // the rounding interval.
+  int64_t cmp = int64_t(scaled_sig - ((dec_sig_under + dec_sig_over) << 1));
+  bool under_closer = cmp < 0 || (cmp == 0 && (dec_sig_under & 1) == 0);
+  bool under_in = lower <= (dec_sig_under << 2);
+  write(buffer, (under_closer & under_in) ? dec_sig_under : dec_sig_over,
+        dec_exp);
 }
+
+}  // namespace zmij

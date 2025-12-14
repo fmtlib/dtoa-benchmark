@@ -23,6 +23,10 @@
 #  elif TARGET_OS_MAC
 #    define OS "mac64"
 #  endif
+#elif defined(__linux__)
+#  if defined(__x86_64__) || defined(_M_X64)
+#    define OS "linux64"
+#  endif
 #endif
 
 #ifndef OS

@@ -53,13 +53,26 @@ if (APPLE)
   execute_process(
     COMMAND sysctl -n machdep.cpu.brand_string
     OUTPUT_VARIABLE CPU_NAME
-    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  string(REPLACE " " "-" CPU_NAME "${CPU_NAME}")
-  string(TOLOWER "${CPU_NAME}" CPU_NAME)
+elseif(LINUX)
+  execute_process(
+    COMMAND lscpu
+    OUTPUT_VARIABLE CPU_NAME
+  )
+  string(REGEX MATCH "Model name: ([^\n]*)\n" CPU_NAME "${CPU_NAME}")
+  string(REGEX REPLACE
+    "AMD|Intel|CPU|\\(R\\)|\\(TM\\)|@|[^ ]+-Core Processor" ""
+    CPU_NAME "${CMAKE_MATCH_1}"
+  )
 else ()
   set(CPU_NAME "unknown")
 endif ()
+
+string(STRIP "${CPU_NAME}" CPU_NAME)
+string(REPLACE "  " " " CPU_NAME "${CPU_NAME}")
+string(REPLACE " " "-" CPU_NAME "${CPU_NAME}")
+string(TOLOWER "${CPU_NAME}" CPU_NAME)
+message("CPU_NAME: ${CPU_NAME}")
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 
 add_custom_target(

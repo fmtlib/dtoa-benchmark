@@ -10,7 +10,14 @@ foreach (csv_file IN LISTS csv_files)
   if (NOT csv_time STRGREATER html_time)
     continue()
   endif ()
-  message(STATUS "Converting ${csv_file} to ${html_file}")
-  execute_process(
-    COMMAND php result/template.php ${csv_file} OUTPUT_FILE ${html_file})
+  find_program("PHP" NAMES php)
+  if (PHP)
+    message(STATUS "Converting ${csv_file} to ${html_file}")
+    execute_process(
+      COMMAND ${PHP} result/template.php ${csv_file} OUTPUT_FILE ${html_file}
+      COMMAND_ERROR_IS_FATAL ANY
+    )
+  else()
+    message(WARNING "PHP not found. HTML file will not be generated")
+  endif()
 endforeach ()

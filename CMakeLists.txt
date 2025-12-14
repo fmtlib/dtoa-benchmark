@@ -59,15 +59,11 @@ elseif(LINUX)
     COMMAND lscpu
     OUTPUT_VARIABLE CPU_NAME
   )
-  string(REGEX MATCH "Model name: [^\n]*\n" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "Model name: " "" CPU_NAME "${CPU_NAME}")
-  string(REGEX REPLACE "[^ ]+-Core Processor" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "(R)" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "(TM)" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "AMD" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "Intel" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "CPU" "" CPU_NAME "${CPU_NAME}")
-  string(REPLACE "@ " "@" CPU_NAME "${CPU_NAME}")
+  string(REGEX MATCH "Model name: ([^\n]*)\n" CPU_NAME "${CPU_NAME}")
+  string(REGEX REPLACE
+    "AMD|Intel|CPU|\\(R\\)|\\(TM\\)|@|[^ ]+-Core Processor" ""
+    CPU_NAME "${CMAKE_MATCH_1}"
+  )
 else ()
   set(CPU_NAME "unknown")
 endif ()

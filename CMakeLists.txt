@@ -27,6 +27,7 @@ add_executable(
   src/sprintf-test.cpp
   src/to_chars-test.cpp
   #src/xjb-test.cpp
+  src/yy-test.cpp
   src/zmij-test.cpp
   # Grisu2 variants are disabled since they don't guarantee correctness.
   #src/milo-test.cpp
@@ -43,6 +44,7 @@ add_executable(
   src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
   src/schubfach/schubfach.cc
+  src/yy/yy_double.c
   src/zmij/zmij.cc
 )
 

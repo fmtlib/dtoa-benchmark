@@ -57,21 +57,22 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where
 The speedup is based on `sprintf`.
 
 | Function      | Time (ns) | Speedup |
-|---------------|----------:|--------:|
-| ostringstream | 872.266   | 1.00x   |
-| sprintf       | 734.468   | 1.19x   |
-| puff          | 629.306   | 1.39x   |
-| doubleconv    | 84.213    | 10.36x  |
-| to_chars      | 42.864    | 20.35x  |
-| ryu           | 37.278    | 23.40x  |
-| schubfach     | 24.728    | 35.27x  |
-| fmt           | 22.299    | 39.12x  |
-| dragonbox     | 20.636    | 42.27x  |
-| null          | 0.930     | 937.92x |
+|--------------:|----------:|--------:|
+| ostringstream | 874.752   | 1.00x   |
+| sprintf       | 734.849   | 1.19x   |
+| doubleconv    | 85.479    | 10.23x  |
+| to_chars      | 42.709    | 20.48x  |
+| ryu           | 37.404    | 23.39x  |
+| schubfach     | 25.166    | 34.76x  |
+| fmt           | 22.302    | 39.22x  |
+| dragonbox     | 20.823    | 42.01x  |
+| yy            | 14.016    | 62.41x  |
+| zmij          | 12.259    | 71.36x  |
+| null          | 0.929     | 941.19x |
 
-<img width="872" height="391" alt="image" src="https://github.com/user-attachments/assets/71fbc772-0579-4683-8e30-e358d4c4fef1" />
+<img width="783" height="354" alt="image" src="https://github.com/user-attachments/assets/7b65921b-af06-4ffa-ab31-e61e7f14abf8" />
 
-<img width="1011" height="763" alt="image" src="https://github.com/user-attachments/assets/e4a37bca-2808-4aac-a8f1-715920b3735d" />
+<img width="888" height="675" alt="image" src="https://github.com/user-attachments/assets/96492ad2-c8b1-4963-8ad0-a89abac4bcc4" />
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping

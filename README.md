@@ -7,6 +7,7 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 * Added [{fmt}](https://github.com/fmtlib/fmt)
 * Added [Dragonbox](https://github.com/jk-jeon/dragonbox)
 * Added [Schubfach](https://github.com/vitaut/schubfach)
+* Added [Żmij](https://github.com/vitaut/zmij)
 * Removed the use of deprecated `strstream`
 * Disabled Grisu2 implementations since they don't guarantee correctness
 
@@ -98,6 +99,7 @@ sprintf       | `sprintf` in C standard library with `"%.17g"` format.
 [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
 [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
+[zmij](https://github.com/vitaut/zmij) | `zmij::dtoa`
 null          | Do nothing.
 
 Notes:

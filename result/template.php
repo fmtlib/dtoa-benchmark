@@ -219,6 +219,7 @@ function drawDigitChart(type, timeDigitData) {
 	var options = { 
 		title: type,
 		chartArea: {
+      'left': 80,
       'width': '60%',
       'height': '80%'
     },

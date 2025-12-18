@@ -54,7 +54,6 @@ the same base name and the `.html` extension.
 
 The following are results measured on a MacBook Pro (Apple M1 Pro), where
 `dtoa` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS.
-The speedup is based on `sprintf`.
 
 | Function            | Time (ns) | Speedup |
 |---------------------|----------:|--------:|

@@ -218,7 +218,10 @@ function drawDigitChart(type, timeDigitData) {
 
 	var options = { 
 		title: type,
-		chartArea: {'width': '70%', 'height': '80%'},
+		chartArea: {
+      'width': '60%',
+      'height': '80%'
+    },
 		hAxis: {
 			title: "Digit",
 			gridlines: { count: timeDigitData.length - 1 },

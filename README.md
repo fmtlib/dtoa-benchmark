@@ -6,6 +6,7 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 * Fixed reporting of results
 * Added [{fmt}](https://github.com/fmtlib/fmt)
 * Added [Dragonbox](https://github.com/jk-jeon/dragonbox)
+* Added [Ryu](https://github.com/ulfjack/ryu)
 * Added [Schubfach](https://github.com/vitaut/schubfach)
 * Added [Żmij](https://github.com/vitaut/zmij)
 * Removed the use of deprecated `strstream`
@@ -98,6 +99,7 @@ Function      | Description
 [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
 null          | Do nothing.
 ostringstream | [`std::ostringstream`](https://en.cppreference.com/w/cpp/io/basic_ostringstream.html) in the C++ standard library with `setprecision(17)`.
+[ryu](https://github.com/ulfjack/ryu) | Ryu `d2s_buffered`
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
 sprintf       | [`sprintf`](https://en.cppreference.com/w/c/io/fprintf.html) in the C standard library with `"%.17g"` format.
 [zmij](https://github.com/vitaut/zmij) | `zmij::dtoa`

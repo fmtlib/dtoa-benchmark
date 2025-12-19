@@ -95,7 +95,7 @@ Function      | Description
 --------------|-----------
 ostringstream | `std::ostringstream` in C++ standard library with `setprecision(17)`.
 sprintf       | `sprintf` in C standard library with `"%.17g"` format.
-[doubleconv](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
+[double-conversion](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
 [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
 [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++

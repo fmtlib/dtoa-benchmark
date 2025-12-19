@@ -43,6 +43,7 @@ add_executable(
   src/double-conversion/strtod.cc
   src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
+  src/ryu/d2s.c
   src/schubfach/schubfach.cc
   src/yy/yy_double.c
   src/zmij/zmij.cc

@@ -72,6 +72,8 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where
 
 <img width="812" height="355" alt="image" src="https://github.com/user-attachments/assets/333f0575-8631-421b-8620-22b8a4ac9e0a" />
 
+`ostringstream` and `sprintf` are excluded from the above graph because they are too slow.
+
 <img width="830" height="661" alt="image" src="https://github.com/user-attachments/assets/0e657107-fdc5-4575-bc04-4fd4ef4b0740" />
 
 Notes:

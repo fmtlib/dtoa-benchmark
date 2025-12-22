@@ -9,6 +9,7 @@ This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-be
 * Added [Ryu](https://github.com/ulfjack/ryu)
 * Added [Schubfach](https://github.com/vitaut/schubfach)
 * Added [Żmij](https://github.com/vitaut/zmij)
+* Added [Asteria](https://github.com/lhmouse/asteria)
 * Removed the use of deprecated `strstream`
 * Disabled Grisu2 implementations since they don't guarantee correctness
 

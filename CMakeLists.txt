@@ -31,6 +31,7 @@ add_executable(
   src/zmij-test.cpp
   # Grisu2 variants are disabled since they don't guarantee correctness.
   #src/milo-test.cpp
+  src/asteria-test.cpp
 
   # Libraries:
   src/double-conversion/bignum-dtoa.cc
@@ -47,6 +48,7 @@ add_executable(
   src/schubfach/schubfach.cc
   src/yy/yy_double.c
   src/zmij/zmij.cc
+  src/asteria/ascii_numput.cpp
 )
 
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)

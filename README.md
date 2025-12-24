@@ -106,7 +106,7 @@ ostringstream | [`std::ostringstream`](https://en.cppreference.com/w/cpp/io/basi
 [ryu](https://github.com/ulfjack/ryu) | Ryu `d2s_buffered`
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
 sprintf       | [`sprintf`](https://en.cppreference.com/w/c/io/fprintf.html) from the C standard library with `"%.17g"` format.
-[zmij](https://github.com/vitaut/zmij) | `zmij::dtoa`
+[zmij](https://github.com/vitaut/zmij) | `zmij::to_string`
 
 Notes:
 

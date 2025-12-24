@@ -16,7 +16,7 @@
 #include <limits>       // std::numeric_limits
 #include <type_traits>  // std::conditional_t
 
-#if __has_include(<arm_neon.h>)
+#ifdef __ARM_NEON
 #  include <arm_neon.h>
 #endif
 
@@ -751,20 +751,16 @@ inline auto is_big_endian() noexcept -> bool {
 }
 
 inline auto countl_zero(uint64_t x) noexcept -> int {
-#if defined(_MSC_VER) && defined(__AVX2__)
-  // use lzcnt on MSVC only on AVX2 capable CPU's that all have this BMI
-  // instruction
+#if defined(__has_builtin) && __has_builtin(__builtin_clzll)
+  return __builtin_clzll(x);
+#elif defined(_MSC_VER) && defined(__AVX2__)
+  // Use lzcnt only on AVX2-capable CPUs that have this BMI instruction.
   return __lzcnt64(x);
 #elif defined(_MSC_VER)
-  // otherwise fallback to BSR instruction. Note that 0 is not allowed as input
-  // here
   unsigned long idx;
-  _BitScanReverse64(&idx, x);
+  _BitScanReverse64(&idx, x);  // Fallback to the BSR instruction.
   return 63 - idx;
 #else
-  // Unlike MSVC, clang and gcc recognize this implementation and replace
-  // it with the assembly instructions which are appropriate for the
-  // target (lzcnt or bsr + zero handling).
   int n = 64;
   for (; x > 0; x >>= 1) --n;
   return n;
@@ -772,18 +768,20 @@ inline auto countl_zero(uint64_t x) noexcept -> int {
 }
 
 inline auto bswap64(uint64_t x) noexcept -> uint64_t {
-#ifdef _MSC_VER
+#if defined(__has_builtin) && __has_builtin(__builtin_bswap64)
+  return __builtin_bswap64(x);
+#elif defined(_MSC_VER)
   return _byteswap_uint64(x);
 #else
-  return __builtin_bswap64(x);
+  return ((x & 0xff00000000000000) >> 56) | ((x & 0x00ff000000000000) >> 40) |
+         ((x & 0x0000ff0000000000) >> 24) | ((x & 0x000000ff00000000) >> 8) |
+         ((x & 0x00000000ff000000) << 8) | ((x & 0x0000000000ff0000) << 24) |
+         ((x & 0x000000000000ff00) << 40) | ((x & 0x00000000000000ff) << 56);
 #endif
 }
 
 inline auto count_trailing_nonzeros(uint64_t x) noexcept -> int {
-  // This assumes little-endian, that is the first char of the string
-  // is in the lowest byte and the last char is in the highest byte.
-  assert(!is_big_endian());
-  // We count the number of bytes until there are only '\0's left.
+  // We count the number of bytes until there are only zeros left.
   // The code is equivalent to
   //   return 8 - count_lzero(x) / 8
   // but if the BSR instruction is emitted (as gcc on x64 does with
@@ -792,9 +790,10 @@ inline auto count_trailing_nonzeros(uint64_t x) noexcept -> int {
   // due to BSR counting in the opposite direction.
   //
   // Additionally, the BSR instruction requires a zero check.  Since the
-  // high bit is never set we can avoid the zero check by shifting the
-  // datum left by one and inserting a sentinel bit at the end. On my x64
-  // this is a measurable speed-up over the automatically inserted range check.
+  // high bit is unused we can avoid the zero check by shifting the
+  // datum left by one and inserting a sentinel bit at the end. This can
+  // be faster than the automatically inserted range check.
+  if (is_big_endian()) x = bswap64(x);
   return (70 - countl_zero((x << 1) | 1)) / 8;
 }
 
@@ -831,35 +830,36 @@ auto to_bcd8(uint64_t abcdefgh) noexcept -> uint64_t {
   return is_big_endian() ? a_b_c_d_e_f_g_h : bswap64(a_b_c_d_e_f_g_h);
 }
 
+inline auto write_if_nonzero(char* buffer, uint32_t digit) noexcept -> char* {
+  *buffer = char('0' + digit);
+  return buffer + (digit != 0);
+}
+
+inline void write8(char* buffer, uint64_t value) noexcept {
+  memcpy(buffer, &value, 8);
+}
+
+constexpr uint64_t zeros = 0x30303030'30303030u;  // 0x30 == '0'
+
 // Writes a significand consisting of up to 17 decimal digits (16-17 for
 // normals) and removes trailing zeros.
-auto write_significand(char* buffer, uint64_t value) noexcept -> char* {
-#ifndef __ARM_NEON__
-  // Each digits is denoted by a letter so value is abbccddeeffgghhii where
-  // digit a can be zero.
+auto write_significand17(char* buffer, uint64_t value) noexcept -> char* {
+#ifndef __ARM_NEON
+  char* start = buffer;
+  // Each digit is denoted by a letter so value is abbccddeeffgghhii.
   uint32_t abbccddee = uint32_t(value / 100'000'000);
   uint32_t ffgghhii = uint32_t(value % 100'000'000);
-  uint32_t a = abbccddee / 100'000'000;
-  uint32_t bbccddee = abbccddee % 100'000'000;
-
-  char* start = buffer;
-  *buffer = char('0' + a);
-  buffer += a != 0;
-
-  constexpr uint64_t zerobits = 0x30303030'30303030u;  // 0x30 == '0'
-  uint64_t bcd = to_bcd8(bbccddee);
-  uint64_t bits = bcd | zerobits;
-  memcpy(buffer, &bits, 8);
+  buffer = write_if_nonzero(buffer, abbccddee / 100'000'000);
+  uint64_t bcd = to_bcd8(abbccddee % 100'000'000);
+  write8(buffer, bcd | zeros);
   if (ffgghhii == 0) {
     buffer += count_trailing_nonzeros(bcd);
     return buffer - int(buffer - start == 1);
   }
-  buffer += 8;
   bcd = to_bcd8(ffgghhii);
-  bits = bcd | zerobits;
-  memcpy(buffer, &bits, 8);
-  return buffer + count_trailing_nonzeros(bcd);
-#else   // __ARM_NEON__
+  write8(buffer + 8, bcd | zeros);
+  return buffer + 8 + count_trailing_nonzeros(bcd);
+#else   // __ARM_NEON
   // An optimized version for NEON by Dougall Johnson.
   struct to_string_constants {
     uint64_t mul_const;
@@ -931,6 +931,17 @@ auto write_significand(char* buffer, uint64_t value) noexcept -> char* {
 #endif  // __ARM_NEON__
 }
 
+// Writes a significand consisting of up to 9 decimal digits (7-9 for normals)
+// and removes trailing zeros.
+auto write_significand9(char* buffer, uint32_t value) noexcept -> char* {
+  char* start = buffer;
+  buffer = write_if_nonzero(buffer, value / 100'000'000);
+  uint64_t bcd = to_bcd8(value % 100'000'000);
+  write8(buffer, bcd | zeros);
+  buffer += count_trailing_nonzeros(bcd);
+  return buffer - int(buffer - start == 1);
+}
+
 struct fp {
   uint64_t sig;
   int exp;
@@ -972,34 +983,35 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
   if (regular) [[likely]] {
     auto [integral, fractional] =
         umul192_upper128(pow10_hi, pow10_lo, bin_sig << exp_shift);
-    UInt digit = integral % 10;
+    uint64_t digit = integral % 10;
 
     // Switch to a fixed-point representation with the integral part in the
     // upper 4 bits and the rest being the fractional part.
-    constexpr int num_bits = sizeof(UInt) * CHAR_BIT;
+    constexpr int num_bits = sizeof(uint64_t) * CHAR_BIT;
     constexpr int num_integral_bits = 4;
     constexpr int num_fractional_bits = num_bits - num_integral_bits;
-    constexpr UInt ten = UInt(10) << num_fractional_bits;
+    constexpr uint64_t ten = uint64_t(10) << num_fractional_bits;
     // Fixed-point remainder of the scaled significand modulo 10.
-    UInt rem10 =
+    uint64_t rem10 =
         (digit << num_fractional_bits) | (fractional >> num_integral_bits);
     // dec_exp is chosen so that 10**dec_exp <= 2**bin_exp < 10**(dec_exp + 1).
     // Since 1ulp == 2**bin_exp it will be in the range [1, 10) after scaling by
     // 10**dec_exp. Add 1 to combine the shift with division by two.
-    UInt half_ulp10 = pow10_hi >> (num_integral_bits - exp_shift + 1);
-    UInt upper = rem10 + half_ulp10;
+    uint64_t half_ulp10 = pow10_hi >> (num_integral_bits - exp_shift + 1);
+    uint64_t upper = rem10 + half_ulp10;
 
     // An optimization from yy by Yaoyuan Guo:
     if (
         // Exact half-ulp tie when rounding to nearest integer.
-        fractional != (UInt(1) << (num_bits - 1)) &&
+        fractional != (uint64_t(1) << (num_bits - 1)) &&
         // Exact half-ulp tie when rounding to nearest 10.
         rem10 != half_ulp10 &&
         // Near-boundary case for rounding to nearest 10.
-        ten - upper > UInt(1)) [[likely]] {
+        ten - upper > uint64_t(1)) [[likely]] {
       bool round = (upper >> num_fractional_bits) >= 10;
-      UInt shorter = integral - digit + round * 10;
-      UInt longer = integral + (fractional >= (UInt(1) << (num_bits - 1)));
+      uint64_t shorter = integral - digit + round * 10;
+      uint64_t longer =
+          integral + (fractional >= (uint64_t(1) << (num_bits - 1)));
       return {((rem10 <= half_ulp10) + round != 0) ? shorter : longer, dec_exp};
     }
   }
@@ -1010,32 +1022,32 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
 
   // Shift the significand so that boundaries are integer.
   constexpr int bound_shift = 2;
-  UInt bin_sig_shifted = bin_sig << bound_shift;
+  uint64_t bin_sig_shifted = bin_sig << bound_shift;
 
   // Compute the estimates of lower and upper bounds of the rounding interval
   // by multiplying them by the power of 10 and applying modified rounding.
-  UInt lsb = bin_sig & 1;
-  UInt lower = (bin_sig_shifted - (regular + 1)) << exp_shift;
+  uint64_t lsb = bin_sig & 1;
+  uint64_t lower = (bin_sig_shifted - (regular + 1)) << exp_shift;
   lower = umul192_upper64_inexact_to_odd(pow10_hi, pow10_lo, lower) + lsb;
-  UInt upper = (bin_sig_shifted + 2) << exp_shift;
+  uint64_t upper = (bin_sig_shifted + 2) << exp_shift;
   upper = umul192_upper64_inexact_to_odd(pow10_hi, pow10_lo, upper) - lsb;
 
   // The idea of using a single shorter candidate is by Cassio Neri.
   // It is less or equal to the upper bound by construction.
-  UInt shorter = 10 * ((upper >> bound_shift) / 10);
+  uint64_t shorter = 10 * ((upper >> bound_shift) / 10);
   if ((shorter << bound_shift) >= lower) return {shorter, dec_exp};
 
-  UInt scaled_sig = umul192_upper64_inexact_to_odd(
+  uint64_t scaled_sig = umul192_upper64_inexact_to_odd(
       pow10_hi, pow10_lo, bin_sig_shifted << exp_shift);
-  UInt dec_sig_under = scaled_sig >> bound_shift;
-  UInt dec_sig_over = dec_sig_under + 1;
+  uint64_t dec_sig_below = scaled_sig >> bound_shift;
+  uint64_t dec_sig_above = dec_sig_below + 1;
 
-  // Pick the closest of dec_sig_under and dec_sig_over and check if it's in
+  // Pick the closest of dec_sig_below and dec_sig_above and check if it's in
   // the rounding interval.
-  int64_t cmp = int64_t(scaled_sig - ((dec_sig_under + dec_sig_over) << 1));
-  bool under_closer = cmp < 0 || (cmp == 0 && (dec_sig_under & 1) == 0);
-  bool under_in = (dec_sig_under << bound_shift) >= lower;
-  return {(under_closer & under_in) ? dec_sig_under : dec_sig_over, dec_exp};
+  int64_t cmp = int64_t(scaled_sig - ((dec_sig_below + dec_sig_above) << 1));
+  bool below_closer = cmp < 0 || (cmp == 0 && (dec_sig_below & 1) == 0);
+  bool below_in = (dec_sig_below << bound_shift) >= lower;
+  return {(below_closer & below_in) ? dec_sig_below : dec_sig_above, dec_exp};
 }
 
 }  // namespace
@@ -1076,11 +1088,17 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
   bin_exp -= num_sig_bits + exp_bias;
 
   auto [dec_sig, dec_exp] = to_decimal(bin_sig, bin_exp, regular);
-  int num_digits = 15 + (dec_sig >= uint(num_bits == 64 ? 1e16 : 1e8));
-  dec_exp += num_digits;
-
   char* start = buffer;
-  buffer = write_significand(buffer + 1, dec_sig);
+  int num_digits = std::numeric_limits<Float>::max_digits10 - 2;
+  if (num_bits == 64) {
+    num_digits += (dec_sig >= uint(1e16));
+    buffer = write_significand17(buffer + 1, dec_sig);
+  } else {
+    num_digits += (dec_sig >= uint(1e8));
+    buffer = write_significand9(buffer + 1, dec_sig);
+    subnormal = dec_sig < uint(1e7);  // Remove leading zero.
+  }
+  dec_exp += num_digits;
   if (subnormal) [[unlikely]] {
     char* p = start + 1;
     while (*p == '0') ++p;
@@ -1090,6 +1108,7 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
     buffer -= num_zeros;
     buffer -= buffer == start + 2;
   }
+
   start[0] = start[1];
   start[1] = '.';
 
@@ -1104,6 +1123,7 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
   buffer[2] = '\0';
 }
 
-template void to_string<double>(double value, char* buffer) noexcept;
+template void to_string(double value, char* buffer) noexcept;
+template void to_string(float value, char* buffer) noexcept;
 
 }  // namespace zmij::detail

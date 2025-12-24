@@ -1,229 +1,251 @@
 <html>
+
 <head>
-<script src="https://code.jquery.com/jquery-1.8.2.js"></script>
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-<script>
-	google.load("visualization", "1", {packages:["corechart", "table"]});
-  google.setOnLoadCallback(drawChart);
-  function drawChart() {
-    var csv = $('#textInput').val();
-    var data = $.csv.toArrays(csv, {
+  <script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.12/jquery.csv.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script>
+    google.load("visualization", "1", { packages: ["corechart", "table"] });
+    google.setOnLoadCallback(drawChart);
+    function drawChart() {
+      var csv = $('#textInput').val();
+      var data = $.csv.toArrays(csv, {
         onParseValue: $.csv.hooks.castToScalar
-    });
+      });
 
-    // Convert data for bar chart (summing all digits)
-    var timeData = {};	// type -> table
-    var funcRowMap;
-    var maxDigit = 0;
+      // Convert data for bar chart (summing all digits)
+      var timeData = {};	// type -> table
+      var funcRowMap;
+      var maxDigit = 0;
 
-    for (var i = 1; i < data.length; i++) {
-    	var type = data[i][0];
-   		var func = data[i][1];
-      var digit = data[i][2];
-   		var time = data[i][3];
-   		if (timeData[type] == null) {
-   			timeData[type] = [["Function", "Time (ns)"/*, { role: "style" }*/]];
-        if (digit != 0)
-   			  funcRowMap = {};
-   		}
+      for (var i = 1; i < data.length; i++) {
+        var type = data[i][0];
+        var func = data[i][1];
+        var digit = data[i][2];
+        var time = data[i][3];
+        if (timeData[type] == null) {
+          timeData[type] = [["Function", "Time (ns)"/*, { role: "style" }*/]];
+          if (digit != 0)
+            funcRowMap = {};
+        }
 
-   		var table = timeData[type];
-   		
-      if (digit != 0) {
-     		if (funcRowMap[func] == null)
-     			funcRowMap[func] = table.push([func, 0]) - 1;
-     		
-     		table[funcRowMap[func]][1] += time;
+        var table = timeData[type];
+
+        if (digit != 0) {
+          if (funcRowMap[func] == null)
+            funcRowMap[func] = table.push([func, 0]) - 1;
+
+          table[funcRowMap[func]][1] += time;
+        }
+        else
+          table.push([func, time]);
+
+        maxDigit = Math.max(maxDigit, digit);
       }
-      else 
-        table.push([func, time]);
 
-      maxDigit = Math.max(maxDigit, digit);
+      // Compute average
+      for (var type in timeData) {
+        var table = timeData[type];
+        for (var i = 1; i < table.length; i++)
+          table[i][1] /= maxDigit;
+      }
+
+      // Convert data for drawing line chart per random digit
+      var timeDigitData = {}; // type -> table
+      var funcColumnMap;
+
+      for (var i = 1; i < data.length; i++) {
+        var type = data[i][0];
+        var func = data[i][1];
+        var digit = data[i][2];
+        var time = data[i][3];
+
+        if (digit == 0)
+          continue;
+
+        if (timeDigitData[type] == null) {
+          timeDigitData[type] = [["Digit"]];
+          funcColumnMap = {};
+        }
+
+        var table = timeDigitData[type];
+
+        if (funcColumnMap[func] == null)
+          funcColumnMap[func] = table[0].push(func) - 1;
+
+        var row;
+        for (row = 1; row < table.length; row++)
+          if (table[row][0] == digit)
+            break;
+
+        if (row == table.length)
+          table.push([digit]);
+
+        table[row][funcColumnMap[func]] = time;
+      }
+
+      for (var type in timeData) {
+        $("#main").append(
+          $("<a>", { name: type }),
+          $("<h2>", { style: "padding-top: 70px; margin-top: -70px;" }).append(type)
+        );
+
+        $("#section").append($("<li>").append($("<a>", { href: "#" + type }).append(type)));
+
+        drawTable(type, timeData[type]);
+        drawBarChart(type, timeData[type]);
+        if (timeDigitData[type] != null)
+          drawDigitChart(type, timeDigitData[type]);
+      }
+
+      $(".chart").each(function () {
+        var chart = $(this);
+        var d = $("#downloadDD").clone().css("display", "");
+        $('li a', d).each(function () {
+          $(this).click(function () {
+            var svg = chart[0].getElementsByTagName('svg')[0].parentNode.innerHTML;
+            svg = sanitize(svg);
+            $('#imageFilename').val($("#title").html() + "_" + chart.data("filename"));
+            $('#imageGetFormTYPE').val($(this).attr('dltype'));
+            $('#imageGetFormSVG').val(svg);
+            $('#imageGetForm').submit();
+          });
+        });
+        $(this).after(d);
+      });
+
+      // Add configurations
+      var thisConfig = "apple-m1-pro_mac64_clang17.0";
+      var configurations = [];
+
+      for (var i in configurations) {
+        var c = configurations[i];
+        $("#configuration").append($("<li>", { class: (c == thisConfig ? "active" : "") }).append($("<a>", { href: c + ".html" }).append(c)));
+      }
     }
 
-    // Compute average
-    for (var type in timeData) {
-      var table = timeData[type];
-      for (var i = 1; i < table.length; i++)
-        table[i][1] /= maxDigit;
-    }
+    function drawTable(type, timeData) {
+      var data = google.visualization.arrayToDataTable(timeData);
+      data.addColumn('number', 'Speedup');
+      data.sort([{ column: 1, desc: true }]);
+      var formatter1 = new google.visualization.NumberFormat({ fractionDigits: 3 });
+      formatter1.format(data, 1);
 
-    // Convert data for drawing line chart per random digit
-    var timeDigitData = {}; // type -> table
-    var funcColumnMap;
+      var div = document.createElement("div");
+      div.className = "tablechart";
+      $("#main").append(div);
+      var table = new google.visualization.Table(div);
+      redrawTable(0);
+      table.setSelection([{ row: 0, column: null }]);
 
-    for (var i = 1; i < data.length; i++) {
-    	var type = data[i][0];
-   		var func = data[i][1];
-		  var digit = data[i][2];
-   		var time = data[i][3];
-
-      if (digit == 0)
-        continue;
-
-   		if (timeDigitData[type] == null) {
-   			timeDigitData[type] = [["Digit"]];
-   			funcColumnMap = {};
-   		}
-
-   		var table = timeDigitData[type];
-
-   		if (funcColumnMap[func] == null)
-   			funcColumnMap[func] = table[0].push(func) - 1;
-
-   		var row;
-   		for (row = 1; row < table.length; row++)
-   			if (table[row][0] == digit)
-   				break;
-
-    	if (row == table.length)
-    		table.push([digit]);
-
-		table[row][funcColumnMap[func]] = time;
-	}
-
-	for (var type in timeData) {
-		$("#main").append(
-      $("<a>", {name: type}),
-      $("<h2>", {style: "padding-top: 70px; margin-top: -70px;"}).append(type)
-    );
-
-    $("#section").append($("<li>").append($("<a>", {href: "#" + type}).append(type)));
-
-		drawTable(type, timeData[type]);
-		drawBarChart(type, timeData[type]);
-    if (timeDigitData[type] != null)
-		  drawDigitChart(type, timeDigitData[type]);
-	}
-
-	$(".chart").each(function() {
-		var chart = $(this);
-		var d = $("#downloadDD").clone().css("display", "");
-		$('li a', d).each(function() {
-	        $(this).click(function() {
-	            var svg = chart[0].getElementsByTagName('svg')[0].parentNode.innerHTML;
-	            svg=sanitize(svg);
-	            $('#imageFilename').val($("#title").html() + "_" + chart.data("filename"));
-	            $('#imageGetFormTYPE').val($(this).attr('dltype'));
-	            $('#imageGetFormSVG').val(svg);
-	            $('#imageGetForm').submit();
-	        });
-	    });		
-		$(this).after(d);
-	});
-
-  // Add configurations
-  var thisConfig = "apple-m1-pro_mac64_clang17.0";
-  var configurations = [];
-
-  for (var i in configurations) {
-    var c = configurations[i];
-    $("#configuration").append($("<li>", {class : (c == thisConfig ? "active" : "")}).append($("<a>", {href: c + ".html"}).append(c)));
-  }
-}
-
-function drawTable(type, timeData) {
-	var data = google.visualization.arrayToDataTable(timeData);
-    data.addColumn('number', 'Speedup');
-    data.sort([{ column: 1, desc: true }]);
-    var formatter1 = new google.visualization.NumberFormat({ fractionDigits: 3 });
-    formatter1.format(data, 1);
-
-	var div = document.createElement("div");
-	div.className = "tablechart";
-	$("#main").append(div);
-    var table = new google.visualization.Table(div);
-    redrawTable(0);
-    table.setSelection([{ row: 0, column: null}]);
-
-    function redrawTable(selectedRow) {
+      function redrawTable(selectedRow) {
         // Compute relative time using the first row as basis
         var basis = data.getValue(selectedRow, 1);
         for (var rowIndex = 0; rowIndex < data.getNumberOfRows(); rowIndex++)
-            data.setValue(rowIndex, 2, basis / data.getValue(rowIndex, 1));
+          data.setValue(rowIndex, 2, basis / data.getValue(rowIndex, 1));
 
-        var formatter = new google.visualization.NumberFormat({suffix: 'x'});
+        var formatter = new google.visualization.NumberFormat({ suffix: 'x' });
         formatter.format(data, 2); // Apply formatter to second column
 
         table.draw(data);
-    }
+      }
 
-    google.visualization.events.addListener(table, 'select',
-    function() {
-        var selection = table.getSelection();
-        if (selection.length > 0) {
+      google.visualization.events.addListener(table, 'select',
+        function () {
+          var selection = table.getSelection();
+          if (selection.length > 0) {
             var item = selection[0];
             if (item.row != null)
-                redrawTable(item.row);
-        }
-    });
+              redrawTable(item.row);
+          }
+        });
 
-}
+    }
 
-function drawBarChart(type, timeData) {
-    var defaultColors = ["#3366cc","#dc3912","#ff9900","#109618","#990099","#0099c6","#dd4477","#66aa00","#b82e2e","#316395","#994499","#22aa99","#aaaa11","#6633cc","#e67300","#8b0707","#651067","#329262","#5574a6","#3b3eac","#b77322","#16d620","#b91383","#f4359e","#9c5935","#a9c413","#2a778d","#668d1c","#bea413","#0c5922","#743411"];
+    function drawBarChart(type, timeData) {
+      var defaultColors = [
+        "#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477",
+        "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc",
+        "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac", "#b77322",
+        "#16d620", "#b91383", "#f4359e", "#9c5935", "#a9c413", "#2a778d", "#668d1c",
+        "#bea413", "#0c5922", "#743411"
+      ];
 
-	var data = google.visualization.arrayToDataTable(timeData);
-	data.addColumn({ type: "string", role: "style" })
-	for (var rowIndex = 0; rowIndex < data.getNumberOfRows(); rowIndex++)
-		data.setValue(rowIndex, 2, defaultColors[rowIndex]);
+      // Filter out methods that are too slow.
+      var excluded = {
+        "ostringstream": true,
+        "sprintf": true
+      };
+      var filtered = [timeData[0]];
+      for (var i = 1; i < timeData.length; i++) {
+        if (!excluded[timeData[i][0]])
+          filtered.push(timeData[i]);
+      }
 
-    data.sort([{ column: 1, desc: true }]);
-	var options = { 
-		title: type,
-		chartArea: {'width': '70%', 'height': '70%'},
-		width: 800,
-		height: 300,
-		legend: { position: "none" },
-		hAxis: { title: "Time (ns)" }
-	};
-	var div = document.createElement("div");
-	div.className = "chart";
-	$(div).data("filename", type + "_time");
-	$("#main").append(div);
-	var chart = new google.visualization.BarChart(div);
+      var data = google.visualization.arrayToDataTable(filtered);
+      data.addColumn({ type: "string", role: "style" })
+      for (var rowIndex = 0; rowIndex < data.getNumberOfRows(); rowIndex++)
+        data.setValue(rowIndex, 2, defaultColors[rowIndex]);
 
-	chart.draw(data, options);
-}
+      data.sort([{ column: 1, desc: true }]);
+      var options = {
+        title: type,
+        chartArea: { 'width': '70%', 'height': '70%' },
+        width: 800,
+        height: 300,
+        legend: { position: "none" },
+        hAxis: { title: "Time (ns)" }
+      };
+      var div = document.createElement("div");
+      div.className = "chart";
+      $(div).data("filename", type + "_time");
+      $("#main").append(div);
+      var chart = new google.visualization.BarChart(div);
 
-function drawDigitChart(type, timeDigitData) {
-	var data = google.visualization.arrayToDataTable(timeDigitData);
+      chart.draw(data, options);
+    }
 
-	var options = { 
-		title: type,
-		chartArea: {'width': '70%', 'height': '80%'},
-		hAxis: {
-			title: "Digit",
-			gridlines: { count: timeDigitData.length - 1 },
-			maxAlternation: 1,
-			minTextSpacing: 0
-		},
-		vAxis: {
-			title: "Time (ns) in log scale",
-			logScale: true,
-			minorGridlines: { count: 10 },
-      baseline: 0
-		},
-		width: 800,
-		height: 600
-	};
-	var div = document.createElement("div");
-	div.className = "chart";
-	$(div).data("filename", type + "_timedigit");
-	$("#main").append(div);
-	var chart = new google.visualization.LineChart(div);
+    function drawDigitChart(type, timeDigitData) {
+      var data = google.visualization.arrayToDataTable(timeDigitData);
 
-	chart.draw(data, options);
-}
+      var options = {
+        title: type,
+        chartArea: {
+          'left': 80,
+          'width': '60%',
+          'height': '80%'
+        },
+        hAxis: {
+          title: "Digit",
+          gridlines: { count: timeDigitData.length - 1 },
+          maxAlternation: 1,
+          minTextSpacing: 0
+        },
+        vAxis: {
+          title: "Time (ns) in log scale",
+          logScale: true,
+          minorGridlines: { count: 10 },
+          baseline: 0
+        },
+        width: 800,
+        height: 600
+      };
+      var div = document.createElement("div");
+      div.className = "chart";
+      $(div).data("filename", type + "_timedigit");
+      $("#main").append(div);
+      var chart = new google.visualization.LineChart(div);
 
-// http://jsfiddle.net/P6XXM/
-function sanitize(svg) {
-    svg = svg
-        .replace(/\<svg/,'<svg xmlns="http://www.w3.org/2000/svg" version="1.1"')
+      chart.draw(data, options);
+    }
+
+    // http://jsfiddle.net/P6XXM/
+    function sanitize(svg) {
+      svg = svg
+        .replace(/\<svg/, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"')
         .replace(/zIndex="[^"]+"/g, '')
         .replace(/isShadow="[^"]+"/g, '')
         .replace(/symbolName="[^"]+"/g, '')
@@ -232,13 +254,13 @@ function sanitize(svg) {
         .replace(/url\([^#]+#/g, 'url(#')
         .replace('<svg xmlns:xlink="http://www.w3.org/1999/xlink" ', '<svg ')
         .replace(/ href=/g, ' xlink:href=')
-    /*.replace(/preserveAspectRatio="none">/g, 'preserveAspectRatio="none"/>')*/
-    /* This fails in IE < 8
-    .replace(/([0-9]+)\.([0-9]+)/g, function(s1, s2, s3) { // round off to save weight
-    return s2 +'.'+ s3[0];
-    })*/
+        /*.replace(/preserveAspectRatio="none">/g, 'preserveAspectRatio="none"/>')*/
+        /* This fails in IE < 8
+        .replace(/([0-9]+)\.([0-9]+)/g, function(s1, s2, s3) { // round off to save weight
+        return s2 +'.'+ s3[0];
+        })*/
 
-    // IE specific
+        // IE specific
         .replace(/id=([^" >]+)/g, 'id="$1"')
         .replace(/class=([^" ]+)/g, 'class="$1"')
         .replace(/ transform /g, ' ')
@@ -250,270 +272,316 @@ function sanitize(svg) {
         .replace(/height=(\d+)/g, 'height="$1"')
         .replace(/hc-svg-href="/g, 'xlink:href="')
         .replace(/style="([^"]+)"/g, function (s) {
-            return s.toLowerCase();
+          return s.toLowerCase();
         });
 
-    // IE9 beta bugs with innerHTML. Test again with final IE9.
-    svg = svg.replace(/(url\(#highcharts-[0-9]+)&quot;/g, '$1')
+      // IE9 beta bugs with innerHTML. Test again with final IE9.
+      svg = svg.replace(/(url\(#highcharts-[0-9]+)&quot;/g, '$1')
         .replace(/&quot;/g, "'");
-    if (svg.match(/ xmlns="/g).length == 2) {
+      if (svg.match(/ xmlns="/g).length == 2) {
         svg = svg.replace(/xmlns="[^"]+"/, '');
+      }
+
+      return svg;
+    }
+  </script>
+  <style type="text/css">
+    @media (min-width: 800px) {
+      .container {
+        max-width: 800px;
+      }
     }
 
-    return svg;
-}
-</script>
-<style type="text/css">
-@media (min-width: 800px) {
-  .container {
-    max-width: 800px;
-  }
-}
-textarea {
-	font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-}
-.tablechart {
-	width: 700px;
-	margin: auto;
-	padding-top: 20px;
-	padding-bottom: 20px;
-}
-.chart {
-	padding-top: 20px;
-	padding-bottom: 20px;
-}
-body { padding-top: 70px; }
-</style>
-</head>
-<body>
-<div class="container">
-<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="https://github.com/fmtlib/dtoa-benchmark"><span class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
-    </div>
+    textarea {
+      font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    }
 
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Configuration <span class="caret"></span></a>
-          <ul class="dropdown-menu" role="menu" id="configuration">
+    .tablechart {
+      width: 700px;
+      margin: auto;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .chart {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    body {
+      padding-top: 70px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse"
+            data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="https://github.com/fmtlib/dtoa-benchmark"><span
+              class="glyphicon glyphicon-home"></span> dtoa-benchmark</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Configuration <span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu" id="configuration">
+              </ul>
+            </li>
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Section <span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu" id="section">
+              </ul>
+            </li>
           </ul>
-        </li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Section <span class="caret"></span></a>
-          <ul class="dropdown-menu" role="menu" id="section">
-          </ul>
-        </li>
-      </ul>
-      <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo Yip</a></p>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
-<div class="page-header">
-<h1 id="title">apple-m1-pro_mac64_clang17.0</h1>
-</div>
-<div id="main"></div>
-<h2>Source CSV</h2>
-<textarea id="textInput" class="form-control" rows="5" readonly>
+          <p class="navbar-text navbar-right">Developed by <a href="https://github.com/miloyip" class="navbar-link">Milo
+              Yip</a></p>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+    <div class="page-header">
+      <h1 id="title">apple-m1-pro_mac64_clang17.0</h1>
+    </div>
+    <div id="main"></div>
+    <h2>Source CSV</h2>
+    <textarea id="textInput" class="form-control" rows="5" readonly>
 Type,Function,Digit,Time(ns)
-randomdigit,doubleconv,1,63.610000
-randomdigit,doubleconv,2,74.320000
-randomdigit,doubleconv,3,79.520000
-randomdigit,doubleconv,4,77.610000
-randomdigit,doubleconv,5,82.300000
-randomdigit,doubleconv,6,83.100000
-randomdigit,doubleconv,7,89.110000
-randomdigit,doubleconv,8,87.790000
-randomdigit,doubleconv,9,86.420000
-randomdigit,doubleconv,10,84.850000
-randomdigit,doubleconv,11,86.380000
-randomdigit,doubleconv,12,86.670000
-randomdigit,doubleconv,13,87.930000
-randomdigit,doubleconv,14,92.550000
-randomdigit,doubleconv,15,93.290000
-randomdigit,doubleconv,16,98.200000
-randomdigit,doubleconv,17,104.780000
-randomdigit,dragonbox,1,18.680000
-randomdigit,dragonbox,2,20.040000
-randomdigit,dragonbox,3,19.720000
-randomdigit,dragonbox,4,21.230000
-randomdigit,dragonbox,5,21.380000
-randomdigit,dragonbox,6,21.410000
-randomdigit,dragonbox,7,20.050000
-randomdigit,dragonbox,8,21.440000
-randomdigit,dragonbox,9,22.540000
-randomdigit,dragonbox,10,21.190000
-randomdigit,dragonbox,11,20.290000
-randomdigit,dragonbox,12,21.100000
-randomdigit,dragonbox,13,20.500000
-randomdigit,dragonbox,14,21.580000
-randomdigit,dragonbox,15,22.890000
-randomdigit,dragonbox,16,21.560000
-randomdigit,dragonbox,17,24.150000
-randomdigit,ryu,1,48.230000
-randomdigit,ryu,2,46.660000
-randomdigit,ryu,3,46.480000
-randomdigit,ryu,4,45.270000
-randomdigit,ryu,5,43.280000
-randomdigit,ryu,6,43.080000
-randomdigit,ryu,7,38.990000
-randomdigit,ryu,8,37.940000
-randomdigit,ryu,9,38.050000
-randomdigit,ryu,10,39.720000
-randomdigit,ryu,11,36.150000
-randomdigit,ryu,12,34.860000
-randomdigit,ryu,13,33.610000
-randomdigit,ryu,14,32.370000
-randomdigit,ryu,15,31.140000
-randomdigit,ryu,16,30.510000
-randomdigit,ryu,17,30.390000
-randomdigit,fmt,1,20.080000
-randomdigit,fmt,2,22.460000
-randomdigit,fmt,3,20.380000
-randomdigit,fmt,4,21.480000
-randomdigit,fmt,5,19.630000
-randomdigit,fmt,6,21.040000
-randomdigit,fmt,7,19.480000
-randomdigit,fmt,8,21.960000
-randomdigit,fmt,9,22.920000
-randomdigit,fmt,10,24.770000
-randomdigit,fmt,11,23.080000
-randomdigit,fmt,12,24.780000
-randomdigit,fmt,13,22.060000
-randomdigit,fmt,14,23.610000
-randomdigit,fmt,15,21.740000
-randomdigit,fmt,16,23.400000
-randomdigit,fmt,17,27.660000
+randomdigit,double-conversion,1,59.780000
+randomdigit,double-conversion,2,72.640000
+randomdigit,double-conversion,3,76.420000
+randomdigit,double-conversion,4,77.130000
+randomdigit,double-conversion,5,80.040000
+randomdigit,double-conversion,6,83.750000
+randomdigit,double-conversion,7,85.610000
+randomdigit,double-conversion,8,85.470000
+randomdigit,double-conversion,9,84.580000
+randomdigit,double-conversion,10,84.330000
+randomdigit,double-conversion,11,83.740000
+randomdigit,double-conversion,12,86.410000
+randomdigit,double-conversion,13,88.030000
+randomdigit,double-conversion,14,93.440000
+randomdigit,double-conversion,15,93.290000
+randomdigit,double-conversion,16,99.070000
+randomdigit,double-conversion,17,103.260000
+randomdigit,dragonbox,1,18.520000
+randomdigit,dragonbox,2,19.760000
+randomdigit,dragonbox,3,19.670000
+randomdigit,dragonbox,4,20.420000
+randomdigit,dragonbox,5,19.920000
+randomdigit,dragonbox,6,20.790000
+randomdigit,dragonbox,7,20.100000
+randomdigit,dragonbox,8,20.910000
+randomdigit,dragonbox,9,20.120000
+randomdigit,dragonbox,10,20.750000
+randomdigit,dragonbox,11,20.220000
+randomdigit,dragonbox,12,21.120000
+randomdigit,dragonbox,13,20.460000
+randomdigit,dragonbox,14,21.450000
+randomdigit,dragonbox,15,20.940000
+randomdigit,dragonbox,16,21.600000
+randomdigit,dragonbox,17,24.230000
+randomdigit,ryu,1,46.080000
+randomdigit,ryu,2,45.950000
+randomdigit,ryu,3,45.640000
+randomdigit,ryu,4,44.370000
+randomdigit,ryu,5,42.740000
+randomdigit,ryu,6,41.850000
+randomdigit,ryu,7,38.130000
+randomdigit,ryu,8,37.120000
+randomdigit,ryu,9,35.480000
+randomdigit,ryu,10,36.610000
+randomdigit,ryu,11,33.480000
+randomdigit,ryu,12,32.700000
+randomdigit,ryu,13,31.320000
+randomdigit,ryu,14,30.220000
+randomdigit,ryu,15,29.290000
+randomdigit,ryu,16,28.220000
+randomdigit,ryu,17,28.100000
+randomdigit,fmt,1,18.920000
+randomdigit,fmt,2,22.800000
+randomdigit,fmt,3,20.260000
+randomdigit,fmt,4,21.410000
+randomdigit,fmt,5,19.660000
+randomdigit,fmt,6,21.190000
+randomdigit,fmt,7,19.460000
+randomdigit,fmt,8,21.810000
+randomdigit,fmt,9,22.900000
+randomdigit,fmt,10,24.890000
+randomdigit,fmt,11,22.840000
+randomdigit,fmt,12,24.680000
+randomdigit,fmt,13,22.050000
+randomdigit,fmt,14,23.650000
+randomdigit,fmt,15,21.780000
+randomdigit,fmt,16,23.340000
+randomdigit,fmt,17,27.720000
 randomdigit,null,1,0.930000
 randomdigit,null,2,0.930000
-randomdigit,null,3,0.960000
-randomdigit,null,4,0.950000
-randomdigit,null,5,0.960000
-randomdigit,null,6,0.960000
-randomdigit,null,7,0.960000
-randomdigit,null,8,0.960000
-randomdigit,null,9,0.960000
-randomdigit,null,10,0.980000
-randomdigit,null,11,0.960000
-randomdigit,null,12,0.960000
-randomdigit,null,13,0.960000
-randomdigit,null,14,0.960000
-randomdigit,null,15,0.960000
-randomdigit,null,16,0.960000
-randomdigit,null,17,0.960000
-randomdigit,ostringstream,1,821.460000
-randomdigit,ostringstream,2,823.610000
-randomdigit,ostringstream,3,852.890000
-randomdigit,ostringstream,4,862.080000
-randomdigit,ostringstream,5,893.880000
-randomdigit,ostringstream,6,895.050000
-randomdigit,ostringstream,7,908.430000
-randomdigit,ostringstream,8,902.510000
-randomdigit,ostringstream,9,924.440000
-randomdigit,ostringstream,10,896.890000
-randomdigit,ostringstream,11,904.270000
-randomdigit,ostringstream,12,921.890000
-randomdigit,ostringstream,13,938.560000
-randomdigit,ostringstream,14,951.570000
-randomdigit,ostringstream,15,947.610000
-randomdigit,ostringstream,16,954.770000
-randomdigit,ostringstream,17,947.630000
-randomdigit,schubfach,1,20.580000
-randomdigit,schubfach,2,24.610000
-randomdigit,schubfach,3,24.800000
-randomdigit,schubfach,4,24.380000
-randomdigit,schubfach,5,24.010000
-randomdigit,schubfach,6,23.610000
-randomdigit,schubfach,7,22.740000
-randomdigit,schubfach,8,22.520000
-randomdigit,schubfach,9,22.830000
-randomdigit,schubfach,10,25.170000
-randomdigit,schubfach,11,27.040000
-randomdigit,schubfach,12,26.780000
-randomdigit,schubfach,13,26.540000
-randomdigit,schubfach,14,26.260000
-randomdigit,schubfach,15,26.040000
-randomdigit,schubfach,16,27.960000
-randomdigit,schubfach,17,34.100000
-randomdigit,sprintf,1,664.230000
-randomdigit,sprintf,2,684.870000
-randomdigit,sprintf,3,702.100000
-randomdigit,sprintf,4,693.150000
-randomdigit,sprintf,5,702.900000
-randomdigit,sprintf,6,715.580000
-randomdigit,sprintf,7,724.210000
-randomdigit,sprintf,8,731.540000
-randomdigit,sprintf,9,736.770000
-randomdigit,sprintf,10,743.200000
-randomdigit,sprintf,11,752.660000
-randomdigit,sprintf,12,763.720000
-randomdigit,sprintf,13,776.260000
-randomdigit,sprintf,14,784.840000
-randomdigit,sprintf,15,787.820000
-randomdigit,sprintf,16,793.710000
-randomdigit,sprintf,17,784.520000
-randomdigit,to_chars,1,52.220000
-randomdigit,to_chars,2,53.380000
-randomdigit,to_chars,3,50.180000
-randomdigit,to_chars,4,48.750000
-randomdigit,to_chars,5,47.030000
-randomdigit,to_chars,6,46.070000
-randomdigit,to_chars,7,44.890000
-randomdigit,to_chars,8,43.230000
-randomdigit,to_chars,9,42.130000
-randomdigit,to_chars,10,43.030000
-randomdigit,to_chars,11,40.120000
-randomdigit,to_chars,12,38.360000
-randomdigit,to_chars,13,37.190000
-randomdigit,to_chars,14,36.310000
-randomdigit,to_chars,15,35.300000
-randomdigit,to_chars,16,33.920000
-randomdigit,to_chars,17,35.140000
-randomdigit,zmij,1,10.090000
-randomdigit,zmij,2,10.090000
-randomdigit,zmij,3,10.140000
-randomdigit,zmij,4,10.070000
-randomdigit,zmij,5,12.720000
-randomdigit,zmij,6,11.920000
-randomdigit,zmij,7,10.710000
-randomdigit,zmij,8,10.640000
-randomdigit,zmij,9,13.030000
-randomdigit,zmij,10,12.760000
-randomdigit,zmij,11,11.550000
-randomdigit,zmij,12,11.410000
-randomdigit,zmij,13,14.020000
-randomdigit,zmij,14,14.170000
-randomdigit,zmij,15,13.070000
-randomdigit,zmij,16,14.890000
-randomdigit,zmij,17,18.840000
+randomdigit,null,3,0.930000
+randomdigit,null,4,0.930000
+randomdigit,null,5,0.930000
+randomdigit,null,6,0.920000
+randomdigit,null,7,0.930000
+randomdigit,null,8,0.930000
+randomdigit,null,9,0.930000
+randomdigit,null,10,0.930000
+randomdigit,null,11,0.930000
+randomdigit,null,12,0.930000
+randomdigit,null,13,0.930000
+randomdigit,null,14,0.930000
+randomdigit,null,15,0.930000
+randomdigit,null,16,0.930000
+randomdigit,null,17,0.920000
+randomdigit,ostringstream,1,795.290000
+randomdigit,ostringstream,2,803.890000
+randomdigit,ostringstream,3,838.210000
+randomdigit,ostringstream,4,877.610000
+randomdigit,ostringstream,5,859.220000
+randomdigit,ostringstream,6,870.290000
+randomdigit,ostringstream,7,884.640000
+randomdigit,ostringstream,8,891.960000
+randomdigit,ostringstream,9,901.820000
+randomdigit,ostringstream,10,904.490000
+randomdigit,ostringstream,11,915.330000
+randomdigit,ostringstream,12,929.690000
+randomdigit,ostringstream,13,939.890000
+randomdigit,ostringstream,14,935.070000
+randomdigit,ostringstream,15,930.900000
+randomdigit,ostringstream,16,937.540000
+randomdigit,ostringstream,17,934.070000
+randomdigit,schubfach,1,20.490000
+randomdigit,schubfach,2,24.100000
+randomdigit,schubfach,3,23.550000
+randomdigit,schubfach,4,23.450000
+randomdigit,schubfach,5,23.110000
+randomdigit,schubfach,6,22.940000
+randomdigit,schubfach,7,22.920000
+randomdigit,schubfach,8,22.470000
+randomdigit,schubfach,9,22.450000
+randomdigit,schubfach,10,24.530000
+randomdigit,schubfach,11,26.230000
+randomdigit,schubfach,12,26.110000
+randomdigit,schubfach,13,25.850000
+randomdigit,schubfach,14,25.680000
+randomdigit,schubfach,15,25.520000
+randomdigit,schubfach,16,27.380000
+randomdigit,schubfach,17,33.420000
+randomdigit,sprintf,1,653.500000
+randomdigit,sprintf,2,674.710000
+randomdigit,sprintf,3,682.030000
+randomdigit,sprintf,4,691.130000
+randomdigit,sprintf,5,700.630000
+randomdigit,sprintf,6,713.580000
+randomdigit,sprintf,7,722.140000
+randomdigit,sprintf,8,732.230000
+randomdigit,sprintf,9,736.230000
+randomdigit,sprintf,10,742.870000
+randomdigit,sprintf,11,751.430000
+randomdigit,sprintf,12,761.510000
+randomdigit,sprintf,13,775.530000
+randomdigit,sprintf,14,786.070000
+randomdigit,sprintf,15,787.410000
+randomdigit,sprintf,16,790.460000
+randomdigit,sprintf,17,779.870000
+randomdigit,to_chars,1,52.170000
+randomdigit,to_chars,2,53.180000
+randomdigit,to_chars,3,51.050000
+randomdigit,to_chars,4,49.110000
+randomdigit,to_chars,5,46.960000
+randomdigit,to_chars,6,45.800000
+randomdigit,to_chars,7,44.760000
+randomdigit,to_chars,8,43.360000
+randomdigit,to_chars,9,42.330000
+randomdigit,to_chars,10,43.130000
+randomdigit,to_chars,11,39.900000
+randomdigit,to_chars,12,38.560000
+randomdigit,to_chars,13,37.340000
+randomdigit,to_chars,14,36.120000
+randomdigit,to_chars,15,35.130000
+randomdigit,to_chars,16,34.020000
+randomdigit,to_chars,17,34.970000
+randomdigit,xjb64,1,10.810000
+randomdigit,xjb64,2,10.810000
+randomdigit,xjb64,3,10.810000
+randomdigit,xjb64,4,10.490000
+randomdigit,xjb64,5,10.510000
+randomdigit,xjb64,6,10.530000
+randomdigit,xjb64,7,10.480000
+randomdigit,xjb64,8,10.480000
+randomdigit,xjb64,9,10.480000
+randomdigit,xjb64,10,10.490000
+randomdigit,xjb64,11,10.550000
+randomdigit,xjb64,12,10.490000
+randomdigit,xjb64,13,10.490000
+randomdigit,xjb64,14,10.480000
+randomdigit,xjb64,15,10.490000
+randomdigit,xjb64,16,10.490000
+randomdigit,xjb64,17,10.510000
+randomdigit,yy,1,12.050000
+randomdigit,yy,2,12.040000
+randomdigit,yy,3,12.070000
+randomdigit,yy,4,12.410000
+randomdigit,yy,5,14.750000
+randomdigit,yy,6,14.300000
+randomdigit,yy,7,13.010000
+randomdigit,yy,8,12.930000
+randomdigit,yy,9,15.180000
+randomdigit,yy,10,14.980000
+randomdigit,yy,11,14.060000
+randomdigit,yy,12,13.950000
+randomdigit,yy,13,16.530000
+randomdigit,yy,14,16.120000
+randomdigit,yy,15,14.840000
+randomdigit,yy,16,14.830000
+randomdigit,yy,17,14.840000
+randomdigit,zmij,1,10.180000
+randomdigit,zmij,2,10.170000
+randomdigit,zmij,3,10.170000
+randomdigit,zmij,4,10.170000
+randomdigit,zmij,5,10.180000
+randomdigit,zmij,6,10.290000
+randomdigit,zmij,7,10.480000
+randomdigit,zmij,8,10.190000
+randomdigit,zmij,9,10.200000
+randomdigit,zmij,10,10.170000
+randomdigit,zmij,11,10.170000
+randomdigit,zmij,12,10.190000
+randomdigit,zmij,13,10.180000
+randomdigit,zmij,14,10.180000
+randomdigit,zmij,15,10.200000
+randomdigit,zmij,16,10.180000
+randomdigit,zmij,17,10.190000
 </textarea>
-</div>
-<div class="row" id="downloadDD" style="display: none">
-<div class="btn-group pull-right" >
-    <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-picture"></span></button>
-    <ul class="dropdown-menu">
+  </div>
+  <div class="row" id="downloadDD" style="display: none">
+    <div class="btn-group pull-right">
+      <button class="btn dropdown-toggle" data-toggle="dropdown"><span
+          class="glyphicon glyphicon-picture"></span></button>
+      <ul class="dropdown-menu">
         <li><a tabindex="-1" href="#" dltype="image/jpeg">JPEG</a></li>
         <li><a tabindex="-1" href="#" dltype="image/png">PNG</a></li>
         <li><a tabindex="-1" href="#" dltype="application/pdf">PDF</a></li>
         <li><a tabindex="-1" href="#" dltype="image/svg+xml">SVG</a></li>
-    </ul>
-</div>
-</div>
-<form method="post" action="http://export.highcharts.com/" id="imageGetForm">
+      </ul>
+    </div>
+  </div>
+  <form method="post" action="http://export.highcharts.com/" id="imageGetForm">
     <input type="hidden" name="filename" id="imageFilename" value="" />
     <input type="hidden" name="type" id="imageGetFormTYPE" value="" />
     <input type="hidden" name="width" value="900" />
     <input type="hidden" name="svg" value="" id="imageGetFormSVG" />
-</form>
-</div>
+  </form>
+  </div>
 </body>
+
 </html>

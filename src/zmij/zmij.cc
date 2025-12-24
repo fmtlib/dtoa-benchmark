@@ -954,10 +954,21 @@ struct fp {
   int exp;
 };
 
+template <int num_bits> auto normalize(fp dec, bool subnormal) noexcept -> fp {
+  if (!subnormal) [[likely]]
+    return dec;
+  while (dec.sig < (num_bits == 64 ? uint64_t(1e16) : uint64_t(1e8))) {
+    dec.sig *= 10;
+    --dec.exp;
+  }
+  return dec;
+}
+
 // Converts a binary FP number bin_sig * 2**bin_exp to the shortest decimal
 // representation.
 template <typename UInt>
-auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
+auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
+                bool subnormal) noexcept -> fp {
   // Compute the decimal exponent as floor(log10(2**bin_exp)) if regular or
   // floor(log10(3/4 * 2**bin_exp)) otherwise, without branching.
   // log10_3_over_4_sig = round(log10(3/4) * 2**log10_2_exp)
@@ -988,7 +999,7 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
   int exp_shift = bin_exp + pow10_bin_exp + 1;
 
   constexpr int num_bits = sizeof(UInt) * CHAR_BIT;
-  if (regular) [[likely]] {
+  if (regular & !subnormal) [[likely]] {
     UInt integral = 0;
     uint64_t fractional = 0;
     if (num_bits == 64) {
@@ -1050,7 +1061,8 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
   // The idea of using a single shorter candidate is by Cassio Neri.
   // It is less or equal to the upper bound by construction.
   uint64_t shorter = 10 * ((upper >> bound_shift) / 10);
-  if ((shorter << bound_shift) >= lower) return {shorter, dec_exp};
+  if ((shorter << bound_shift) >= lower)
+    return normalize<num_bits>({shorter, dec_exp}, subnormal);
 
   uint64_t scaled_sig = umul_upper_inexact_to_odd(pow10_hi, pow10_lo,
                                                   bin_sig_shifted << exp_shift);
@@ -1062,7 +1074,8 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular) noexcept -> fp {
   int64_t cmp = int64_t(scaled_sig - ((dec_sig_below + dec_sig_above) << 1));
   bool below_closer = cmp < 0 || (cmp == 0 && (dec_sig_below & 1) == 0);
   bool below_in = (dec_sig_below << bound_shift) >= lower;
-  return {(below_closer & below_in) ? dec_sig_below : dec_sig_above, dec_exp};
+  uint64_t dec_sig = (below_closer & below_in) ? dec_sig_below : dec_sig_above;
+  return normalize<num_bits>({dec_sig, dec_exp}, subnormal);
 }
 
 }  // namespace
@@ -1102,28 +1115,20 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
   bin_sig ^= implicit_bit;
   bin_exp -= num_sig_bits + exp_bias;
 
-  auto [dec_sig, dec_exp] = to_decimal(bin_sig, bin_exp, regular);
+  auto [dec_sig, dec_exp] = to_decimal(bin_sig, bin_exp, regular, subnormal);
   char* start = buffer;
   int num_digits = std::numeric_limits<Float>::max_digits10 - 2;
   if (num_bits == 64) {
-    num_digits += (dec_sig >= uint(1e16));
+    dec_exp += num_digits + (dec_sig >= uint(1e16));
     buffer = write_significand17(buffer + 1, dec_sig);
   } else {
-    num_digits += (dec_sig >= uint(1e8));
+    if (dec_sig < uint(1e7)) [[unlikely]] {
+      dec_sig *= 10;
+      --dec_exp;
+    }
+    dec_exp += num_digits + (dec_sig >= uint(1e8));
     buffer = write_significand9(buffer + 1, dec_sig);
-    subnormal = dec_sig < uint(1e7);  // Remove leading zero.
   }
-  dec_exp += num_digits;
-  if (subnormal) [[unlikely]] {
-    char* p = start + 1;
-    while (*p == '0') ++p;
-    int num_zeros = int(p - (start + 1));
-    memmove(start + 1, p, unsigned(num_digits - num_zeros + 1));
-    dec_exp -= num_zeros;
-    buffer -= num_zeros;
-    buffer -= buffer == start + 2;
-  }
-
   start[0] = start[1];
   start[1] = '.';
 

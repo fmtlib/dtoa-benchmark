@@ -26,7 +26,7 @@ add_executable(
   src/schubfach-test.cpp
   src/sprintf-test.cpp
   src/to_chars-test.cpp
-  #src/xjb-test.cpp
+  src/xjb-test.cpp
   src/yy-test.cpp
   src/zmij-test.cpp
   # Grisu2 variants are disabled since they don't guarantee correctness.

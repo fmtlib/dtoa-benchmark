@@ -59,23 +59,24 @@ The following are results measured on a MacBook Pro (Apple M1 Pro), where
 
 | Function            | Time (ns) | Speedup |
 |---------------------|----------:|--------:|
-| ostringstream       | 871.982   | 1.00x   |
-| sprintf             | 737.510   | 1.18x   |
-| double-conversion   | 84.304    | 10.34x  |
-| to_chars            | 42.786    | 20.38x  |
-| ryu                 | 37.081    | 23.52x  |
-| schubfach           | 24.885    | 35.04x  |
-| fmt                 | 22.274    | 39.15x  |
-| dragonbox           | 20.701    | 42.12x  |
-| yy                  | 13.974    | 62.40x  |
-| zmij                | 12.271    | 71.06x  |
-| null                | 0.930     | 937.62x |
+| ostringstream       | 891.171   | 1.00x   |
+| sprintf             | 734.196   | 1.21x   |
+| double-conversion   | 84.529    | 10.54x  |
+| to_chars            | 42.817    | 20.81x  |
+| ryu                 | 36.900    | 24.15x  |
+| schubfach           | 24.718    | 36.05x  |
+| fmt                 | 22.315    | 39.94x  |
+| dragonbox           | 20.646    | 43.16x  |
+| yy                  | 14.052    | 63.42x  |
+| xjb64               | 10.552    | 84.45x  |
+| zmij                | 10.205    | 87.32x  |
+| null                | 0.929     | 959.46x |
 
-<img width="812" height="355" alt="image" src="https://github.com/user-attachments/assets/333f0575-8631-421b-8620-22b8a4ac9e0a" />
+<img width="782" height="353" alt="image" src="https://github.com/user-attachments/assets/ba5a20c5-6fea-4cc3-91b6-cb2742723b60" />
 
 `ostringstream` and `sprintf` are excluded from the above graph because they are too slow.
 
-<img width="830" height="661" alt="image" src="https://github.com/user-attachments/assets/0e657107-fdc5-4575-bc04-4fd4ef4b0740" />
+<img width="826" height="670" alt="image" src="https://github.com/user-attachments/assets/1982c4f4-4cbf-4b4d-91b0-90e8da52340c" />
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping

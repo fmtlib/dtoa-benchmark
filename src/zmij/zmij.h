@@ -6,9 +6,13 @@
 #ifndef ZMIJ_H_
 #define ZMIJ_H_
 
+#include <stddef.h>  // size_t
+#include <string.h>  // memcpy
+
 namespace zmij {
 namespace detail {
-template <typename Float> void to_string(Float value, char* buffer) noexcept;
+template <typename Float>
+auto write(Float value, char* buffer) noexcept -> char*;
 }  // namespace detail
 
 enum {
@@ -17,17 +21,25 @@ enum {
 };
 
 /// Writes the shortest correctly rounded decimal representation of `value` to
-/// `buffer`. `buffer` should point to a buffer of size `double_buffer_size` or
-/// larger.
-inline void to_string(double value, char* buffer) noexcept {
-  return detail::to_string(value, buffer);
+/// `out`. `out` should point to a buffer of size `n` or larger.
+inline auto write(char* out, size_t n, double value) noexcept -> size_t {
+  char* start = out;
+  if (n >= double_buffer_size) return detail::write(value, out) - start;
+  char buffer[double_buffer_size];
+  size_t result = detail::write(value, buffer) - start;
+  memcpy(out, buffer, n);
+  return result;
 }
 
 /// Writes the shortest correctly rounded decimal representation of `value` to
-/// `buffer`. `buffer` should point to a buffer of size `float_buffer_size` or
-/// larger.
-inline void to_string(float value, char* buffer) noexcept {
-  return detail::to_string(value, buffer);
+/// `out`. `out` should point to a buffer of size `n` or larger.
+inline auto write(char* out, size_t n, float value) noexcept -> size_t {
+  /*if (n >= float_buffer_size) return detail::write(value, out);
+  char buffer[float_buffer_size];
+  size_t result = detail::write(value, buffer);
+  memcpy(out, buffer, n);
+  return result;*/
+  return 0;
 }
 
 }  // namespace zmij

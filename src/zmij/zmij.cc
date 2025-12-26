@@ -9,7 +9,7 @@
 #endif
 
 #include <assert.h>  // assert
-#include <limits.h>  // CHAR_BIT
+#include <stddef.h>  // size_t
 #include <stdint.h>  // uint64_t
 #include <string.h>  // memcpy
 
@@ -21,11 +21,34 @@
 #endif
 
 #ifdef _MSC_VER
-#  include <intrin.h>  // lzcnt/adc/umul128/umulh
+#  include <intrin.h>  // __lzcnt64/_umul128/__umulh
 #endif
 
 #ifdef __clang__
 #  pragma clang diagnostic ignored "-Wc++17-extensions"
+#endif
+
+#ifndef ZMIJ_USE_SIMD
+#  define ZMIJ_USE_SIMD 1
+#endif
+
+#ifdef __has_builtin
+#  define ZMIJ_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#  define ZMIJ_HAS_BUILTIN(x) 0
+#endif
+#ifdef __has_cpp_attribute
+#  define ZMIJ_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#else
+#  define ZMIJ_HAS_CPP_ATTRIBUTE(x) 0
+#endif
+
+#if ZMIJ_HAS_CPP_ATTRIBUTE(likely) && ZMIJ_HAS_CPP_ATTRIBUTE(unlikely)
+#  define ZMIJ_LIKELY likely
+#  define ZMIJ_UNLIKELY unlikely
+#else
+#  define ZMIJ_LIKELY
+#  define ZMIJ_UNLIKELY
 #endif
 
 namespace {
@@ -761,14 +784,20 @@ inline auto is_big_endian() noexcept -> bool {
 
 inline auto clz(uint64_t x) noexcept -> int {
   assert(x != 0);
-#if defined(__has_builtin) && __has_builtin(__builtin_clzll)
+#if ZMIJ_HAS_BUILTIN(__builtin_clzll)
   return __builtin_clzll(x);
-#elif defined(_MSC_VER) && defined(__AVX2__)
+#elif defined(_MSC_VER) && defined(__AVX2__) && defined(_M_AMD64)
   // Use lzcnt only on AVX2-capable CPUs that have this BMI instruction.
   return __lzcnt64(x);
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_ARM64))
   unsigned long idx;
   _BitScanReverse64(&idx, x);  // Fallback to the BSR instruction.
+  return 63 - idx;
+#elif defined(_MSC_VER)
+  // Fallback to the 32-bit BSR instruction.
+  unsigned long idx;
+  if (_BitScanReverse(&idx, uint32_t(x >> 32))) return 31 - idx;
+  _BitScanReverse(&idx, uint32_t(x));
   return 63 - idx;
 #else
   int n = 64;
@@ -778,7 +807,7 @@ inline auto clz(uint64_t x) noexcept -> int {
 }
 
 inline auto bswap64(uint64_t x) noexcept -> uint64_t {
-#if defined(__has_builtin) && __has_builtin(__builtin_bswap64)
+#if ZMIJ_HAS_BUILTIN(__builtin_bswap64)
   return __builtin_bswap64(x);
 #elif defined(_MSC_VER)
   return _byteswap_uint64(x);
@@ -854,7 +883,7 @@ constexpr uint64_t zeros = 0x30303030'30303030u;  // 0x30 == '0'
 // Writes a significand consisting of up to 17 decimal digits (16-17 for
 // normals) and removes trailing zeros.
 auto write_significand17(char* buffer, uint64_t value) noexcept -> char* {
-#ifndef __ARM_NEON
+#if !defined(__ARM_NEON) || !ZMIJ_USE_SIMD
   char* start = buffer;
   // Each digit is denoted by a letter so value is abbccddeeffgghhii.
   uint32_t abbccddee = uint32_t(value / 100'000'000);
@@ -935,7 +964,7 @@ auto write_significand17(char* buffer, uint64_t value) noexcept -> char* {
 
   buffer += 16 - (clz(~zeroes) >> 2);
   return buffer - int(buffer - start == 1);
-#endif  // __ARM_NEON__
+#endif  // __ARM_NEON
 }
 
 // Writes a significand consisting of up to 9 decimal digits (7-9 for normals)
@@ -955,7 +984,7 @@ struct fp {
 };
 
 template <int num_bits> auto normalize(fp dec, bool subnormal) noexcept -> fp {
-  if (!subnormal) [[likely]]
+  if (!subnormal) [[ZMIJ_LIKELY]]
     return dec;
   while (dec.sig < (num_bits == 64 ? uint64_t(1e16) : uint64_t(1e8))) {
     dec.sig *= 10;
@@ -998,10 +1027,10 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
   //   3 * 2**60 / 100 = 3.45...e+16 (exp_shift = 2 + 1)
   int exp_shift = bin_exp + pow10_bin_exp + 1;
 
-  constexpr int num_bits = sizeof(UInt) * CHAR_BIT;
-  if (regular & !subnormal) [[likely]] {
-    UInt integral = 0;
-    uint64_t fractional = 0;
+  constexpr int num_bits = std::numeric_limits<UInt>::digits;
+  if (regular & !subnormal) [[ZMIJ_LIKELY]] {
+    UInt integral = 0;        // integral part of bin_sig * pow10
+    uint64_t fractional = 0;  // fractional part of bin_sig * pow10
     if (num_bits == 64) {
       auto [i, f] = umul192_upper128(pow10_hi, pow10_lo, bin_sig << exp_shift);
       integral = i;
@@ -1021,24 +1050,27 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
     // Fixed-point remainder of the scaled significand modulo 10.
     uint64_t rem10 =
         (digit << num_fractional_bits) | (fractional >> num_integral_bits);
+
+    // scaled_half_ulp = 1 * pow10 in the fixed-point format.
     // dec_exp is chosen so that 10**dec_exp <= 2**bin_exp < 10**(dec_exp + 1).
-    // Since 1ulp == 2**bin_exp it will be in the range [1, 10) after scaling by
-    // 10**dec_exp. Add 1 to combine the shift with division by two.
-    uint64_t half_ulp10 = pow10_hi >> (num_integral_bits - exp_shift + 1);
-    uint64_t upper = rem10 + half_ulp10;
+    // Since 1ulp == 2**bin_exp it will be in the range [1, 10) after scaling
+    // by 10**dec_exp. Add 1 to combine the shift with division by two.
+    uint64_t scaled_half_ulp = pow10_hi >> (num_integral_bits - exp_shift + 1);
+    uint64_t upper = rem10 + scaled_half_ulp;
 
     // An optimization from yy by Yaoyuan Guo:
     if (
         // Exact half-ulp tie when rounding to nearest integer.
         fractional != (uint64_t(1) << 63) &&
         // Exact half-ulp tie when rounding to nearest 10.
-        rem10 != half_ulp10 &&
+        rem10 != scaled_half_ulp &&
         // Near-boundary case for rounding to nearest 10.
-        ten - upper > uint64_t(1)) [[likely]] {
-      bool round = (upper >> num_fractional_bits) >= 10;
-      uint64_t shorter = integral - digit + round * 10;
+        ten - upper > uint64_t(1)) [[ZMIJ_LIKELY]] {
+      bool round_up = (upper >> num_fractional_bits) >= 10;
+      uint64_t shorter = integral - digit + round_up * 10;
       uint64_t longer = integral + (fractional >= (uint64_t(1) << 63));
-      return {((rem10 <= half_ulp10) + round != 0) ? shorter : longer, dec_exp};
+      return {((rem10 <= scaled_half_ulp) + round_up != 0) ? shorter : longer,
+              dec_exp};
     }
   }
 
@@ -1060,21 +1092,22 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
 
   // The idea of using a single shorter candidate is by Cassio Neri.
   // It is less or equal to the upper bound by construction.
-  uint64_t shorter = 10 * ((upper >> bound_shift) / 10);
+  UInt shorter = 10 * ((upper >> bound_shift) / 10);
   if ((shorter << bound_shift) >= lower)
     return normalize<num_bits>({shorter, dec_exp}, subnormal);
 
-  uint64_t scaled_sig = umul_upper_inexact_to_odd(pow10_hi, pow10_lo,
-                                                  bin_sig_shifted << exp_shift);
-  uint64_t dec_sig_below = scaled_sig >> bound_shift;
-  uint64_t dec_sig_above = dec_sig_below + 1;
+  UInt scaled_sig = umul_upper_inexact_to_odd(pow10_hi, pow10_lo,
+                                              bin_sig_shifted << exp_shift);
+  UInt dec_sig_below = scaled_sig >> bound_shift;
+  UInt dec_sig_above = dec_sig_below + 1;
 
   // Pick the closest of dec_sig_below and dec_sig_above and check if it's in
   // the rounding interval.
-  int64_t cmp = int64_t(scaled_sig - ((dec_sig_below + dec_sig_above) << 1));
+  using sint = std::make_signed_t<UInt>;
+  sint cmp = sint(scaled_sig - ((dec_sig_below + dec_sig_above) << 1));
   bool below_closer = cmp < 0 || (cmp == 0 && (dec_sig_below & 1) == 0);
   bool below_in = (dec_sig_below << bound_shift) >= lower;
-  uint64_t dec_sig = (below_closer & below_in) ? dec_sig_below : dec_sig_above;
+  UInt dec_sig = (below_closer & below_in) ? dec_sig_below : dec_sig_above;
   return normalize<num_bits>({dec_sig, dec_exp}, subnormal);
 }
 
@@ -1082,9 +1115,11 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
 
 namespace zmij::detail {
 
-template <typename Float> void to_string(Float value, char* buffer) noexcept {
+template <typename Float>
+auto write(Float value, char* buffer) noexcept -> char* {
+  // It is slightly faster to return a pointer to the end than the size.
   static_assert(std::numeric_limits<Float>::is_iec559, "IEEE 754 required");
-  constexpr int num_bits = sizeof(Float) * CHAR_BIT;
+  constexpr int num_bits = std::numeric_limits<Float>::digits == 53 ? 64 : 32;
   using uint = std::conditional_t<num_bits == 64, uint64_t, uint32_t>;
   uint bits = 0;
   memcpy(&bits, &value, sizeof(value));
@@ -1103,13 +1138,21 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
   int bin_exp = int(bits >> num_sig_bits) & exp_mask;  // binary exponent
 
   bool subnormal = false;
-  if (((bin_exp + 1) & exp_mask) <= 1) [[unlikely]] {
-    if (bin_exp != 0) return void(memcpy(buffer, !bin_sig ? "inf" : "nan", 4));
-    if (bin_sig == 0) return void(memcpy(buffer, "0", 2));
+  if (((bin_exp + 1) & exp_mask) <= 1) [[ZMIJ_UNLIKELY]] {
+    if (bin_exp != 0) {
+      memcpy(buffer, bin_sig == 0 ? "inf" : "nan", 4);
+      return buffer + 3;
+    }
+    if (bin_sig == 0) {
+      memcpy(buffer, "0", 2);
+      return buffer + 1;
+    }
     // Handle subnormals.
+    // Setting regular is not redundant: it avoids extra data dependencies
+    // and register pressure on the hot path (measurable perf impact).
+    regular = true;
     bin_sig |= implicit_bit;
     bin_exp = 1;
-    regular = true;
     subnormal = true;
   }
   bin_sig ^= implicit_bit;
@@ -1122,7 +1165,7 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
     dec_exp += num_digits + (dec_sig >= uint(1e16));
     buffer = write_significand17(buffer + 1, dec_sig);
   } else {
-    if (dec_sig < uint(1e7)) [[unlikely]] {
+    if (dec_sig < uint(1e7)) [[ZMIJ_UNLIKELY]] {
       dec_sig *= 10;
       --dec_exp;
     }
@@ -1140,10 +1183,12 @@ template <typename Float> void to_string(Float value, char* buffer) noexcept {
   *buffer = char('0' + a);
   buffer += dec_exp >= 100;
   memcpy(buffer, digits2(bb), 2);
-  buffer[2] = '\0';
+  buffer += 2;
+  *buffer = '\0';
+  return buffer;
 }
 
-template void to_string(double value, char* buffer) noexcept;
-template void to_string(float value, char* buffer) noexcept;
+template auto write(double value, char* buffer) noexcept -> char*;
+template auto write(float value, char* buffer) noexcept -> char*;
 
 }  // namespace zmij::detail

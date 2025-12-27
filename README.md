@@ -107,6 +107,7 @@ ostringstream | [`std::ostringstream`](https://en.cppreference.com/w/cpp/io/basi
 [schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
 sprintf       | [`sprintf`](https://en.cppreference.com/w/c/io/fprintf.html) from the C standard library with `"%.17g"` format.
 [zmij](https://github.com/vitaut/zmij) | `zmij::to_string`
+[asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` (decimal double)
 
 Notes:
 

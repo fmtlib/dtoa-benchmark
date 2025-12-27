@@ -3,7 +3,7 @@
 #include "test.h"
 
 void dtoa_zmij(double x, char* buffer) noexcept {
-  zmij::to_string(x, buffer);
+  zmij::write(buffer, zmij::double_buffer_size, x);
 }
 
 REGISTER_TEST(zmij);

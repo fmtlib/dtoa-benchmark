@@ -1274,17 +1274,17 @@ do_is_special_class(const char*& str_out, uint32_t& len_out, const frexp& frx)
     switch(static_cast<uint32_t>(frx.cls))
       {
       case floating_point_class_infinity:
-        str_out = "-infinity" + (1 - frx.sign);
+        str_out = "-infinity" + (1U - frx.sign);
         len_out = 8U + frx.sign;
         return true;
 
       case floating_point_class_nan:
-        str_out = "-nan" + (1 - frx.sign);
+        str_out = "-nan" + (1U - frx.sign);
         len_out = 3U + frx.sign;
         return true;
 
       case floating_point_class_zero:
-        str_out = s_small_decimals[0] + (1 - frx.sign);
+        str_out = s_small_decimals[0] + (1U - frx.sign);
         len_out = 1U + frx.sign;
         return true;
 
@@ -1306,7 +1306,7 @@ do_write_zeroes(char*& wptr, uint32_t len)
 
 inline
 void
-do_write_mantissa(char*& wptr, uint64_t mant, uint64_t divisor, uint32_t base, char* rdxpp_opt)
+do_write_mantissa(char*& wptr, uint64_t mant, uint64_t divisor, uint32_t base, char* rdxpp)
   {
     uint64_t reg = mant;
     while(reg != 0) {
@@ -1315,7 +1315,7 @@ do_write_mantissa(char*& wptr, uint64_t mant, uint64_t divisor, uint32_t base, c
       reg %= divisor;
       reg *= base;
 
-      if(wptr == rdxpp_opt) {
+      if(wptr == rdxpp) {
         // Skip the radix point which is set by the caller.
         wptr ++;
       }
@@ -1324,9 +1324,8 @@ do_write_mantissa(char*& wptr, uint64_t mant, uint64_t divisor, uint32_t base, c
       wptr ++;
     }
 
-    while(rdxpp_opt && (wptr < rdxpp_opt)) {
-      // Append zeroes up to `rdxp_opt`. The string will end there so
-      // don't write a radix point.
+    while(wptr < rdxpp) {
+      // Append zeroes up to `rdxpp`, where the string will end.
       *(volatile char*) wptr = '0';
       wptr ++;
     }
@@ -1517,7 +1516,7 @@ put_BF(float value)
 
     frx.exp += 23;
 
-    ::memcpy(this->m_stor, "-0b0.**", 8);
+    ::memcpy(this->m_stor, "-0b0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     if((frx.exp >= 0) && (frx.exp < 24)) {
@@ -1530,24 +1529,25 @@ put_BF(float value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 0x1p23, 2, nullptr);
+      do_write_mantissa(wptr, frx.mant, 0x1p23, 2, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 0x1p23, 2, rdxpp);
-      *wptr = 'p';
-      wptr += 1;
+      *(wptr ++) = 'p';
       do_write_exponent(wptr, frx.exp);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1562,21 +1562,20 @@ put_BEF(float value)
 
     frx.exp += 23;
 
-    ::memcpy(this->m_stor, "-0b0.**", 8);
+    ::memcpy(this->m_stor, "-0b0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 0x1p23, 2, rdxpp);
-    *wptr = 'p';
-    wptr += 1;
+    *(wptr ++) = 'p';
     do_write_exponent(wptr, frx.exp);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1593,7 +1592,7 @@ put_XF(float value)
     frx.mant <<= frx.exp & 3;
     frx.exp >>= 2;
 
-    ::memcpy(this->m_stor, "-0x0.**", 8);
+    ::memcpy(this->m_stor, "-0x0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     if((frx.exp >= 0) && (frx.exp < 6)) {
@@ -1606,24 +1605,25 @@ put_XF(float value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 0x1p23, 16, nullptr);
+      do_write_mantissa(wptr, frx.mant, 0x1p23, 16, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 0x1p23, 16, rdxpp);
-      *wptr = 'p';
-      wptr += 1;
+      *(wptr ++) = 'p';
       do_write_exponent(wptr, frx.exp * 4);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1640,21 +1640,20 @@ put_XEF(float value)
     frx.mant <<= frx.exp & 3;
     frx.exp >>= 2;
 
-    ::memcpy(this->m_stor, "-0x0.**", 8);
+    ::memcpy(this->m_stor, "-0x0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 0x1p23, 16, rdxpp);
-    *wptr = 'p';
-    wptr += 1;
+    *(wptr ++) = 'p';
     do_write_exponent(wptr, frx.exp * 4);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1669,7 +1668,7 @@ put_DF(float value)
 
     frx.exp += 8;
 
-    ::memcpy(this->m_stor, "-0.", 4);
+    ::memcpy(this->m_stor, "-0", 2);
     char* wptr = ::std::begin(this->m_stor) + 1;
 
     if((frx.exp >= 0) && (frx.exp < 6)) {
@@ -1682,24 +1681,25 @@ put_DF(float value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 1e8, 10, nullptr);
+      do_write_mantissa(wptr, frx.mant, 1e8, 10, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 1e8, 10, rdxpp);
-      *wptr = 'e';
-      wptr += 1;
+      *(wptr ++) = 'e';
       do_write_exponent(wptr, frx.exp);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1714,21 +1714,20 @@ put_DEF(float value)
 
     frx.exp += 8;
 
-    ::memcpy(this->m_stor, "-0.", 4);
+    ::memcpy(this->m_stor, "-0", 2);
     char* wptr = ::std::begin(this->m_stor) + 1;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 1e8, 10, rdxpp);
-    *wptr = 'e';
-    wptr += 1;
+    *(wptr ++) = 'e';
     do_write_exponent(wptr, frx.exp);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1743,7 +1742,7 @@ put_BD(double value)
 
     frx.exp += 52;
 
-    ::memcpy(this->m_stor, "-0b0.**", 8);
+    ::memcpy(this->m_stor, "-0b0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     if((frx.exp >= 0) && (frx.exp < 53)) {
@@ -1756,24 +1755,25 @@ put_BD(double value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 0x1p52, 2, nullptr);
+      do_write_mantissa(wptr, frx.mant, 0x1p52, 2, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 0x1p52, 2, rdxpp);
-      *wptr = 'p';
-      wptr += 1;
+      *(wptr ++) = 'p';
       do_write_exponent(wptr, frx.exp);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1788,21 +1788,20 @@ put_BED(double value)
 
     frx.exp += 52;
 
-    ::memcpy(this->m_stor, "-0b0.**", 8);
+    ::memcpy(this->m_stor, "-0b0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 0x1p52, 2, rdxpp);
-    *wptr = 'p';
-    wptr += 1;
+    *(wptr ++) = 'p';
     do_write_exponent(wptr, frx.exp);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1819,7 +1818,7 @@ put_XD(double value)
     frx.mant <<= frx.exp & 3;
     frx.exp >>= 2;
 
-    ::memcpy(this->m_stor, "-0x0.**", 8);
+    ::memcpy(this->m_stor, "-0x0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     if((frx.exp >= 0) && (frx.exp < 14)) {
@@ -1832,24 +1831,25 @@ put_XD(double value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 0x1p52, 16, nullptr);
+      do_write_mantissa(wptr, frx.mant, 0x1p52, 16, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 0x1p52, 16, rdxpp);
-      *wptr = 'p';
-      wptr += 1;
+      *(wptr ++) = 'p';
       do_write_exponent(wptr, frx.exp * 4);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1866,21 +1866,20 @@ put_XED(double value)
     frx.mant <<= frx.exp & 3;
     frx.exp >>= 2;
 
-    ::memcpy(this->m_stor, "-0x0.**", 8);
+    ::memcpy(this->m_stor, "-0x0", 4);
     char* wptr = ::std::begin(this->m_stor) + 3;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 0x1p52, 16, rdxpp);
-    *wptr = 'p';
-    wptr += 1;
+    *(wptr ++) = 'p';
     do_write_exponent(wptr, frx.exp * 4);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1895,7 +1894,7 @@ put_DD(double value)
 
     frx.exp += 17;
 
-    ::memcpy(this->m_stor, "-0.", 4);
+    ::memcpy(this->m_stor, "-0", 2);
     char* wptr = ::std::begin(this->m_stor) + 1;
 
     if((frx.exp >= 0) && (frx.exp < 15)) {
@@ -1908,24 +1907,25 @@ put_DD(double value)
     else if((frx.exp >= -4) && (frx.exp < 0)) {
       // Write the number in plain format. The number starts with
       // `0.` and zeroes are filled as necessary.
+      char* rdxpp = wptr + 1;
+      *rdxpp = this->m_rdxp;
       wptr += 2;
       do_write_zeroes(wptr, -(uint32_t) (frx.exp + 1));
-      do_write_mantissa(wptr, frx.mant, 1e17, 10, nullptr);
+      do_write_mantissa(wptr, frx.mant, 1e17, 10, rdxpp);
     }
     else {
       // Write the number in scientific notation.
       char* rdxpp = wptr + 1;
       *rdxpp = this->m_rdxp;
       do_write_mantissa(wptr, frx.mant, 1e17, 10, rdxpp);
-      *wptr = 'e';
-      wptr += 1;
+      *(wptr ++) = 'e';
       do_write_exponent(wptr, frx.exp);
     }
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 
@@ -1940,21 +1940,20 @@ put_DED(double value)
 
     frx.exp += 17;
 
-    ::memcpy(this->m_stor, "-0.", 4);
+    ::memcpy(this->m_stor, "-0", 2);
     char* wptr = ::std::begin(this->m_stor) + 1;
 
     // Write the number in scientific notation.
     char* rdxpp = wptr + 1;
     *rdxpp = this->m_rdxp;
     do_write_mantissa(wptr, frx.mant, 1e17, 10, rdxpp);
-    *wptr = 'e';
-    wptr += 1;
+    *(wptr ++) = 'e';
     do_write_exponent(wptr, frx.exp);
 
     ROCKET_ASSERT(wptr < ::std::end(this->m_stor));
     *wptr = 0;
 
-    this->m_data = ::std::begin(this->m_stor) + (1 - frx.sign);
+    this->m_data = ::std::begin(this->m_stor) + (1U - frx.sign);
     this->m_size = (uint32_t) (wptr - this->m_data);
   }
 

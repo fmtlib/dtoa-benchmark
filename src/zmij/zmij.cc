@@ -6,6 +6,13 @@
 
 #if __has_include("zmij.h")
 #  include "zmij.h"
+#else
+namespace zmij {
+struct dec_fp {
+  long long sig;
+  int exp;
+};
+}  // namespace zmij
 #endif
 
 #include <assert.h>  // assert
@@ -37,6 +44,11 @@
 #else
 #  define ZMIJ_HAS_BUILTIN(x) 0
 #endif
+#ifdef __has_attribute
+#  define ZMIJ_HAS_ATTRIBUTE(x) __has_attribute(x)
+#else
+#  define ZMIJ_HAS_ATTRIBUTE(x) 0
+#endif
 #ifdef __has_cpp_attribute
 #  define ZMIJ_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
 #else
@@ -51,10 +63,10 @@
 #  define ZMIJ_UNLIKELY
 #endif
 
-#ifdef _MSC_VER
-#  define ZMIJ_INLINE __forceinline
-#elif defined(__has_attribute) && __has_attribute(always_inline)
+#if ZMIJ_HAS_ATTRIBUTE(always_inline)
 #  define ZMIJ_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#  define ZMIJ_INLINE __forceinline
 #else
 #  define ZMIJ_INLINE inline
 #endif
@@ -102,6 +114,32 @@ using uint128_t = unsigned __int128;
 #else
 using uint128_t = uint128;
 #endif  // ZMIJ_USE_INT128
+
+template <typename Float> struct float_traits : std::numeric_limits<Float> {
+  static_assert(float_traits::is_iec559, "IEEE 754 required");
+
+  static constexpr int num_bits = float_traits::digits == 53 ? 64 : 32;
+  static constexpr int num_sig_bits = float_traits::digits - 1;
+  static constexpr int num_exp_bits = num_bits - num_sig_bits - 1;
+  static constexpr int exp_mask = (1 << num_exp_bits) - 1;
+  static constexpr int exp_bias = (1 << (num_exp_bits - 1)) - 1;
+
+  using sig_type = std::conditional_t<num_bits == 64, uint64_t, uint32_t>;
+  static constexpr sig_type implicit_bit = sig_type(1) << num_sig_bits;
+
+  static auto to_bits(Float value) noexcept -> sig_type {
+    uint64_t bits;
+    memcpy(&bits, &value, sizeof(value));
+    return bits;
+  }
+
+  static auto get_sig(sig_type bits) noexcept -> sig_type {
+    return bits & (implicit_bit - 1);
+  }
+  static auto get_exp(sig_type bits) noexcept -> int {
+    return int(bits >> num_sig_bits) & exp_mask;
+  }
+};
 
 // 128-bit significands of powers of 10 rounded down.
 // Generated with gen-pow10.py.
@@ -772,20 +810,6 @@ auto umul_upper_inexact_to_odd(uint64_t x_hi, uint64_t, uint32_t y) noexcept
   return uint32_t(result >> 32) | ((uint32_t(result) >> 1) != 0);
 }
 
-struct divmod_result {
-  uint32_t quo;
-  uint32_t rem;
-};
-
-// Returns {value / 100, value % 100} correct for values of up to 4 digits.
-inline auto divmod100(uint32_t value) noexcept -> divmod_result {
-  assert(value < 10'000);
-  constexpr int exp = 19;  // 19 is faster or equal to 12 even for 3 digits.
-  constexpr int sig = (1 << exp) / 100 + 1;
-  uint32_t div = (value * sig) >> exp;  // value / 100
-  return {div, value - div * 100};
-}
-
 inline auto is_big_endian() noexcept -> bool {
   int n = 1;
   return *reinterpret_cast<char*>(&n) != 1;
@@ -822,8 +846,8 @@ inline auto bswap64(uint64_t x) noexcept -> uint64_t {
   return _byteswap_uint64(x);
 #else
   return ((x & 0xff00000000000000) >> 56) | ((x & 0x00ff000000000000) >> 40) |
-         ((x & 0x0000ff0000000000) >> 24) | ((x & 0x000000ff00000000) >> 8) |
-         ((x & 0x00000000ff000000) << 8) | ((x & 0x0000000000ff0000) << 24) |
+         ((x & 0x0000ff0000000000) >> 24) | ((x & 0x000000ff00000000) >> +8) |
+         ((x & 0x00000000ff000000) << +8) | ((x & 0x0000000000ff0000) << 24) |
          ((x & 0x000000000000ff00) << 40) | ((x & 0x00000000000000ff) << 56);
 #endif
 }
@@ -1011,21 +1035,17 @@ constexpr auto compute_dec_exp(int bin_exp, bool regular) noexcept -> int {
 //   3 * 2**60 / 100 = 3.45...e+16  (needs shift = 2 + 1)
 constexpr ZMIJ_INLINE auto compute_exp_shift(int bin_exp, int dec_exp) noexcept
     -> int {
+  assert(dec_exp >= -350 && dec_exp <= 350);
   // log2_pow10_sig = round(log2(10) * 2**log2_pow10_exp) + 1
   constexpr int log2_pow10_sig = 217'707, log2_pow10_exp = 16;
-  assert(dec_exp >= -350 && dec_exp <= 350);
   // pow10_bin_exp = floor(log2(10**-dec_exp))
   int pow10_bin_exp = -dec_exp * log2_pow10_sig >> log2_pow10_exp;
   // pow10 = ((pow10_hi << 64) | pow10_lo) * 2**(pow10_bin_exp - 127)
   return bin_exp + pow10_bin_exp + 1;
 }
 
-struct fp {
-  uint64_t sig;
-  int exp;
-};
-
-template <int num_bits> auto normalize(fp dec, bool subnormal) noexcept -> fp {
+template <int num_bits>
+auto normalize(zmij::dec_fp dec, bool subnormal) noexcept -> zmij::dec_fp {
   if (!subnormal) [[ZMIJ_LIKELY]]
     return dec;
   while (dec.sig < (num_bits == 64 ? uint64_t(1e16) : uint64_t(1e8))) {
@@ -1038,8 +1058,8 @@ template <int num_bits> auto normalize(fp dec, bool subnormal) noexcept -> fp {
 // Converts a binary FP number bin_sig * 2**bin_exp to the shortest decimal
 // representation.
 template <typename UInt>
-auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
-                bool subnormal) noexcept -> fp {
+ZMIJ_INLINE auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
+                            bool subnormal) noexcept -> zmij::dec_fp {
   int dec_exp = compute_dec_exp(bin_exp, regular);
   int exp_shift = compute_exp_shift(bin_exp, dec_exp);
   auto [pow10_hi, pow10_lo] = pow10_significands[-dec_exp - dec_exp_min];
@@ -1085,8 +1105,8 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
         // Near-boundary case for rounding to nearest 10.
         ten - upper > 1u) [[ZMIJ_LIKELY]] {
       bool round_up = upper >= ten;
-      uint64_t shorter = integral - digit + round_up * 10;
-      uint64_t longer = integral + (fractional >= half_ulp);
+      int64_t shorter = int64_t(integral - digit + round_up * 10);
+      int64_t longer = int64_t(integral + (fractional >= half_ulp));
       bool use_shorter = (scaled_sig_mod10 <= scaled_half_ulp) + round_up != 0;
       return {use_shorter ? shorter : longer, dec_exp};
     }
@@ -1112,7 +1132,7 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
   // It is less or equal to the upper bound by construction.
   UInt shorter = 10 * ((upper >> bound_shift) / 10);
   if ((shorter << bound_shift) >= lower)
-    return normalize<num_bits>({shorter, dec_exp}, subnormal);
+    return normalize<num_bits>({int64_t(shorter), dec_exp}, subnormal);
 
   UInt scaled_sig = umul_upper_inexact_to_odd(pow10_hi, pow10_lo,
                                               bin_sig_shifted << exp_shift);
@@ -1126,37 +1146,51 @@ auto to_decimal(UInt bin_sig, int bin_exp, bool regular,
   bool below_closer = cmp < 0 || (cmp == 0 && (dec_sig_below & 1) == 0);
   bool below_in = (dec_sig_below << bound_shift) >= lower;
   UInt dec_sig = (below_closer & below_in) ? dec_sig_below : dec_sig_above;
-  return normalize<num_bits>({dec_sig, dec_exp}, subnormal);
+  return normalize<num_bits>({int64_t(dec_sig), dec_exp}, subnormal);
 }
 
 }  // namespace
 
-namespace zmij::detail {
+namespace zmij {
+
+inline auto to_decimal(double value) noexcept -> dec_fp {
+  using traits = float_traits<double>;
+  auto bits = traits::to_bits(value);
+  auto bin_sig = traits::get_sig(bits);  // binary significand
+  auto bin_exp = traits::get_exp(bits);  // binary exponent
+  bool regular = bin_sig != 0;
+  bool subnormal = false;
+  if (((bin_exp + 1) & traits::exp_mask) <= 1) [[ZMIJ_UNLIKELY]] {
+    if (bin_exp != 0) return {0, int(~0u >> 1)};
+    if (bin_sig == 0) return {0, 0};
+    // Handle subnormals.
+    bin_sig |= traits::implicit_bit;
+    bin_exp = 1;
+    subnormal = true;
+    regular = true;
+  }
+  bin_sig ^= traits::implicit_bit;
+  bin_exp -= traits::num_sig_bits + traits::exp_bias;
+  auto [dec_sig, dec_exp] = ::to_decimal(bin_sig, bin_exp, regular, subnormal);
+  return {bits >> (traits::num_bits - 1) ? -dec_sig : dec_sig, dec_exp};
+}
+
+namespace detail {
 
 // It is slightly faster to return a pointer to the end than the size.
 template <typename Float>
 auto write(Float value, char* buffer) noexcept -> char* {
-  static_assert(std::numeric_limits<Float>::is_iec559, "IEEE 754 required");
-  constexpr int num_bits = std::numeric_limits<Float>::digits == 53 ? 64 : 32;
-  using uint = std::conditional_t<num_bits == 64, uint64_t, uint32_t>;
-  uint bits = 0;
-  memcpy(&bits, &value, sizeof(value));
+  using traits = float_traits<Float>;
+  auto bits = traits::to_bits(value);
 
   *buffer = '-';
-  buffer += bits >> (num_bits - 1);
+  buffer += bits >> (traits::num_bits - 1);
 
-  constexpr int num_sig_bits = std::numeric_limits<Float>::digits - 1;
-  constexpr uint implicit_bit = uint(1) << num_sig_bits;
-  uint bin_sig = bits & (implicit_bit - 1);  // binary significand
+  auto bin_sig = traits::get_sig(bits);  // binary significand
+  auto bin_exp = traits::get_exp(bits);  // binary exponent
   bool regular = bin_sig != 0;
-
-  constexpr int num_exp_bits = num_bits - num_sig_bits - 1;
-  constexpr int exp_mask = (1 << num_exp_bits) - 1;
-  constexpr int exp_bias = (1 << (num_exp_bits - 1)) - 1;
-  int bin_exp = int(bits >> num_sig_bits) & exp_mask;  // binary exponent
-
   bool subnormal = false;
-  if (((bin_exp + 1) & exp_mask) <= 1) [[ZMIJ_UNLIKELY]] {
+  if (((bin_exp + 1) & traits::exp_mask) <= 1) [[ZMIJ_UNLIKELY]] {
     if (bin_exp != 0) {
       memcpy(buffer, bin_sig == 0 ? "inf" : "nan", 4);
       return buffer + 3;
@@ -1166,41 +1200,50 @@ auto write(Float value, char* buffer) noexcept -> char* {
       return buffer + 1;
     }
     // Handle subnormals.
-    // Setting regular is not redundant: it avoids extra data dependencies
-    // and register pressure on the hot path (measurable perf impact).
-    regular = true;
-    bin_sig |= implicit_bit;
+    bin_sig |= traits::implicit_bit;
     bin_exp = 1;
     subnormal = true;
+    // Setting regular is not redundant: it has a measurable perf impact.
+    regular = true;
   }
-  bin_sig ^= implicit_bit;
-  bin_exp -= num_sig_bits + exp_bias;
+  bin_sig ^= traits::implicit_bit;
+  bin_exp -= traits::num_sig_bits + traits::exp_bias;
 
-  auto [dec_sig, dec_exp] = to_decimal(bin_sig, bin_exp, regular, subnormal);
+  // Here be 🐉s.
+  auto [dec_sig, dec_exp] = ::to_decimal(bin_sig, bin_exp, regular, subnormal);
+
+  // Write significand.
   char* start = buffer;
-  int num_digits = std::numeric_limits<Float>::max_digits10 - 2;
-  if (num_bits == 64) {
-    dec_exp += num_digits + (dec_sig >= uint(1e16));
+  int num_digits = traits::max_digits10 - 2;
+  if (traits::num_bits == 64) {
+    dec_exp += num_digits + (dec_sig >= uint64_t(1e16));
     buffer = write_significand17(buffer + 1, dec_sig);
   } else {
-    if (dec_sig < uint(1e7)) [[ZMIJ_UNLIKELY]] {
+    if (dec_sig < uint32_t(1e7)) [[ZMIJ_UNLIKELY]] {
       dec_sig *= 10;
       --dec_exp;
     }
-    dec_exp += num_digits + (dec_sig >= uint(1e8));
+    dec_exp += num_digits + (dec_sig >= uint32_t(1e8));
     buffer = write_significand9(buffer + 1, dec_sig);
   }
   start[0] = start[1];
   start[1] = '.';
 
+  // Write exponent.
   *buffer++ = 'e';
   *buffer++ = '-' + (dec_exp >= 0) * ('+' - '-');
   int mask = (dec_exp >= 0) - 1;
   dec_exp = ((dec_exp + mask) ^ mask);  // absolute value
-  auto [a, bb] = divmod100(uint32_t(dec_exp));
-  *buffer = char('0' + a);
-  buffer += dec_exp >= 100;
-  memcpy(buffer, digits2(bb), 2);
+  if constexpr (traits::min_exponent10 < -99 || traits::max_exponent10 > 99) {
+    // 19 is faster or equal to 12 even for 3 digits.
+    constexpr int div_exp = 19;
+    constexpr int div_sig = (1 << div_exp) / 100 + 1;
+    uint32_t a = (uint32_t(dec_exp) * div_sig) >> div_exp;  // value / 100
+    *buffer = char('0' + a);
+    buffer += dec_exp >= 100;
+    dec_exp -= a * 100;
+  }
+  memcpy(buffer, digits2(dec_exp), 2);
   buffer[2] = '\0';
   return buffer + 2;
 }
@@ -1208,4 +1251,5 @@ auto write(Float value, char* buffer) noexcept -> char* {
 template auto write(double value, char* buffer) noexcept -> char*;
 template auto write(float value, char* buffer) noexcept -> char*;
 
-}  // namespace zmij::detail
+}  // namespace detail
+}  // namespace zmij

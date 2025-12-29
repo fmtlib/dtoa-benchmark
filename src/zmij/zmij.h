@@ -16,6 +16,22 @@ auto write(Float value, char* buffer) noexcept -> char*;
 }  // namespace detail
 
 enum {
+  non_finite_exp = int(~0u >> 1),
+};
+
+// A decimal floating-point number sig * pow(10, exp).
+// If exp is non_finite_exp then the number is a NaN or an infinity.
+struct dec_fp {
+  long long sig;  // significand
+  int exp;        // exponent
+};
+
+/// Converts `value` into the shortest correctly rounded decimal representation.
+/// Usage:
+///   auto [sig, exp] = to_decimal(6.62607015e-34);
+auto to_decimal(double value) noexcept -> dec_fp;
+
+enum {
   double_buffer_size = 25,
   float_buffer_size = 17,
 };

@@ -57,26 +57,29 @@ the same base name and the `.html` extension.
 The following are results measured on a MacBook Pro (Apple M1 Pro), where
 `dtoa` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS.
 
+
 | Function            | Time (ns) | Speedup |
 |---------------------|----------:|--------:|
-| ostringstream       | 891.171   | 1.00x   |
-| sprintf             | 734.196   | 1.21x   |
-| double-conversion   | 84.529    | 10.54x  |
-| to_chars            | 42.817    | 20.81x  |
-| ryu                 | 36.900    | 24.15x  |
-| schubfach           | 24.718    | 36.05x  |
-| fmt                 | 22.315    | 39.94x  |
-| dragonbox           | 20.646    | 43.16x  |
-| yy                  | 14.052    | 63.42x  |
-| xjb64               | 10.552    | 84.45x  |
-| zmij                | 10.205    | 87.32x  |
-| null                | 0.929     | 959.46x |
+| ostringstream       |   874.884 |   1.00× |
+| sprintf             |   743.801 |   1.18× |
+| double-conversion   |    83.519 |  10.48× |
+| to_chars            |    43.672 |  20.03× |
+| ryu                 |    36.865 |  23.73× |
+| schubfach           |    24.879 |  35.16× |
+| fmt                 |    22.338 |  39.17× |
+| dragonbox           |    20.641 |  42.39× |
+| yy                  |    14.335 |  61.03× |
+| xjb64               |    10.724 |  81.58× |
+| zmij                |    10.087 |  86.73× |
+| null                |     0.930 | 940.73× |
 
-<img width="782" height="353" alt="image" src="https://github.com/user-attachments/assets/ba5a20c5-6fea-4cc3-91b6-cb2742723b60" />
+Conversion time (smaller is better):
+
+<img width="804" height="350" alt="image" src="https://github.com/user-attachments/assets/389d7e77-1ed2-4988-9521-1f6dbffbc77f" />
 
 `ostringstream` and `sprintf` are excluded from the above graph because they are too slow.
 
-<img width="826" height="670" alt="image" src="https://github.com/user-attachments/assets/1982c4f4-4cbf-4b4d-91b0-90e8da52340c" />
+<img width="835" height="672" alt="image" src="https://github.com/user-attachments/assets/3d1224d8-1efa-47ee-b5b4-4ed3179bc799" />
 
 Notes:
 * The `null` implementation does nothing. It measures the overheads of looping

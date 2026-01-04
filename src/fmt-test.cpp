@@ -1,5 +1,3 @@
-// {fmt} test with the compact Dragonbox cache (the default).
-
 #define FMT_HEADER_ONLY 1
 #include "fmt/compile.h"
 #include "test.h"

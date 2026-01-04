@@ -1,18 +1,17 @@
 #include <algorithm>
-#include <cassert>
-#include <cstdio>
-#include <cstring>
+#include <chrono>
 #include <exception>
 #include <limits>
+#include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include <math.h>
-
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "double-conversion/double-conversion.h"
 #include "resultfilename.h"
 #include "test.h"
-#include "timer.h"
 
 const unsigned kVerifyRandomCount = 100000;
 // const unsigned kIterationForRandom = 100;
@@ -21,6 +20,11 @@ const unsigned kVerifyRandomCount = 100000;
 const unsigned kIterationForRandom = 1;
 const unsigned kIterationPerDigit = 1;
 const unsigned kTrial = 3;
+
+auto to_milliseconds(std::chrono::steady_clock::duration d) -> double {
+  using seconds = std::chrono::duration<double>;
+  return std::chrono::duration_cast<seconds>(d).count() * 1000;
+}
 
 class Random {
  public:
@@ -133,18 +137,18 @@ void BenchSequential(void (*f)(double, char*), const char* fname, FILE* fp) {
   double minDuration = std::numeric_limits<double>::max();
   double maxDuration = 0.0;
 
-  int64_t start = 1;
+  int64_t begin = 1;
   for (int digit = 1; digit <= 17; digit++) {
-    int64_t end = start * 10;
+    int64_t end = begin * 10;
 
     double duration = std::numeric_limits<double>::max();
     for (unsigned trial = 0; trial < kTrial; trial++) {
-      int64_t v = start;
+      int64_t v = begin;
       Random r;
-      v += ((int64_t(r()) << 32) | int64_t(r())) % start;
+      v += ((int64_t(r()) << 32) | int64_t(r())) % begin;
       double sign = 1;
-      Timer timer;
-      timer.Start();
+
+      auto start = std::chrono::steady_clock::now();
       for (unsigned iteration = 0; iteration < kIterationPerDigit;
            iteration++) {
         double d = v * sign;
@@ -152,10 +156,10 @@ void BenchSequential(void (*f)(double, char*), const char* fname, FILE* fp) {
         // printf("%.17g -> %s\n", d, buffer);
         sign = -sign;
         v += 1;
-        if (v >= end) v = start;
+        if (v >= end) v = begin;
       }
-      timer.Stop();
-      duration = std::min(duration, timer.GetElapsedMilliseconds());
+      auto finish = std::chrono::steady_clock::now();
+      duration = std::min(duration, to_milliseconds(finish - start));
     }
 
     duration *=
@@ -163,7 +167,7 @@ void BenchSequential(void (*f)(double, char*), const char* fname, FILE* fp) {
     minDuration = std::min(minDuration, duration);
     maxDuration = std::max(maxDuration, duration);
     fprintf(fp, "%s_sequential,%d,%f\n", fname, digit, duration);
-    start = end;
+    begin = end;
   }
 
   printf("[%8.3fns, %8.3fns]\n", minDuration, maxDuration);
@@ -211,14 +215,13 @@ void BenchRandom(void (*f)(double, char*), const char* fname, FILE* fp) {
 
   double duration = std::numeric_limits<double>::max();
   for (unsigned trial = 0; trial < kTrial; trial++) {
-    Timer timer;
-    timer.Start();
+    auto start = std::chrono::steady_clock::now();
 
     for (unsigned iteration = 0; iteration < kIterationForRandom; iteration++)
       for (size_t i = 0; i < n; i++) f(data[i], buffer);
 
-    timer.Stop();
-    duration = std::min(duration, timer.GetElapsedMilliseconds());
+    auto finish = std::chrono::steady_clock::now();
+    duration = std::min(duration, to_milliseconds(finish - start));
   }
 
   duration *=
@@ -290,8 +293,7 @@ void BenchRandomDigit(void (*f)(double, char*), const char* fname, FILE* fp) {
 
     double duration = std::numeric_limits<double>::max();
     for (unsigned trial = 0; trial < kTrial; trial++) {
-      Timer timer;
-      timer.Start();
+      auto start = std::chrono::steady_clock::now();
 
       for (unsigned iteration = 0; iteration < kIterationPerDigit;
            iteration++) {
@@ -302,8 +304,8 @@ void BenchRandomDigit(void (*f)(double, char*), const char* fname, FILE* fp) {
         }
       }
 
-      timer.Stop();
-      duration = std::min(duration, timer.GetElapsedMilliseconds());
+      auto finish = std::chrono::steady_clock::now();
+      duration = std::min(duration, to_milliseconds(finish - start));
     }
 
     duration *=
@@ -323,8 +325,8 @@ void Bench(void (*f)(double, char*), const char* fname, FILE* fp) {
 
 void BenchAll() {
   // doublery to write to /result path, where template.php exists
-  FILE* fp;
-  if ((fp = fopen("../../result/template.php", "r")) != NULL) {
+  FILE* fp = fopen("../../result/template.php", "r");
+  if (fp) {
     fclose(fp);
     fp = fopen("../../result/" RESULT_FILENAME, "w");
   } else if ((fp = fopen("result/template.php", "r")) != NULL) {

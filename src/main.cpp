@@ -4,11 +4,7 @@
 #include <cstring>
 #include <exception>
 #include <limits>
-#if _MSC_VER
-#  include "msinttypes/stdint.h"
-#else
-#  include <stdint.h>
-#endif
+#include <stdint.h>
 #include <math.h>
 
 #include <cstdlib>
@@ -50,18 +46,12 @@ static size_t VerifyValue(double value, void (*f)(double, char*),
     // throw std::exception();
   }
 
-#if 0
-	char* end;
-	double roundtrip = strtod(buffer, &end);
-	int processed = int(end - buffer);
-#else
   // double-conversion returns correct result.
   using namespace double_conversion;
   StringToDoubleConverter converter(
       StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
   int processed = 0;
   double roundtrip = converter.StringToDouble(buffer, 1024, &processed);
-#endif
 
   size_t len = strlen(buffer);
   if (len != (size_t)processed) {

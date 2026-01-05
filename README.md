@@ -1,4 +1,4 @@
-# dtoa Benchmark
+# dtoa benchmark
 
 This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with the following changes:
 

@@ -106,16 +106,16 @@ directory and viewable online using
 
 | Function | Description |
 |----------|------------|
-| [double-conversion](https://code.google.com/p/double-conversion/) | Implementation extracted from V8 using `EcmaScriptConverter().ToShortest()` (Grisu3 with bignum fallback). |
-| [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables. |
-| [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (Dragonbox backend). |
-| null | No-op implementation. |
-| ostringstream | `std::ostringstream` with `setprecision(17)`. |
-| [ryu](https://github.com/ulfjack/ryu) | `d2s_buffered`. |
-| [schubfach](https://github.com/vitaut/schubfach) | C++ Schubfach implementation. |
-| sprintf | C `sprintf("%.17g")`. |
-| [zmij](https://github.com/vitaut/zmij) | `zmij::to_string`. |
-| [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD`. |
+| [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` |
+| [double-conversion](https://github.com/google/double-conversion) | `EcmaScriptConverter::ToShortest` which implements Grisu3 with bignum fallback |
+| [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables |
+| [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (uses Dragonbox). |
+| null | no-op implementation |
+| [ostringstream](https://en.cppreference.com/w/cpp/io/basic_ostringstream.html) | `std::ostringstream` with `setprecision(17)` |
+| [ryu](https://github.com/ulfjack/ryu) | `d2s_buffered` |
+| [schubfach](https://github.com/vitaut/schubfach) | C++ Schubfach implementation |
+| [sprintf](https://en.cppreference.com/w/c/io/fprintf.html) | C `sprintf("%.17g", value)` |
+| [zmij](https://github.com/vitaut/zmij) | `zmij::write`. |
 
 ### Notes
 

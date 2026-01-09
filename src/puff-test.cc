@@ -10,7 +10,7 @@
 #include <charconv>  // std::to_chars
 #include <limits>    // std::numeric_limits
 
-#include "test.h"
+#include "benchmark.h"
 
 // A fixed-point decimal number.
 struct decimal {
@@ -157,6 +157,5 @@ void dtoa(char* buf, double val, int precision) {
   *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
 }
 
-void dtoa_puff(double value, char* buffer) { dtoa(buffer, value, 17); }
-
-REGISTER_TEST(puff);
+REGISTER_METHOD("puff",
+                [](double value, char* buffer) { dtoa(buffer, value, 17); });

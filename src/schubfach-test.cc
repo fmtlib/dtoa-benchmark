@@ -2,10 +2,8 @@
 
 #include "schubfach/schubfach.h"
 
-#include "test.h"
+#include "benchmark.h"
 
-void dtoa_schubfach(double x, char* buffer) noexcept {
+REGISTER_METHOD("schubfach", [](double x, char* buffer) noexcept {
   schubfach::dtoa(x, buffer);
-}
-
-REGISTER_TEST(schubfach);
+});

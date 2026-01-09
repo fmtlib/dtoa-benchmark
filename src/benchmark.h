@@ -15,10 +15,10 @@ struct method {
 
 extern std::vector<method> methods;
 
-#define REGISTER_METHOD(f)                     \
-  static int register_##f = []() {             \
-    methods.push_back(method{#f, dtoa##_##f}); \
-    return 0;                                  \
+#define REGISTER_METHOD(name, dtoa)       \
+  static int reg = []() {                  \
+    methods.push_back(method{name, dtoa}); \
+    return 0;                              \
   }()
 
 #endif  // BENCHMARK_H_

@@ -216,7 +216,7 @@ auto main() -> int {
   for (const method& m : methods) verify(m);
 
   std::string filename = fmt::format(
-    "result/{}_{}_{}.csv", MACHINE, os_name(), compiler_name());
+    "results/{}_{}_{}.csv", MACHINE, os_name(), compiler_name());
   FILE* f = fopen(filename.c_str(), "w");
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {

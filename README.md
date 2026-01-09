@@ -36,7 +36,7 @@ The benchmark consists of two phases:
      * Reduce precision to 1–17 decimal digits in the significand.
      * Convert each value to an ASCII string.
 
-   Each digit group is executed 100 times.  
+   Each digit group is executed 10 times.  
    For each configuration, 10 trials are run and the **minimum** elapsed time
    is recorded.
 

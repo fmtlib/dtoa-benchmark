@@ -76,19 +76,20 @@ void verify(const method& m) {
     double value;
     const char* expected;
   };
-  const test_case cases[] = {{0},
-                             {0.1, "0.1"},
-                             {0.12, "0.12"},
-                             {0.123, "0.123"},
-                             {0.1234, "0.1234"},
-                             {1.2345, "1.2345"},
-                             {1.0 / 3.0},
-                             {2.0 / 3.0},
-                             {10.0 / 3.0},
-                             {20.0 / 3.0},
-                             {std::numeric_limits<double>::min()},
-                             {std::numeric_limits<double>::max()},
-                             {std::numeric_limits<double>::denorm_min()}};
+  const test_case cases[] =  //
+      {{0},
+       {0.1, "0.1"},
+       {0.12, "0.12"},
+       {0.123, "0.123"},
+       {0.1234, "0.1234"},
+       {1.2345, "1.2345"},
+       {1.0 / 3.0},
+       {2.0 / 3.0},
+       {10.0 / 3.0},
+       {20.0 / 3.0},
+       {std::numeric_limits<double>::min()},
+       {std::numeric_limits<double>::max()},
+       {std::numeric_limits<double>::denorm_min()}};
   for (auto c : cases) verify_value(c.value, m.dtoa, c.expected);
 
   rng r;

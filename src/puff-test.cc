@@ -157,5 +157,6 @@ void dtoa(char* buf, double val, int precision) {
   *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
 }
 
-REGISTER_METHOD("puff",
-                [](double value, char* buffer) { dtoa(buffer, value, 17); });
+static register_method _("puff", [](double value, char* buffer) {
+  dtoa(buffer, value, 17);
+});

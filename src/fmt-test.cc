@@ -2,7 +2,7 @@
 #include "benchmark.h"
 #include "fmt/compile.h"
 
-REGISTER_METHOD("fmt", [](double value, char* buffer) {
+static register_method _("fmt", [](double value, char* buffer) {
   buffer = fmt::format_to(buffer, FMT_COMPILE("{}"), value);
   *buffer = '\0';
 });

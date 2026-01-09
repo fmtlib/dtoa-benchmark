@@ -2,6 +2,6 @@
 
 #include "benchmark.h"
 
-REGISTER_METHOD("ryu", [](double value, char* buffer) {
+static register_method _("ryu", [](double value, char* buffer) {
   d2s_buffered(value, buffer);
 });

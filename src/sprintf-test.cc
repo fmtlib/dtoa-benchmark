@@ -2,6 +2,6 @@
 
 #include "benchmark.h"
 
-REGISTER_METHOD("sprintf", [](double value, char* buffer) {
+static register_method _("sprintf", [](double value, char* buffer) {
   sprintf(buffer, "%.17g", value);
 });

@@ -1,3 +1,3 @@
 #include "benchmark.h"
 
-REGISTER_METHOD("null", [](double, char*) {});
+static register_method _("null", [](double, char*) {});

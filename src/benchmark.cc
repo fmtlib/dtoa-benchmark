@@ -12,9 +12,7 @@
 
 #include "fmt/format.h"
 
-constexpr int num_trials = 10;
 constexpr int max_digits = std::numeric_limits<double>::max_digits10;
-constexpr int num_iterations_per_digit = 10;
 constexpr int num_doubles_per_digit = 100'000;
 
 std::vector<method> methods;
@@ -175,8 +173,10 @@ struct benchmark_result {
   digit_result per_digit[max_digits + 1];
 };
 
-auto bench_random_digit(dtoa_fun dtoa, const std::string& name)
+auto bench_random_digit(dtoa_fun dtoa, const std::string& name, int num_trials)
     -> benchmark_result {
+  int num_iterations_per_digit = num_trials;
+
   char buffer[256] = {};
   benchmark_result result;
   for (int digit = 1; digit <= max_digits; ++digit) {
@@ -208,14 +208,16 @@ auto bench_random_digit(dtoa_fun dtoa, const std::string& name)
 }
 
 auto main(int argc, char** argv) -> int {
+  std::string commit_hash;
+  if (argc > 1) commit_hash = std::string("_") + argv[1];
+  int num_trials = 10;
+  if (argc > 2) num_trials = std::stoi(argv[2]);
+
   std::sort(
       methods.begin(), methods.end(),
       [](const method& lhs, const method& rhs) { return lhs.name < rhs.name; });
 
   for (const method& m : methods) verify(m);
-
-  std::string commit_hash;
-  if (argc > 1) commit_hash = std::string("_") + argv[1];
 
   std::string filename = fmt::format("results/{}_{}_{}{}.csv", MACHINE,
                                      os_name(), compiler_name(), commit_hash);
@@ -223,7 +225,7 @@ auto main(int argc, char** argv) -> int {
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {
     fmt::print("Benchmarking randomdigit {:20} ... ", m.name);
-    benchmark_result result = bench_random_digit(m.dtoa, m.name);
+    benchmark_result result = bench_random_digit(m.dtoa, m.name, num_trials);
     for (int digit = 1; digit <= max_digits; ++digit) {
       fmt::print(f, "randomdigit,{},{},{:f}\n", m.name, digit,
                  result.per_digit[digit].duration_ns);

@@ -83,13 +83,19 @@ message("CPU_NAME: ${CPU_NAME}")
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 
 execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE COMMIT_HASH)
+string(STRIP "${COMMIT_HASH}" COMMIT_HASH)
 
-add_custom_target(
-  run-benchmark
-  COMMAND dtoa-benchmark ${COMMIT_HASH}
-  COMMAND cmake -P convert-results.cmake
-  # Run in the source directory because we want results to be in the source
-  # results directory.
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  DEPENDS dtoa-benchmark
-)
+function(add_benchmark_target name num_trials)
+  add_custom_target(
+    ${name}
+    COMMAND dtoa-benchmark ${COMMIT_HASH} ${num_trials}
+    COMMAND cmake -P convert-results.cmake
+    # Run in the source directory because we want results to be in the source
+    # results directory.
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS dtoa-benchmark
+  )
+endfunction()
+
+add_benchmark_target(run-benchmark 10)
+add_benchmark_target(run-benchmark-fast 3)

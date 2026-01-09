@@ -52,8 +52,9 @@ add_executable(
   src/asteria/ascii_numput.cpp
 )
 
-target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
+target_compile_options(dtoa-benchmark PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
 target_compile_features(dtoa-benchmark PRIVATE cxx_std_20)
+target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
 
 if (APPLE)
   execute_process(

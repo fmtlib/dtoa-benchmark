@@ -10,7 +10,7 @@
 #include <algorithm>  // std::sort
 #include <charconv>   // std::from_chars
 
-#include "fmt/base.h"
+#include "fmt/format.h"
 #include "resultfilename.h"
 
 constexpr int num_trials = 3;
@@ -19,6 +19,35 @@ constexpr int num_iterations_per_digit = 1;
 constexpr int num_doubles_per_digit = 100'000;
 
 std::vector<method> methods;
+
+#ifndef MACHINE
+#  define MACHINE "unknown"
+#endif
+
+auto os_name() -> const char* {
+#if defined(__linux__)
+  return "linux";
+#elif defined(__APPLE__)
+  return "macos";
+#elif define(_WIN32)
+  return "windows";
+#endif
+  return "unknown";
+}
+
+#define DO_STRINGIFY(x) #x
+#define STRINGIFY(x) DO_STRINGIFY(x)
+
+auto compiler_name() -> const char* {
+#if defined(__clang__)
+  return "clang" STRINGIFY(__clang_major__) "." STRINGIFY(__clang_minor__);
+#elif defined(__GNUC__)
+  return "gcc" STRINGIFY(__GNUC__) "." STRINGIFY(__GNUC_MINOR__);
+#elif defined(_MSC_VER)
+  return "msvc";
+#endif
+  return "unknown";
+}
 
 // Random number generator from dtoa-benchmark.
 class rng {
@@ -186,7 +215,9 @@ auto main() -> int {
 
   for (const method& m : methods) verify(m);
 
-  FILE* f = fopen("result/" RESULT_FILENAME, "w");
+  std::string filename = fmt::format(
+    "result/{}_{}_{}.csv", MACHINE, os_name(), compiler_name());
+  FILE* f = fopen(filename.c_str(), "w");
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {
     fmt::print("Benchmarking randomdigit {:20} ... ", m.name);

@@ -1,6 +1,6 @@
 # dtoa benchmark
 
-This is a fork of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with the following changes:
+This is a rewrite of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with the following changes:
 
 * CMake support
 * Fixed reporting of results

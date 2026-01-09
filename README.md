@@ -105,7 +105,7 @@ directory and viewable online using
 ## Methods
 
 | Function | Description |
-|----------|------------|
+|----------|-------------|
 | [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` |
 | [double-conversion](https://github.com/google/double-conversion) | `EcmaScriptConverter::ToShortest` which implements Grisu3 with bignum fallback |
 | [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables |
@@ -115,6 +115,7 @@ directory and viewable online using
 | [ryu](https://github.com/ulfjack/ryu) | `d2s_buffered` |
 | [schubfach](https://github.com/vitaut/schubfach) | C++ Schubfach implementation |
 | [sprintf](https://en.cppreference.com/w/c/io/fprintf.html) | C `sprintf("%.17g", value)` |
+| [to_chars](https://en.cppreference.com/w/cpp/utility/to_chars.html) | `std::to_chars` |
 | [zmij](https://github.com/vitaut/zmij) | `zmij::write`. |
 
 ### Notes

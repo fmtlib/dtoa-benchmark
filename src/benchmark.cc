@@ -11,11 +11,10 @@
 #include <charconv>   // std::from_chars
 
 #include "fmt/format.h"
-#include "resultfilename.h"
 
-constexpr int num_trials = 3;
+constexpr int num_trials = 10;
 constexpr int max_digits = std::numeric_limits<double>::max_digits10;
-constexpr int num_iterations_per_digit = 1;
+constexpr int num_iterations_per_digit = 10;
 constexpr int num_doubles_per_digit = 100'000;
 
 std::vector<method> methods;

@@ -69,30 +69,37 @@ class rng {
   }
 };
 
-auto verify_value(double value, dtoa_fun dtoa, const char* expected) -> size_t {
-  char buffer[1024] = {};
-  dtoa(value, buffer);
-
-  if (expected && strcmp(buffer, expected) != 0)
-    fmt::print("Error: expect {} but actual {}\n", expected, buffer);
-
-  double roundtrip = 0;
-  size_t len = strlen(buffer);
-  if (std::from_chars(buffer, buffer + len, roundtrip).ptr != buffer + len) {
-    fmt::print("Error: some extra character {} -> '{}'\n", value, buffer);
-    throw std::exception();
-  }
-  if (value != roundtrip) {
-    fmt::print("Error: roundtrip fail {} -> '{}' -> {}\n", value, buffer,
-               roundtrip);
-  }
-  return len;
-}
-
 void verify(const method& m) {
   if (m.name == "null") return;
 
   fmt::print("Verifying {:20} ... ", m.name);
+
+  bool first = true;
+  auto verify_value = [&](double value, dtoa_fun dtoa, const char* expected) {
+    char buffer[1024] = {};
+    dtoa(value, buffer);
+
+    if (expected && strcmp(buffer, expected) != 0) {
+      if (first) {
+        fmt::print("\n");
+        first = false;
+      }
+      fmt::print("warning: expected {} but got {}\n", expected, buffer);
+    }
+
+    double roundtrip = 0;
+    size_t len = strlen(buffer);
+    if (std::from_chars(buffer, buffer + len, roundtrip).ptr != buffer + len) {
+      fmt::print("error: some extra character {} -> '{}'\n", value, buffer);
+      throw std::exception();
+    }
+    if (value != roundtrip) {
+      fmt::print("error: roundtrip fail {} -> '{}' -> {}\n", value, buffer,
+                 roundtrip);
+      throw std::exception();
+    }
+    return len;
+  };
 
   // Verify boundary and simple cases.
   // This gives benign errors in ostringstream and sprintf:
@@ -225,6 +232,7 @@ auto main(int argc, char** argv) -> int {
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {
     fmt::print("Benchmarking randomdigit {:20} ... ", m.name);
+    fflush(stdout);
     benchmark_result result = bench_random_digit(m.dtoa, m.name, num_trials);
     for (int digit = 1; digit <= max_digits; ++digit) {
       fmt::print(f, "randomdigit,{},{},{:f}\n", m.name, digit,

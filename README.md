@@ -32,7 +32,7 @@ The benchmark consists of two phases:
    The benchmark case is:
 
    * **RandomDigit**  
-     * Generate 1000 random `double` values (excluding `±inf` and `NaN`).
+     * Generate 100,000 random `double` values (excluding `±inf` and `NaN`).
      * Reduce precision to 1–17 decimal digits in the significand.
      * Convert each value to an ASCII string.
 
@@ -121,22 +121,9 @@ directory and viewable online using
 `std::to_string` is excluded because it does **not** guarantee round-trip
 correctness (until C++26).
 
-## FAQ
+## Why is fast `dtoa` important?
 
-### 1. How do I add a new implementation?
-
-Clone an existing implementation file, modify it, and register it in CMake.
-Use:
-
-```cpp
-REGISTER_TEST(name)
-```
-
-Pull requests are welcome.
-
-### 2. Why are fast `dtoa` functions important?
-
-Floating-point formatting is ubiquitous in text output.  
+Floating-point formatting is ubiquitous in text output. 
 Standard facilities such as `sprintf` and `std::stringstream` are often slow.
 This benchmark originated from performance work in
 [RapidJSON](https://github.com/miloyip/rapidjson/).
@@ -144,3 +131,5 @@ This benchmark originated from performance work in
 ## See Also
 
 * [Faster double-to-string conversion](https://vitaut.net/posts/2025/faster-dtoa/)
+* [The smallest state-of-the-art double-to-string implementation](
+  https://vitaut.net/posts/2025/smallest-dtoa/)

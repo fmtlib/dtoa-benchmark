@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include "benchmark.h"
+
 struct Test;
 typedef std::vector<const Test*> TestList;
 class TestManager {
@@ -37,3 +39,5 @@ struct Test {
 
 #define STRINGIFY(x) #x
 #define REGISTER_TEST(f) static Test gRegister##f(STRINGIFY(f), dtoa##_##f)
+
+#define REGISTER_TEST(f) REGISTER_METHOD(f)

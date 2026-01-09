@@ -13,7 +13,7 @@ project(DTOA_BENCHMARK C CXX)
 
 add_executable(
   dtoa-benchmark
-  src/main.cpp
+  src/benchmark.cc
 
   # Tests:
   src/double-conversion-test.cpp

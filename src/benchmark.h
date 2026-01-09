@@ -8,9 +8,11 @@
 #include <string>
 #include <vector>
 
+using dtoa_fun = void (*)(double, char*);
+
 struct method {
   std::string name;
-  void (*dtoa)(double, char*);
+  dtoa_fun dtoa;
 };
 
 extern std::vector<method> methods;

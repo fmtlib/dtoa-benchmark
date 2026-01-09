@@ -18,8 +18,6 @@ constexpr int max_digits = std::numeric_limits<double>::max_digits10;
 constexpr int num_iterations_per_digit = 1;
 constexpr int num_doubles_per_digit = 100'000;
 
-using dtoa_fun = void (*)(double, char*);
-
 std::vector<method> methods;
 
 // Random number generator from dtoa-benchmark.

@@ -207,15 +207,18 @@ auto bench_random_digit(dtoa_fun dtoa, const std::string& name)
   return result;
 }
 
-auto main() -> int {
+auto main(int argc, char** argv) -> int {
   std::sort(
       methods.begin(), methods.end(),
       [](const method& lhs, const method& rhs) { return lhs.name < rhs.name; });
 
   for (const method& m : methods) verify(m);
 
-  std::string filename =
-      fmt::format("results/{}_{}_{}.csv", MACHINE, os_name(), compiler_name());
+  std::string commit_hash;
+  if (argc > 1) commit_hash = std::string("_") + argv[1];
+
+  std::string filename = fmt::format("results/{}_{}_{}{}.csv", MACHINE,
+                                     os_name(), compiler_name(), commit_hash);
   FILE* f = fopen(filename.c_str(), "w");
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {

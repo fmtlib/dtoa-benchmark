@@ -82,9 +82,11 @@ string(TOLOWER "${CPU_NAME}" CPU_NAME)
 message("CPU_NAME: ${CPU_NAME}")
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 
+execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE COMMIT_HASH)
+
 add_custom_target(
   run-benchmark
-  COMMAND dtoa-benchmark
+  COMMAND dtoa-benchmark ${COMMIT_HASH}
   COMMAND cmake -P convert-results.cmake
   # Run in the source directory because we want results to be in the source
   # results directory.

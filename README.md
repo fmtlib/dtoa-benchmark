@@ -1,145 +1,146 @@
 # dtoa benchmark
 
-This is a rewrite of Milo Yip's [dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with the following changes:
-
-* CMake support
-* Fixed reporting of results
-* Added [{fmt}](https://github.com/fmtlib/fmt)
-* Added [Dragonbox](https://github.com/jk-jeon/dragonbox)
-* Added [Ryu](https://github.com/ulfjack/ryu)
-* Added [Schubfach](https://github.com/vitaut/schubfach)
-* Added [Żmij](https://github.com/vitaut/zmij)
-* Added [Asteria](https://github.com/lhmouse/asteria)
-* Removed the use of deprecated `strstream`
-* Disabled Grisu2 implementations since they don't guarantee correctness
-
-Copyright(c) 2014 Milo Yip (miloyip@gmail.com)
+This project is a complete rewrite of Milo Yip’s
+[dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark), featuring an
+updated set of algorithms that reflect the current state of the art and a
+simplified workflow.
 
 ## Introduction
 
-This benchmark evaluates the performance of conversion from double precision
-IEEE-754 floating point (`double`) to ASCII string. The function prototype is:
+This benchmark evaluates the performance of converting double-precision
+IEEE-754 floating-point values (`double`) to ASCII strings. The function
+signature is:
 
 ```cpp
 void dtoa(double value, char* buffer);
 ```
 
-The character string result **must** be convertible to the original value
-**exactly** via some correct implementation of `strtod`, i.e. roundtrip
-convertible.
+The resulting string **must** be round-trip convertible: it should parse back
+to the original value **exactly** via a correct implementation of `strtod`.
 
-Note that `dtoa` is *not* a standard function in C and C++.
+Note: `dtoa` is *not* a standard C or C++ function.
 
 ## Procedure
 
-Firstly the program verifies the correctness of implementations.
+The benchmark consists of two phases:
 
-Then, one case for benchmark is carried out:
+1. **Correctness verification**  
+   All implementations are first validated to ensure round-trip correctness.
 
-1. **RandomDigit**: Generates 1000 random `double` values, filtered out
-`+/-inf` and `nan`. Then convert them to limited precision (1 to 17 decimal
-digits in significand). Finally convert these numbers into ASCII.
+2. **Performance measurement**
 
-Each digit group is run for 100 times. The minimum time duration is measured
-for 10 trials.
+   The benchmark case is:
+
+   * **RandomDigit**  
+     * Generate 1000 random `double` values (excluding `±inf` and `NaN`).
+     * Reduce precision to 1–17 decimal digits in the significand.
+     * Convert each value to an ASCII string.
+
+   Each digit group is executed 100 times.  
+   For each configuration, 10 trials are run and the **minimum** elapsed time
+   is recorded.
 
 ## Build and Run
 
-1. Configure: `cmake .`
-2. Build and run benchmark: `make run-benchmark`
+```bash
+cmake .
+make run-benchmark
+```
 
-The results in CSV format will be written to the file
-`result/<cpu>_<os>_<compiler>.csv` and automatically converted to HTML with
-the same base name and the `.html` extension.
+Results are written in CSV format to:
+
+```
+result/<cpu>_<os>_<compiler>.csv
+```
+
+They are also automatically converted to HTML with the same base name.
 
 ## Results
 
-The following are results measured on a MacBook Pro (Apple M1 Pro), where
-`dtoa` is compiled by Apple clang 17.0.0 (clang-1700.0.13.5) and run on macOS.
+The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 
+* Compiler: Apple clang 17.0.0 (clang-1700.0.13.5)
+* OS: macOS
 
-| Function            | Time (ns) | Speedup |
-|---------------------|----------:|--------:|
-| ostringstream       |   874.884 |   1.00× |
-| sprintf             |   743.801 |   1.18× |
-| double-conversion   |    83.519 |  10.48× |
-| to_chars            |    43.672 |  20.03× |
-| ryu                 |    36.865 |  23.73× |
-| schubfach           |    24.879 |  35.16× |
-| fmt                 |    22.338 |  39.17× |
-| dragonbox           |    20.641 |  42.39× |
-| yy                  |    14.335 |  61.03× |
-| xjb64               |    10.724 |  81.58× |
-| zmij                |    10.087 |  86.73× |
-| null                |     0.930 | 940.73× |
+| Function          | Time (ns) | Speedup |
+|-------------------|----------:|--------:|
+| ostringstream     |   874.884 |   1.00× |
+| sprintf           |   743.801 |   1.18× |
+| double-conversion |    83.519 |  10.48× |
+| to_chars          |    43.672 |  20.03× |
+| ryu               |    36.865 |  23.73× |
+| schubfach         |    24.879 |  35.16× |
+| fmt               |    22.338 |  39.17× |
+| dragonbox         |    20.641 |  42.39× |
+| yy                |    14.335 |  61.03× |
+| xjb64             |    10.724 |  81.58× |
+| zmij              |    10.087 |  86.73× |
+| null              |     0.930 | 940.73× |
 
-Conversion time (smaller is better):
+**Conversion time (smaller is better):**
 
 <img width="804" height="350" alt="image" src="https://github.com/user-attachments/assets/389d7e77-1ed2-4988-9521-1f6dbffbc77f" />
 
-`ostringstream` and `sprintf` are excluded from the above graph because they are too slow.
+`ostringstream` and `sprintf` are excluded due to their significantly slower
+performance.
 
 <img width="835" height="672" alt="image" src="https://github.com/user-attachments/assets/3d1224d8-1efa-47ee-b5b4-4ed3179bc799" />
 
-Notes:
-* The `null` implementation does nothing. It measures the overheads of looping
-  and function call.
-* `sprintf` and `ostringstream` don't generate the shortest representation,
-  e.g. `0.1` is formatted as `0.10000000000000001`.
-* `ryu`, `dragonbox` and `schubfach` only produce the output in the exponential
-  format, e.g. `0.1` is formatted as `1E-1` or similar.
+### Notes
 
-Some results of various configurations are located at [`result`](
-https://github.com/fmtlib/dtoa-benchmark/tree/master/result). They can be
-accessed online, with interactivity provided by [Google Charts](
-https://developers.google.com/chart/):
+* `null` performs no conversion and measures loop + call overhead.
+* `sprintf` and `ostringstream` do **not** generate shortest representations
+  (e.g. `0.1` → `0.10000000000000001`).
+* `ryu`, `dragonbox`, and `schubfach` always emit exponential notation
+  (e.g. `0.1` → `1E-1`).
 
-* [apple-m1-pro_mac64_clang17.0](
-  https://fmtlib.github.io/dtoa-benchmark/result/apple-m1-pro_mac64_clang17.0.html)
+Additional benchmark results are available in the
+[`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result)
+directory and viewable online using
+[Google Charts](https://developers.google.com/chart/):
 
-## Implementations
+* [apple-m1-pro_mac64_clang17.0](https://fmtlib.github.io/dtoa-benchmark/result/apple-m1-pro_mac64_clang17.0.html)
 
-Function      | Description
---------------|-----------
-[double-conversion](https://code.google.com/p/double-conversion/)    |  C++ implementation extracted from Google's V8 JavaScript Engine with `EcmaScriptConverter().ToShortest()` (based on Grisu3, fall back to slower bignum algorithm when Grisu3 failed to produce shortest implementation).
-[dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables.
-[fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with format string compilation (implements Dragonbox).
-null          | Do nothing.
-ostringstream | [`std::ostringstream`](https://en.cppreference.com/w/cpp/io/basic_ostringstream.html) from the C++ standard library with `setprecision(17)`.
-[ryu](https://github.com/ulfjack/ryu) | Ryu `d2s_buffered`
-[schubfach](https://github.com/vitaut/schubfach) | Schubfach implementation in C++
-sprintf       | [`sprintf`](https://en.cppreference.com/w/c/io/fprintf.html) from the C standard library with `"%.17g"` format.
-[zmij](https://github.com/vitaut/zmij) | `zmij::to_string`
-[asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` (decimal double)
+## Methods
 
-Notes:
+| Function | Description |
+|----------|------------|
+| [double-conversion](https://code.google.com/p/double-conversion/) | Implementation extracted from V8 using `EcmaScriptConverter().ToShortest()` (Grisu3 with bignum fallback). |
+| [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables. |
+| [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (Dragonbox backend). |
+| null | No-op implementation. |
+| ostringstream | `std::ostringstream` with `setprecision(17)`. |
+| [ryu](https://github.com/ulfjack/ryu) | `d2s_buffered`. |
+| [schubfach](https://github.com/vitaut/schubfach) | C++ Schubfach implementation. |
+| sprintf | C `sprintf("%.17g")`. |
+| [zmij](https://github.com/vitaut/zmij) | `zmij::to_string`. |
+| [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD`. |
 
-`std::to_string` is not tested as it does not fulfill the roundtrip
-requirement (until C++26).
+### Notes
+
+`std::to_string` is excluded because it does **not** guarantee round-trip
+correctness (until C++26).
 
 ## FAQ
 
-1. How to add an implementation?
-   
-   You may clone an existing implementation file. And then modify it and add to
-   the CMake config. Note that it will automatically register to the benchmark
-   by macro `REGISTER_TEST(name)`.
+### 1. How do I add a new implementation?
 
-   Making a pull request of new implementations is welcome.
+Clone an existing implementation file, modify it, and register it in CMake.
+Use:
 
-2. Why not converting `double` to `std::string`?
+```cpp
+REGISTER_TEST(name)
+```
 
-   It may introduce heap allocation, which is a big overhead. User can easily
-   wrap these low-level functions to return `std::string`, if needed.
+Pull requests are welcome.
 
-3. Why fast `dtoa` functions is needed?
+### 2. Why are fast `dtoa` functions important?
 
-   They are a very common operations in writing data in text format.
-   The standard way of `sprintf`, `std::stringstream`, often provides poor
-   performance. The author of this benchmark would optimize the `sprintf`
-   implementation in [RapidJSON](https://github.com/miloyip/rapidjson/),
-   thus he creates this project.
+Floating-point formatting is ubiquitous in text output.  
+Standard facilities such as `sprintf` and `std::stringstream` are often slow.
+This benchmark originated from performance work in
+[RapidJSON](https://github.com/miloyip/rapidjson/).
 
-## Related Benchmarks and Discussions
+## See Also
 
-* [Printing Floating-Point Numbers](http://www.ryanjuckett.com/programming/printing-floating-point-numbers/)
+* [Faster double-to-string conversion](https://vitaut.net/posts/2025/faster-dtoa/)

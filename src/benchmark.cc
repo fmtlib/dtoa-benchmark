@@ -10,12 +10,21 @@
 
 #include <algorithm>  // std::sort
 #include <chrono>
+#include <string>
+#include <vector>
 
 #include "double-conversion/double-conversion.h"
 #include "fmt/format.h"
 
+namespace {
+
 constexpr int max_digits = std::numeric_limits<double>::max_digits10;
 constexpr int num_doubles_per_digit = 100'000;
+
+struct method {
+  std::string name;
+  dtoa_fun dtoa;
+};
 
 std::vector<method> methods;
 
@@ -226,6 +235,12 @@ auto bench_random_digit(dtoa_fun dtoa, const std::string& name, int num_trials)
     if (ns > result.max_ns) result.max_ns = ns;
   }
   return result;
+}
+
+}  // namespace
+
+register_method::register_method(const char* name, dtoa_fun dtoa) {
+  methods.push_back(method{name, dtoa});
 }
 
 auto main(int argc, char** argv) -> int {

@@ -50,7 +50,7 @@ make run-benchmark
 Results are written in CSV format to:
 
 ```
-result/<cpu>_<os>_<compiler>.csv
+results/<cpu>_<os>_<compiler>_<commit>.csv
 ```
 
 They are also automatically converted to HTML with the same base name.
@@ -95,7 +95,7 @@ performance.
   (e.g. `0.1` → `1E-1`).
 
 Additional benchmark results are available in the
-[`result`](https://github.com/fmtlib/dtoa-benchmark/tree/master/result)
+[`results`](https://github.com/fmtlib/dtoa-benchmark/tree/main/results)
 directory and viewable online using
 [Google Charts](https://developers.google.com/chart/):
 

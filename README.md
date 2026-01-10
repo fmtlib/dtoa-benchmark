@@ -99,8 +99,8 @@ Additional benchmark results are available in the
 directory and viewable online using
 [Google Charts](https://developers.google.com/chart/):
 
-* [apple-m1-pro_macos_clang17.0](
-  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang17.0.html)
+* [apple-m1-pro_macos_clang17.0_e0a03f7](
+  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang17.0_e0a03f7.html)
 
 ## Methods
 

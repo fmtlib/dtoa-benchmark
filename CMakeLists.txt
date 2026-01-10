@@ -19,6 +19,7 @@ add_executable(
   #src/asteria-test.cc
   src/double-conversion-test.cc
   src/dragonbox-test.cc
+  src/experimental-test.cc
   src/fmt-test.cc
   # Grisu2 variants are disabled since they don't guarantee correctness.
   #src/milo-test.cc

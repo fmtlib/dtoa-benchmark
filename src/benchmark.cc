@@ -9,9 +9,9 @@
 #include <stdio.h>   // snprintf
 
 #include <algorithm>  // std::sort
-#include <charconv>   // std::from_chars
 #include <chrono>
 
+#include "double-conversion/double-conversion.h"
 #include "fmt/format.h"
 
 constexpr int max_digits = std::numeric_limits<double>::max_digits10;
@@ -46,6 +46,20 @@ auto compiler_name() -> const char* {
   return "msvc";
 #endif
   return "unknown";
+}
+
+struct from_chars_result {
+  double value;
+  size_t count;
+};
+
+auto from_chars(const char* buffer) -> from_chars_result {
+  using namespace double_conversion;
+  StringToDoubleConverter converter(
+      StringToDoubleConverter::ALLOW_TRAILING_JUNK, 0.0, 0.0, NULL, NULL);
+  int count = 0;
+  double value = converter.StringToDouble(buffer, 1024, &count);
+  return {value, size_t(count)};
 }
 
 // Random number generator from dtoa-benchmark.
@@ -89,9 +103,9 @@ void verify(const method& m) {
       fmt::print("warning: expected {} but got {}\n", expected, buffer);
     }
 
-    double roundtrip = 0;
     size_t len = strlen(buffer);
-    if (std::from_chars(buffer, buffer + len, roundtrip).ptr != buffer + len) {
+    auto [roundtrip, count] = from_chars(buffer);
+    if (len != count) {
       fmt::print("error: some extra character {} -> '{}'\n", value, buffer);
       throw std::exception();
     }
@@ -160,9 +174,7 @@ auto get_random_digit_data(int digit) -> const double* {
         // Limit the number of digits.
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "%.*g", digit, d);
-        d = 0;
-        std::from_chars(buffer, buffer + strlen(buffer), d);
-        data.push_back(d);
+        data.push_back(from_chars(buffer).value);
       }
     }
     return data;

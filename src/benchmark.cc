@@ -4,11 +4,13 @@
 
 #include "benchmark.h"
 
+#include <math.h>    // isnan
 #include <stdint.h>  // uint64_t
 #include <stdio.h>   // snprintf
 
 #include <algorithm>  // std::sort
 #include <charconv>   // std::from_chars
+#include <chrono>
 
 #include "fmt/format.h"
 

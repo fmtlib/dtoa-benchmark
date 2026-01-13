@@ -1,5 +1,5 @@
 // This file is part of Asteria.
-// Copyright (C) 2018-2025, LH_Mouse. All wrongs reserved.
+// Copyright (C) 2018-2026 LH_Mouse. All wrongs reserved.
 
 #ifndef ROCKET_FWD_
 #define ROCKET_FWD_
@@ -1272,18 +1272,17 @@ mulh128(uint64_t x, uint64_t y, uint64_t* lo = nullptr)
   noexcept
   {
 #ifdef __SIZEOF_INT128__
-    __extension__ using my_uint128_t = unsigned __int128;
-    my_uint128_t r = (my_uint128_t) x * y;
-    lo && (*lo = (uint64_t) r);
+    __extension__ unsigned __int128 r = (unsigned __int128) x * y;
+    if(lo) *lo = (uint64_t) r;
     return (uint64_t) (r >> 64);
 #else
     // https://github.com/catid/fp61/blob/master/fp61.h
-    constexpr uint64_t M32 = 1ULL << 32;
-    uint64_t xl = x % M32, xh = x / M32;
-    uint64_t yl = y % M32, yh = y / M32;
+    constexpr uint64_t M = 0x100000000ULL;
+    uint64_t xl = x % M, xh = x / M;
+    uint64_t yl = y % M, yh = y / M;
     uint64_t xlyl = xl * yl, xhyl = xh * yl, xlyh = xl * yh, xhyh = xh * yh;
-    lo && (*lo = xlyl + xhyl / M32 + xlyh / M32);
-    return (xlyl / M32 + xhyl + xlyh % M32) / M32 + xlyh / M32 + xhyh;
+    if(lo) *lo = xlyl + xhyl / M + xlyh / M;
+    return (xlyl / M + xhyl + xlyh % M) / M + xlyh / M + xhyh;
 #endif
   }
 

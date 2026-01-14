@@ -62,29 +62,29 @@ The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 * Compiler: Apple clang 17.0.0 (clang-1700.0.13.5)
 * OS: macOS
 
-| Function          | Time (ns) | Speedup |
-|-------------------|----------:|--------:|
-| ostringstream     |   874.884 |   1.00× |
-| sprintf           |   743.801 |   1.18× |
-| double-conversion |    83.519 |  10.48× |
-| to_chars          |    43.672 |  20.03× |
-| ryu               |    36.865 |  23.73× |
-| schubfach         |    24.879 |  35.16× |
-| fmt               |    22.338 |  39.17× |
-| dragonbox         |    20.641 |  42.39× |
-| yy                |    14.335 |  61.03× |
-| xjb64             |    10.724 |  81.58× |
-| zmij              |    10.087 |  86.73× |
-| null              |     0.930 | 940.73× |
+| Function           | Time (ns) | Speedup |
+|--------------------|----------:|--------:|
+| ostringstream      | 870.478   | 1.00x   |
+| sprintf            | 734.033   | 1.19x   |
+| double-conversion  | 82.903    | 10.50x  |
+| to_chars           | 42.537    | 20.46x  |
+| ryu                | 36.805    | 23.65x  |
+| schubfach          | 24.653    | 35.31x  |
+| fmt                | 22.201    | 39.21x  |
+| dragonbox          | 20.544    | 42.37x  |
+| yy                 | 13.963    | 62.34x  |
+| xjb64              | 10.500    | 82.90x  |
+| zmij               | 8.895     | 97.87x  |
+| null               | 0.929     | 936.55x |
 
 **Conversion time (smaller is better):**
 
-<img width="804" height="350" alt="image" src="https://github.com/user-attachments/assets/389d7e77-1ed2-4988-9521-1f6dbffbc77f" />
+<img width="816" height="358" alt="image" src="https://github.com/user-attachments/assets/c6eea19d-f824-4069-bc26-d701a419916e" />
 
 `ostringstream` and `sprintf` are excluded due to their significantly slower
 performance.
 
-<img width="835" height="672" alt="image" src="https://github.com/user-attachments/assets/3d1224d8-1efa-47ee-b5b4-4ed3179bc799" />
+<img width="857" height="687" alt="image" src="https://github.com/user-attachments/assets/13cb86d3-4d76-4903-a13e-d4845a4388b4" />
 
 ### Notes
 
@@ -100,7 +100,7 @@ directory and viewable online using
 [Google Charts](https://developers.google.com/chart/):
 
 * [apple-m1-pro_macos_clang17.0_e0a03f7](
-  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang17.0_e0a03f7.html)
+  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang17.0_f0f753f.html)
 
 ## Methods
 

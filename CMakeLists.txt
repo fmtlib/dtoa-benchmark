@@ -114,3 +114,12 @@ add_executable(
 )
 target_compile_features(cache-pressure PRIVATE cxx_std_20)
 target_include_directories(cache-pressure PRIVATE src src/fmt/include)
+
+# L1 cache contention test -- measures dtoa degradation under L1 pressure.
+add_executable(
+  cache-contention
+  src/cache-contention.cc
+  ${DTOA_SOURCES}
+)
+target_compile_features(cache-contention PRIVATE cxx_std_20)
+target_include_directories(cache-contention PRIVATE src src/fmt/include)

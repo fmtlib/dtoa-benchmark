@@ -34,8 +34,8 @@ register_method::register_method(const char* name, dtoa_fun dtoa) {
   methods.push_back(method{name, dtoa});
 }
 
-// Max competitor size: 28KB (leaves 4KB for stack/dtoa minimum).
-static constexpr int MAX_COMPETITOR_KB = 28;
+// Max competitor size: 64KB (past L1d to observe the cliff).
+static constexpr int MAX_COMPETITOR_KB = 64;
 static constexpr int MAX_COMPETITOR_LINES = MAX_COMPETITOR_KB * 1024 / 64;
 
 // Competitor working set, cache-line aligned.
@@ -125,8 +125,8 @@ int main(int argc, char** argv) {
   std::sort(methods.begin(), methods.end(),
             [](const method& a, const method& b) { return a.name < b.name; });
 
-  // Pressure levels: 0KB to 28KB in 4KB steps.
-  int pressures_kb[] = {0, 4, 8, 12, 16, 20, 24, 28};
+  // Pressure levels: 0KB up to 48KB (past L1d size to see the cliff).
+  int pressures_kb[] = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48};
   int num_pressures = sizeof(pressures_kb) / sizeof(pressures_kb[0]);
 
   // Header.

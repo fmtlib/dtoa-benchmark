@@ -13,25 +13,30 @@ project(DTOA_BENCHMARK C CXX)
 
 add_executable(
   dtoa-benchmark
-  src/main.cpp
+  src/benchmark.cc
 
   # Tests:
-  src/ryutest.cpp
-  src/doubleconvtest.cpp
-  src/fmttest.cpp
-  src/fmttest_full.cpp
-  #src/dtoa_puff.cpp
-  src/dragonbox_test.cpp
-  src/fpconvtest.cpp
-  src/grisu2btest.cpp
-  # Disabled since it's very similar to fpconv.
-  #src/milotest.cpp
-  src/null.cpp
-  src/ostringstream.cpp
-  src/sprintf.cpp
-  src/xjb64_test.cpp
+  #src/asteria-test.cc
+  src/double-conversion-test.cc
+  src/dragonbox-test.cc
+  src/experimental-test.cc
+  src/fmt-test.cc
+  # Grisu2 variants are disabled since they don't guarantee correctness.
+  #src/milo-test.cc
+  src/null-test.cc
+  src/ostringstream-test.cc
+  #src/puff-test.cc
+  src/ryu-test.cc
+  src/schubfach-test.cc
+  src/sprintf-test.cc
+  src/to_chars-test.cc
+  src/uscale-test.cc
+  src/xjb-test.cc
+  src/yy-test.cc
+  src/zmij-test.cc
 
   # Libraries:
+  src/asteria/ascii_numput.cpp
   src/double-conversion/bignum-dtoa.cc
   src/double-conversion/bignum.cc
   src/double-conversion/cached-powers.cc
@@ -42,32 +47,58 @@ add_executable(
   src/double-conversion/strtod.cc
   src/dragonbox/dragonbox_to_chars.cpp # 2 Aug 2025: 6c7c925
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
-  src/fpconv/fpconv.c
-  src/grisu/grisu2b_59_56.c
+  src/ryu/d2s.c
+  src/schubfach/schubfach.cc
+  src/xjb/xjb64.cpp
+  src/uscale/uscale.c # 19 Jan 2026: 6255750
+  src/yy/yy_double.c
+  src/zmij/zmij.cc
 )
 
+target_compile_options(dtoa-benchmark PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(dtoa-benchmark PRIVATE cxx_std_20)
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
-target_compile_features(dtoa-benchmark PRIVATE cxx_std_17)
 
 if (APPLE)
   execute_process(
     COMMAND sysctl -n machdep.cpu.brand_string
     OUTPUT_VARIABLE CPU_NAME
-    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  string(REPLACE " " "-" CPU_NAME "${CPU_NAME}")
-  string(TOLOWER "${CPU_NAME}" CPU_NAME)
+elseif(LINUX)
+  execute_process(
+    COMMAND lscpu
+    OUTPUT_VARIABLE CPU_NAME
+  )
+  string(REGEX MATCH "Model name: ([^\n]*)\n" CPU_NAME "${CPU_NAME}")
+  string(REGEX REPLACE
+    "AMD|Intel|CPU|\\(R\\)|\\(TM\\)|@|[^ ]+-Core Processor" ""
+    CPU_NAME "${CMAKE_MATCH_1}"
+  )
 else ()
   set(CPU_NAME "unknown")
 endif ()
+
+string(STRIP "${CPU_NAME}" CPU_NAME)
+string(REPLACE "  " " " CPU_NAME "${CPU_NAME}")
+string(REPLACE " " "-" CPU_NAME "${CPU_NAME}")
+string(TOLOWER "${CPU_NAME}" CPU_NAME)
+message("CPU_NAME: ${CPU_NAME}")
 target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 
-add_custom_target(
-  run-benchmark
-  COMMAND dtoa-benchmark
-  COMMAND cmake -P convert-results.cmake
-  # Run in the source directory because we want results to be in the source
-  # result directory.
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  DEPENDS dtoa-benchmark
-)
+execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE COMMIT_HASH)
+string(STRIP "${COMMIT_HASH}" COMMIT_HASH)
+
+function(add_benchmark_target name num_trials)
+  add_custom_target(
+    ${name}
+    COMMAND dtoa-benchmark ${COMMIT_HASH} ${num_trials}
+    COMMAND cmake -P convert-results.cmake
+    # Run in the source directory because we want results to be in the source
+    # results directory.
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS dtoa-benchmark
+  )
+endfunction()
+
+add_benchmark_target(run-benchmark 10)
+add_benchmark_target(run-benchmark-fast 3)

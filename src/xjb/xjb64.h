@@ -1,1 +1,1 @@
-extern "C" char* xjb64(double v,char* buf);
+char* xjb64(double v,char* buf);

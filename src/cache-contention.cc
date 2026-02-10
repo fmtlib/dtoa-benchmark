@@ -97,18 +97,7 @@ measure_contended(dtoa_fun dtoa, int competitor_lines, int rounds) {
 
   double total_ns =
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-  // Subtract competitor overhead: measure it separately.
-  auto start2 = std::chrono::steady_clock::now();
-  for (int r = 0; r < rounds; r++) {
-    touch_competitor(competitor_lines);
-  }
-  auto end2 = std::chrono::steady_clock::now();
-  double competitor_ns =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start2)
-          .count();
-
-  double dtoa_ns = (total_ns - competitor_ns) / (rounds * CALLS_PER_ROUND);
-  return dtoa_ns;
+  return total_ns / (rounds * CALLS_PER_ROUND);
 }
 
 int main(int argc, char** argv) {

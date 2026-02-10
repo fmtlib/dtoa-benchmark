@@ -30,6 +30,7 @@ add_executable(
   src/schubfach-test.cc
   src/sprintf-test.cc
   src/to_chars-test.cc
+  src/uscale-test.cc
   src/xjb-test.cc
   src/yy-test.cc
   src/zmij-test.cc
@@ -49,6 +50,7 @@ add_executable(
   src/ryu/d2s.c
   src/schubfach/schubfach.cc
   src/xjb/xjb64.cpp
+  src/uscale/uscale.c # 19 Jan 2026: 6255750
   src/yy/yy_double.c
   src/zmij/zmij.cc
 )

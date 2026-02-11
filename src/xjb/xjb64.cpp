@@ -1083,8 +1083,8 @@ static inline char *write_1_to_16_digit(u64 x, char *buf, const struct const_val
 	}
 }
 
-//namespace xjb
-//{
+// namespace xjb
+// {
 	// void get_pow10_128bit(i64 k,u64 *hi,u64 *lo)
 	// {
 	// 	// get 10**(-k-1);
@@ -1304,15 +1304,16 @@ static inline char *write_1_to_16_digit(u64 x, char *buf, const struct const_val
 		buf += first_sig_pos;
 #if HAS_NEON_OR_SSE2
 		memcpy(buf, &(s.ascii16), 16);
-#if XJB_AARCH64
-		memmove(buf, &buf[16 - (15 + D17)], 16); // this is heavy instruction on x64;
-#endif
+
 
 #else
 		memcpy(buf + 0, &(s.hi), 8);
 		memcpy(buf + 8, &(s.lo), 8);
 #endif
 
+#if XJB_AARCH64
+		memmove(buf, &buf[16 - (15 + D17)], 16); // this is heavy instruction on x64;
+#endif
 
 		one |= 0x3030;
 		memcpy(&buf[15 + D17], &one, 8);
@@ -1471,7 +1472,6 @@ static inline char *write_1_to_16_digit(u64 x, char *buf, const struct const_val
 		memcpy(buf, &exp_result_u64, 8);
 		return buf + exp_len;
 	}
-
 // 	char *to_string(float v, char *buf) { return xjb32(v, buf); }
 // 	char *to_string(double v, char *buf) { return xjb64(v, buf); }
 // } // end of namespace xjb

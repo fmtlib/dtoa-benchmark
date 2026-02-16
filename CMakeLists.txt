@@ -102,3 +102,24 @@ endfunction()
 
 add_benchmark_target(run-benchmark 10)
 add_benchmark_target(run-benchmark-fast 3)
+
+# Cache pressure measurement tool -- shares all dtoa implementations
+# but uses a different main() that measures L1 cache pollution.
+get_target_property(DTOA_SOURCES dtoa-benchmark SOURCES)
+list(REMOVE_ITEM DTOA_SOURCES src/benchmark.cc)
+add_executable(
+  cache-pressure
+  src/cache-pressure.cc
+  ${DTOA_SOURCES}
+)
+target_compile_features(cache-pressure PRIVATE cxx_std_20)
+target_include_directories(cache-pressure PRIVATE src src/fmt/include)
+
+# L1 cache contention test -- measures dtoa degradation under L1 pressure.
+add_executable(
+  cache-contention
+  src/cache-contention.cc
+  ${DTOA_SOURCES}
+)
+target_compile_features(cache-contention PRIVATE cxx_std_20)
+target_include_directories(cache-contention PRIVATE src src/fmt/include)

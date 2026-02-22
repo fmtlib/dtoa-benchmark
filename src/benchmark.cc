@@ -102,7 +102,8 @@ void verify(const method& m) {
   bool first = true;
   auto verify_value = [&](double value, dtoa_fun dtoa, const char* expected) {
     char buffer[1024] = {};
-    dtoa(value, buffer);
+    char* result = dtoa(value, buffer);
+    if (result) *result = '\0';
 
     if (expected && strcmp(buffer, expected) != 0) {
       if (first) {

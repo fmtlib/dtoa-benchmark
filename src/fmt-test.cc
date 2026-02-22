@@ -3,6 +3,5 @@
 #include "fmt/compile.h"
 
 static register_method _("fmt", [](double value, char* buffer) {
-  buffer = fmt::format_to(buffer, FMT_COMPILE("{}"), value);
-  *buffer = '\0';
+  return fmt::format_to(buffer, FMT_COMPILE("{}"), value);
 });

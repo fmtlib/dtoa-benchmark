@@ -4,6 +4,7 @@
 
 #include "benchmark.h"
 
-static register_method _("schubfach", [](double x, char* buffer) noexcept {
+static register_method _("schubfach", [](double x, char* buffer) -> char* {
   schubfach::dtoa(x, buffer);
+  return nullptr;
 });

@@ -4,8 +4,9 @@
 // Copyright (c) 2024, Victor Zverovich
 // License: https://github.com/fmtlib/fmt/blob/master/LICENSE
 
+#include <math.h>    // frexp, signbit
 #include <stdint.h>  // uint32_t
-#include <string.h>  // memcpy
+#include <string.h>  // memcpy, memmove
 
 #include <charconv>  // std::to_chars
 #include <limits>    // std::numeric_limits

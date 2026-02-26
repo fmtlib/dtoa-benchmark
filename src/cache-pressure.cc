@@ -42,7 +42,14 @@ static constexpr int WORKING_SET_INTS = NUM_CACHE_LINES * INTS_PER_LINE;
 alignas(64) static volatile uint64_t working_set[WORKING_SET_INTS];
 
 // Touch every cache line, return checksum.
-static uint64_t __attribute__((noinline, optimize("O1")))
+// optimize("O1") prevents the compiler from vectorizing or merging the
+// volatile reads. Clang doesn't support optimize(), so use optnone there.
+#ifdef __clang__
+__attribute__((noinline, optnone))
+#else
+__attribute__((noinline, optimize("O1")))
+#endif
+static uint64_t
 load_working_set() {
   uint64_t sum = 0;
   for (int i = 0; i < WORKING_SET_INTS; i += INTS_PER_LINE) {

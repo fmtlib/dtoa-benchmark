@@ -259,6 +259,10 @@ auto main(int argc, char** argv) -> int {
   std::string filename = fmt::format("results/{}_{}_{}{}.csv", MACHINE,
                                      os_name(), compiler_name(), commit_hash);
   FILE* f = fopen(filename.c_str(), "w");
+  if (!f) {
+    fmt::print("error: cannot open '{}' for writing\n", filename);
+    return 1;
+  }
   fmt::print(f, "Type,Function,Digit,Time(ns)\n");
   for (const method& m : methods) {
     fmt::print("Benchmarking randomdigit {:20} ... ", m.name);

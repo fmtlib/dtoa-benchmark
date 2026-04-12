@@ -1,4 +1,4 @@
-// A double-to-string conversion algorithm based on Schubfach and yy.
+// A double-to-string conversion algorithm based on Schubfach and xjb.
 // Copyright (c) 2025 - present, Victor Zverovich
 // Distributed under the MIT license (see LICENSE) or alternatively
 // the Boost Software License, Version 1.0.
@@ -61,6 +61,9 @@ static_assert(!ZMIJ_USE_SSE4_1 || ZMIJ_USE_SSE);
 #else
 #  define ZMIJ_USE_SSE4_1 0
 #endif
+
+#define ZMIJ_USE_SIMD_SHUFFLE \
+  ((ZMIJ_USE_NEON || ZMIJ_USE_SSE4_1) && !ZMIJ_OPTIMIZE_SIZE)
 
 #ifdef __aarch64__
 #  define ZMIJ_AARCH64 1
@@ -195,22 +198,23 @@ inline auto clz(uint64_t x) noexcept -> int {
 #endif
 }
 
-inline auto ctz32(uint32_t x) noexcept -> int {
+inline auto ctz(uint64_t x) noexcept -> int {
   assert(x != 0);
-#if ZMIJ_HAS_BUILTIN(__builtin_ctz)
-  return __builtin_ctz(x);
+#if ZMIJ_HAS_BUILTIN(__builtin_ctzll)
+  return __builtin_ctzll(x);
+#elif defined(_M_AMD64) || defined(_M_ARM64)
+  unsigned long idx;
+  _BitScanForward64(&idx, x);
+  return idx;
 #elif ZMIJ_MSC_VER
-  unsigned long r;
-  _BitScanForward(&r, x);
-  return r;
+  unsigned long idx;
+  if (_BitScanForward(&idx, uint32_t(x))) return idx;
+  _BitScanForward(&idx, uint32_t(x >> 32));
+  return idx + 32;
 #else
-  // Branchless using de Bruijn sequences.
-  static constexpr int table[] = {
-      0,  1,  2,  53, 3,  7,  54, 27, 4,  38, 41, 8,  34, 55, 48, 28,
-      62, 5,  39, 46, 44, 42, 22, 9,  24, 35, 59, 56, 49, 18, 29, 11,
-      63, 52, 6,  26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
-      51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
-  return table[((x & (~x + 1)) * uint64_t(0x022FDD63CC95386D)) >> 58];
+  int n = 0;
+  for (; (x & 1) == 0; x >>= 1) ++n;
+  return n;
 #endif
 }
 
@@ -315,6 +319,18 @@ auto umulhi_inexact_to_odd(uint64_t x_hi, uint64_t, uint32_t y) noexcept
   return uint32_t(p >> 32) | ((uint32_t(p) >> 1) != 0);
 }
 
+// Computes the decimal exponent as floor(log10(2**bin_exp)) if regular or
+// floor(log10(3/4 * 2**bin_exp)) otherwise, without branching.
+constexpr auto compute_dec_exp(int bin_exp, bool regular = true) noexcept
+    -> int {
+  assert(bin_exp >= -1334 && bin_exp <= 2620);
+  // log10_3_over_4_sig = -log10(3/4) * 2**log10_2_exp rounded to a power of 2
+  constexpr int log10_3_over_4_sig = 131'072;
+  // log10_2_sig = round(log10(2) * 2**log10_2_exp)
+  constexpr int log10_2_sig = 315'653, log10_2_exp = 20;
+  return (bin_exp * log10_2_sig - !regular * log10_3_over_4_sig) >> log10_2_exp;
+}
+
 template <typename Float> struct float_traits : std::numeric_limits<Float> {
   static_assert(float_traits::is_iec559, "IEEE 754 required");
 
@@ -324,6 +340,9 @@ template <typename Float> struct float_traits : std::numeric_limits<Float> {
   static constexpr int exp_mask = (1 << num_exp_bits) - 1;
   static constexpr int exp_bias = (1 << (num_exp_bits - 1)) - 1;
   static constexpr int exp_offset = exp_bias + num_sig_bits;
+  static constexpr int min_fixed_dec_exp = -4;
+  static constexpr int max_fixed_dec_exp =
+      compute_dec_exp(float_traits::digits + 1) - 1;
 
   using sig_type = std::conditional_t<num_bits == 64, uint64_t, uint32_t>;
   static constexpr sig_type implicit_bit = sig_type(1) << num_sig_bits;
@@ -383,23 +402,23 @@ constexpr uint128 pow10_major[] = {
     {0xd94ad8b1c7380874, 0x18375281ae7822bc},  //  313
 };
 constexpr uint32_t pow10_fixups[] = {
-    0x05271b1f, 0x00000c20, 0x00003200, 0x12100020, 0x00000000,
-    0x06000000, 0xc16409c0, 0xaf26700f, 0xeb987b07, 0x0000000d,
-    0x00000000, 0x66fbfffe, 0xb74100ec, 0xa0669fe8, 0xedb21280,
-    0x00000686, 0x0a021200, 0x29b89c20, 0x08bc0eda, 0x00000000};
+    0x0a4e363f, 0x00001840, 0x00006400, 0x24200040, 0x00000000,
+    0x0c000000, 0x82c81380, 0x5e4ce01f, 0xd730f60f, 0x0000001b,
+    0x00000000, 0xcdf7fffc, 0x6e8201d8, 0x40cd3fd1, 0xdb642501,
+    0x00000d0d, 0x14042400, 0x53713840, 0x11781db4, 0x00000000};
 
 // 128-bit significands of powers of 10 rounded down.
-struct pow10_significands_table {
+struct pow10_significand_table {
   static constexpr bool compress = ZMIJ_OPTIMIZE_SIZE != 0;
   static constexpr bool split_tables = !compress && ZMIJ_AARCH64 != 0;
-  static constexpr int num_pow10s = 617;
+  static constexpr int num_pow10s = 618;
   uint64_t data[compress ? 1 : num_pow10s * 2] = {};
 
   // Computes the 128-bit significand of 10**i using method by Dougall Johnson.
   static constexpr auto compute(unsigned i) noexcept -> uint128 {
     constexpr int stride = sizeof(pow10_minor) / sizeof(*pow10_minor);
-    auto m = pow10_minor[(i + 11) % stride];
-    auto h = pow10_major[(i + 11) / stride];
+    auto m = pow10_minor[(i + 10) % stride];
+    auto h = pow10_major[(i + 10) / stride];
 
     uint64_t h1 = umul128_hi64(h.lo, m);
 
@@ -414,7 +433,7 @@ struct pow10_significands_table {
     return result;
   }
 
-  constexpr pow10_significands_table() {
+  constexpr pow10_significand_table() {
     for (int i = 0; i < num_pow10s && !compress; ++i) {
       uint128 result = compute(i);
       if (split_tables) {
@@ -428,7 +447,7 @@ struct pow10_significands_table {
   }
 
   ZMIJ_CONSTEXPR auto operator[](int dec_exp) const noexcept -> uint128 {
-    constexpr int dec_exp_min = -292;
+    constexpr int dec_exp_min = -293;
     int i = dec_exp - dec_exp_min;
     if (compress) return compute(i);
     if (!split_tables) return {data[i * 2], data[i * 2 + 1]};
@@ -441,22 +460,19 @@ struct pow10_significands_table {
     return {hi[-dec_exp], lo[-dec_exp]};
   }
 };
-alignas(64) constexpr pow10_significands_table pow10_significands;
+alignas(64) constexpr pow10_significand_table pow10_significands;
 
-// Computes the decimal exponent as floor(log10(2**bin_exp)) if regular or
-// floor(log10(3/4 * 2**bin_exp)) otherwise, without branching.
-constexpr auto compute_dec_exp(int bin_exp, bool regular = true) noexcept
-    -> int {
-  assert(bin_exp >= -1334 && bin_exp <= 2620);
-  // log10_3_over_4_sig = -log10(3/4) * 2**log10_2_exp rounded to a power of 2
-  constexpr int log10_3_over_4_sig = 131'072;
-  // log10_2_sig = round(log10(2) * 2**log10_2_exp)
-  constexpr int log10_2_sig = 315'653, log10_2_exp = 20;
-  return (bin_exp * log10_2_sig - !regular * log10_3_over_4_sig) >> log10_2_exp;
-}
-
-constexpr ZMIJ_INLINE auto do_compute_exp_shift(int bin_exp,
-                                                int dec_exp) noexcept
+// Computes a shift so that, after scaling by a power of 10, the intermediate
+// result always has a fixed 128-bit fractional part (for double).
+//
+// Different binary exponents can map to the same decimal exponent, but place
+// the decimal point at different bit positions. The shift compensates for this.
+//
+// For example, both 3 * 2**59 and 3 * 2**60 have dec_exp = 2, but dividing by
+// 10^dec_exp puts the decimal point in different bit positions:
+//   3 * 2**59 / 100 = 1.72...e+16  (needs shift = 1 + 1)
+//   3 * 2**60 / 100 = 3.45...e+16  (needs shift = 2 + 1)
+constexpr ZMIJ_INLINE auto compute_exp_shift(int bin_exp, int dec_exp) noexcept
     -> unsigned char {
   assert(dec_exp >= -350 && dec_exp <= 350);
   // log2_pow10_sig = round(log2(10) * 2**log2_pow10_exp) + 1
@@ -469,6 +485,9 @@ constexpr ZMIJ_INLINE auto do_compute_exp_shift(int bin_exp,
 
 struct exp_shift_table {
   static constexpr bool enable = ZMIJ_OPTIMIZE_SIZE == 0;
+  // extra_shift must be >= 3 to keep shift non-negative and <= 11 to
+  // fit the significand into 64 bits after the shift.
+  static constexpr int extra_shift = 6;
   unsigned char data[enable ? float_traits<double>::exp_mask + 1 : 1] = {};
 
   constexpr exp_shift_table() {
@@ -476,7 +495,7 @@ struct exp_shift_table {
       int bin_exp = raw_exp - float_traits<double>::exp_offset;
       if (raw_exp == 0) ++bin_exp;
       int dec_exp = compute_dec_exp(bin_exp);
-      data[raw_exp] = do_compute_exp_shift(bin_exp, dec_exp);
+      data[raw_exp] = compute_exp_shift(bin_exp, dec_exp + 1) + extra_shift;
     }
   }
 };
@@ -498,30 +517,68 @@ struct exp_string_table {
       uint64_t bc = abs_e % 100;
       uint64_t val = ((bc % 10 + '0') << 8) | (bc / 10 + '0');
       if (uint64_t a = abs_e / 100) val = (val << 8) | (a + '0');
-      data[e + offset] = (uint64_t(abs_e >= 100 ? 5 : 4) << 48) | (val << 16) |
-                         (uint64_t(e >= 0 ? '+' : '-') << 8) | 'e';
+      uint64_t len =
+          e >= -4 && e < traits::max_fixed_dec_exp ? 0 : 4 + (abs_e >= 100);
+      data[e + offset] =
+          (len << 48) | (val << 16) | (uint64_t(e >= 0 ? '+' : '-') << 8) | 'e';
     }
   }
 };
 constexpr exp_string_table exp_strings;
 
-// Computes a shift so that, after scaling by a power of 10, the intermediate
-// result always has a fixed 128-bit fractional part (for double).
-//
-// Different binary exponents can map to the same decimal exponent, but place
-// the decimal point at different bit positions. The shift compensates for this.
-//
-// For example, both 3 * 2**59 and 3 * 2**60 have dec_exp = 2, but dividing by
-// 10^dec_exp puts the decimal point in different bit positions:
-//   3 * 2**59 / 100 = 1.72...e+16  (needs shift = 1 + 1)
-//   3 * 2**60 / 100 = 3.45...e+16  (needs shift = 2 + 1)
-template <int num_bits, bool only_regular = false>
-constexpr ZMIJ_INLINE auto compute_exp_shift(int bin_exp, int dec_exp) noexcept
-    -> unsigned char {
-  if (num_bits == 64 && exp_shift_table::enable && only_regular)
-    return exp_shifts.data[bin_exp + float_traits<double>::exp_offset];
-  return do_compute_exp_shift(bin_exp, dec_exp);
-}
+// Per-decimal-exponent formatting positions for branchless output.
+// Each entry holds positions for the decimal point, leading zeros, and the
+// exponent, indexed by the decimal exponent (dec_exp).
+struct dec_exp_format_table {
+  using traits = float_traits<double>;
+  static constexpr int num_entries =
+      traits::max_fixed_dec_exp - traits::min_fixed_dec_exp + 2;  // +1 sentinel
+
+  struct entry {
+    // Byte offset past leading "0.00..." before first significant digit.
+    unsigned char start_pos;
+    unsigned char point_pos;
+    // Start position for shifting digits right by one to insert the point.
+    unsigned char shift_pos;
+    // Position where exponent notation starts, indexed by sig length - 1.
+    // For fixed-notation entries this points past all output digits.
+    unsigned char exp_pos[traits::max_digits10];
+  };
+
+  entry data[num_entries] = {};
+
+  constexpr dec_exp_format_table() {
+    for (int dec_exp = traits::min_fixed_dec_exp;
+         dec_exp <= traits::max_fixed_dec_exp + 1; ++dec_exp) {
+      auto& e = data[dec_exp - traits::min_fixed_dec_exp];
+      bool neg_fixed = dec_exp >= traits::min_fixed_dec_exp && dec_exp <= -1;
+      bool pos_fixed = dec_exp >= 0 && dec_exp <= traits::max_fixed_dec_exp;
+
+      e.start_pos = neg_fixed ? 1 - dec_exp : 0;
+      e.point_pos = pos_fixed ? 1 + dec_exp : 1;
+      e.shift_pos =
+          e.point_pos + (dec_exp >= 0 || dec_exp < traits::min_fixed_dec_exp);
+
+      for (int s = 1; s <= traits::max_digits10; ++s) {
+        if (neg_fixed)
+          e.exp_pos[s - 1] = s;
+        else if (pos_fixed)
+          e.exp_pos[s - 1] = s > dec_exp + 1 ? s + 1 : dec_exp + 1;
+        else
+          e.exp_pos[s - 1] = s + 1 - (s == 1);
+      }
+    }
+  }
+
+  template <typename Traits>
+  constexpr auto get(int dec_exp) const noexcept -> const entry& {
+    constexpr auto min = traits::min_fixed_dec_exp,
+                   max = Traits::max_fixed_dec_exp;
+    unsigned i = unsigned(dec_exp - min);
+    return data[i <= unsigned(max - min) ? i : num_entries - 1];
+  }
+};
+constexpr dec_exp_format_table dec_exp_formats;
 
 inline auto count_trailing_nonzeros(uint64_t x) noexcept -> int {
   // We count the number of bytes until there are only zeros left.
@@ -593,16 +650,6 @@ inline auto write_if(char* buffer, uint32_t digit, bool condition) noexcept
   return buffer + condition;
 }
 
-inline void write8(char* buffer, uint64_t value) noexcept {
-  memcpy(buffer, &value, 8);
-}
-
-inline auto read8(char* buffer) noexcept -> uint64_t {
-  uint64_t r;
-  memcpy(&r, buffer, 8);
-  return r;
-}
-
 #if ZMIJ_USE_SSE
 alignas(64) constexpr struct sse_constants {
   static constexpr auto splat64(uint64_t x) -> uint128 { return {x, x}; }
@@ -640,22 +687,21 @@ using m128ptr = const __m128i*;
 
 // SSE parallel version of to_bcd8: converts bbccddee and ffgghhii into
 // individual BCD digits in SIMD lane order (caller must shuffle).
-ZMIJ_INLINE auto get_double_significand_bcd_unshuffled_sse(
-    uint64_t value, bool extra_digit, uint32_t bbccddee, uint32_t ffgghhii,
-    const sse_constants* c) noexcept -> __m128i {
-  const __m128i div10k = _mm_load_si128(m128ptr(&c->div10k));
-  const __m128i neg10k = _mm_load_si128(m128ptr(&c->neg10k));
-  const __m128i div100 = _mm_load_si128(m128ptr(&c->div100));
-  const __m128i div10 = _mm_load_si128(m128ptr(&c->div10));
+ZMIJ_INLINE auto to_unshuffled_digits(uint32_t bbccddee, uint32_t ffgghhii,
+                                      const sse_constants& c) noexcept
+    -> __m128i {
+  const __m128i div10k = _mm_load_si128(m128ptr(&c.div10k));
+  const __m128i neg10k = _mm_load_si128(m128ptr(&c.neg10k));
+  const __m128i div100 = _mm_load_si128(m128ptr(&c.div100));
+  const __m128i div10 = _mm_load_si128(m128ptr(&c.div10));
 #  if ZMIJ_USE_SSE4_1
-  const __m128i neg100 = _mm_load_si128(m128ptr(&c->neg100));
-  const __m128i neg10 = _mm_load_si128(m128ptr(&c->neg10));
+  const __m128i neg100 = _mm_load_si128(m128ptr(&c.neg100));
+  const __m128i neg10 = _mm_load_si128(m128ptr(&c.neg10));
 #  else
-  const __m128i hundred = _mm_load_si128(m128ptr(&c->hundred));
-  const __m128i moddiv10 = _mm_load_si128(m128ptr(&c->moddiv10));
+  const __m128i hundred = _mm_load_si128(m128ptr(&c.hundred));
+  const __m128i moddiv10 = _mm_load_si128(m128ptr(&c.moddiv10));
 #  endif
 
-  // The BCD sequences are based on ones provided by Xiang JunBo.
   __m128i x = _mm_set_epi64x(bbccddee, ffgghhii);
   __m128i y = _mm_add_epi64(
       x, _mm_mul_epu32(neg10k,
@@ -676,35 +722,12 @@ ZMIJ_INLINE auto get_double_significand_bcd_unshuffled_sse(
 }
 #endif  // ZMIJ_USE_SSE
 
-// Writes a significand and removes trailing zeros. value has up to 17 decimal
-// digits (16-17 for normals) for double (num_bits == 64) and up to 9 digits
-// (8-9 for normals) for float. The significant digits start from buffer[1].
-// buffer[0] may contain '0' after this function if the leading digit is zero.
-template <int num_bits, bool use_sse = ZMIJ_USE_SSE != 0 && num_bits == 64>
-ZMIJ_INLINE auto write_significand(char* buffer, uint64_t value,
-                                   bool extra_digit) noexcept -> char* {
-  if (num_bits == 32) {
-    buffer = write_if(buffer, value / 100'000'000, extra_digit);
-    uint64_t bcd = to_bcd8(value % 100'000'000);
-    write8(buffer, bcd + zeros);
-    return buffer + count_trailing_nonzeros(bcd);
-  }
-  if (!ZMIJ_USE_NEON && !use_sse) {
-    // Digits/pairs of digits are denoted by letters: value = abbccddeeffgghhii.
-    uint32_t abbccddee = uint32_t(value / 100'000'000);
-    uint32_t ffgghhii = uint32_t(value % 100'000'000);
-    buffer = write_if(buffer, abbccddee / 100'000'000, extra_digit);
-    uint64_t bcd = to_bcd8(abbccddee % 100'000'000);
-    write8(buffer, bcd + zeros);
-    if (ffgghhii == 0) {
-      write8(buffer + 8, zeros);
-      return buffer + count_trailing_nonzeros(bcd);
-    }
-    bcd = to_bcd8(ffgghhii);
-    write8(buffer + 8, bcd + zeros);
-    return buffer + 8 + count_trailing_nonzeros(bcd);
-  }
 #if ZMIJ_USE_NEON
+// When reverse_hi_lo is true, the two 8-digit halves are returned in reversed
+// order so that trailing zeros become leading zero bytes, letting ctz count
+// them while the shuffle runs in parallel.
+template <bool reverse_hi_lo = false>
+ZMIJ_INLINE auto to_unshuffled_digits(uint64_t value) -> uint8x16_t {
   // An optimized version for NEON by Dougall Johnson.
   using int32x4 = std::conditional_t<ZMIJ_MSC_VER != 0, int32_t[4], int32x4_t>;
   using int16x8 = std::conditional_t<ZMIJ_MSC_VER != 0, int16_t[8], int16x8_t>;
@@ -730,14 +753,11 @@ ZMIJ_INLINE auto write_significand(char* buffer, uint64_t value,
   uint64_t abbccddee = uint64_t(umul128(value, c->mul_const) >> 90);
   uint64_t ffgghhii = value - abbccddee * hundred_million;
 
-  // We could probably make this bit faster, but we're preferring to
-  // reuse the constants for now.
-  uint64_t a = uint64_t(umul128(abbccddee, c->mul_const) >> 90);
-  uint64_t bbccddee = abbccddee - a * hundred_million;
-
-  buffer = write_if(buffer, a, extra_digit);
-
-  uint64x1_t ffgghhii_bbccddee_64 = {(uint64_t(ffgghhii) << 32) | bbccddee};
+  // When reverse_hi_lo, actual order is abbccddee|ffgghhii; the 17th digit
+  // ends up at byte index 0, so it can be extracted for the trailing write.
+  uint64x1_t ffgghhii_bbccddee_64 = {
+      reverse_hi_lo ? (uint64_t(abbccddee) << 32) | ffgghhii
+                    : (uint64_t(ffgghhii) << 32) | abbccddee};
   int32x2_t bbccddee_ffgghhii = vreinterpret_s32_u64(ffgghhii_bbccddee_64);
 
   int32x2_t bbcc_ffgg = vreinterpret_s32_u32(
@@ -759,31 +779,61 @@ ZMIJ_INLINE auto write_significand(char* buffer, uint64_t value,
       vmlaq_n_s32(ddee_bbcc_hhii_ffgg, dd_bb_hh_ff, c->multipliers32[3]));
   int16x8_t high_10s =
       vqdmulhq_n_s16(ee_dd_cc_bb_ii_hh_gg_ff, c->multipliers16[0]);
-  uint8x16_t digits = vrev64q_u8(vreinterpretq_u8_s16(
-      vmlaq_n_s16(ee_dd_cc_bb_ii_hh_gg_ff, high_10s, c->multipliers16[1])));
+  return vreinterpretq_u8_s16(
+      vmlaq_n_s16(ee_dd_cc_bb_ii_hh_gg_ff, high_10s, c->multipliers16[1]));
+}
+#endif
+
+template <int num_bits> struct dec_digits {
+  uint64_t digits;
+  int num_digits;
+};
+
+template <> struct dec_digits<64> {
+#if ZMIJ_USE_NEON
+  uint16x8_t digits;
+#elif ZMIJ_USE_SSE
+  __m128i digits;
+#else
+  uint128 digits;
+#endif
+  int num_digits;
+};
+
+// Converts a significand to decimal digits, removing trailing zeros. value has
+// up to 17 decimal digits (16-17 for normals) for double (num_bits == 64) and
+// up to 9 digits (8-9 for normals) for float.
+template <int num_bits>
+ZMIJ_INLINE auto to_digits(char* buffer, uint64_t value,
+                           bool extra_digit) noexcept -> dec_digits<num_bits> {
+#if !ZMIJ_USE_SIMD
+  // Digits/pairs of digits are denoted by letters: value = bbccddeeffgghhii.
+  uint32_t bbccddee = uint32_t(value / 100'000'000);
+  uint32_t ffgghhii = uint32_t(value % 100'000'000);
+  uint64_t hi = to_bcd8(bbccddee);
+  if (ffgghhii == 0) return {{hi + zeros, zeros}, count_trailing_nonzeros(hi)};
+  uint64_t lo = to_bcd8(ffgghhii);
+  return {{hi + zeros, lo + zeros}, 8 + count_trailing_nonzeros(lo)};
+#elif ZMIJ_USE_NEON
+  auto unshuffled_digits = to_unshuffled_digits(value);
+  uint8x16_t digits = vrev64q_u8(unshuffled_digits);
   uint16x8_t str = vaddq_u16(vreinterpretq_u16_u8(digits),
                              vreinterpretq_u16_s8(vdupq_n_s8('0')));
-  memcpy(buffer, &str, sizeof(str));
 
   uint16x8_t is_not_zero =
       vreinterpretq_u16_u8(vcgtzq_s8(vreinterpretq_s8_u8(digits)));
   uint64_t zeroes =
       vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(is_not_zero, 4)), 0);
-  return buffer + (16 - ((zeroes != 0 ? clz(zeroes) : 64) >> 2));
-#elif ZMIJ_USE_SSE
+  return {str, 16 - (clz(zeroes) >> 2)};
+#else  // ZMIJ_USE_SSE
   uint32_t abbccddee = uint32_t(value / 100'000'000);
   uint32_t ffgghhii = uint32_t(value % 100'000'000);
-  uint32_t a = abbccddee / 100'000'000;
-  uint32_t bbccddee = abbccddee % 100'000'000;
-
-  buffer = write_if(buffer, a, extra_digit);
 
   const auto* c = &sse_consts;
   ZMIJ_ASM(("" : "+r"(c)));  // Load constants from memory.
 
   const __m128i zeros = _mm_load_si128(m128ptr(&c->zeros));
-  auto unshuffled_bcd = get_double_significand_bcd_unshuffled_sse(
-      value, extra_digit, bbccddee, ffgghhii, c);
+  auto unshuffled_bcd = to_unshuffled_digits(abbccddee, ffgghhii, *c);
 #  if ZMIJ_USE_SSE4_1
   const __m128i bswap = _mm_load_si128(m128ptr(&c->bswap));
   auto bcd = _mm_shuffle_epi8(unshuffled_bcd, bswap);  // SSSE3
@@ -795,44 +845,84 @@ ZMIJ_INLINE auto write_significand(char* buffer, uint64_t value,
   __m128i mask128 = _mm_cmpgt_epi8(bcd, _mm_setzero_si128());
   uint64_t mask = _mm_movemask_epi8(mask128);
 #  if defined(__LZCNT__) && !defined(ZMIJ_NO_BUILTINS)
-  auto len = 32 - _lzcnt_u32(mask);
+  int len = 32 - _lzcnt_u32(mask);
 #  else
-  auto len = 63 - clz((mask << 1) | 1);
+  int len = 63 - clz((mask << 1) | 1);
 #  endif
-  auto digits = _mm_or_si128(bcd, zeros);
-  _mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), digits);
-  return buffer + len;
+  return {_mm_or_si128(bcd, zeros), len};
 #endif  // ZMIJ_USE_SSE
 }
 
-#if ZMIJ_USE_SSE4_1 && !ZMIJ_OPTIMIZE_SIZE
-#  define ZMIJ_PACK16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)  \
-    uint128 {                                                          \
-      sse_constants::pack8((a), (b), (c), (d), (e), (f), (g), (h)),    \
-          sse_constants::pack8((i), (j), (k), (l), (m), (n), (o), (p)) \
-    }
-constexpr uint128 shuffle_table[] = {
-    ZMIJ_PACK16(0x80, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 0x80, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 0x80, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 0x80, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 0x80, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 0x80, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 0x80, 9, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 0x80, 8, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 0x80, 7, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 0x80, 6, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 0x80, 5, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 0x80, 4, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 0x80, 3, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 0x80, 2, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0x80, 1),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0x80),
-    ZMIJ_PACK16(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
-};
+template <>
+ZMIJ_INLINE auto to_digits<32>(char* buffer, uint64_t value,
+                               bool extra_digit) noexcept -> dec_digits<32> {
+  write_if(buffer, value / 100'000'000, extra_digit);
+  uint64_t bcd = to_bcd8(value % 100'000'000);
+  return {bcd + zeros, count_trailing_nonzeros(bcd)};
+}
 
-auto write_fixed_double_sse4(char* buffer, uint64_t dec_sig, int dec_exp,
+#if ZMIJ_USE_SIMD_SHUFFLE
+struct shuffle_table {
+  constexpr static bool merge_tables = ZMIJ_USE_SSE4_1;
+  constexpr static size_t table_size =
+      (1 + merge_tables) * (float_traits<double>::max_fixed_dec_exp + 2);
+  alignas(16 * (1 + merge_tables)) uint8_t data[table_size][16] = {};
+  constexpr shuffle_table() {
+    for (int i = 0; i < float_traits<double>::max_fixed_dec_exp + 2; ++i) {
+      uint8_t v = 0xf;
+      for (int j = 0; j < 16; ++j) {
+        data[(1 + merge_tables) * i][j] = i == j ? 0x80 : v--;
+        if (merge_tables) data[2 * i + 1][j] = i == j ? '.' : '0';
+      }
+    }
+  }
+
+  ZMIJ_INLINE auto get_shuffler(int index) const noexcept -> const uint8_t* {
+    assert((1 + merge_tables) * index < table_size);
+    // GCC combines the address calculation with the one in get_point_and_zeros
+    // below.
+    return merge_tables ? data[0] + 32 * index : &data[index][0];
+  }
+
+  ZMIJ_INLINE auto get_point_and_zeros(int index) const noexcept
+      -> const uint8_t* {
+    assert(merge_tables && 2 * index + 1 < table_size);
+    // GCC combines the address calculation with the one in get_shuffler above.
+    return data[0] + 32 * index + 16;
+  }
+};
+constexpr shuffle_table shuffles;
+#endif  // ZMIJ_USE_SIMD_SHUFFLE
+
+auto write_fixed_double_simd(char* buffer, uint64_t dec_sig, int dec_exp,
                              bool extra_digit) noexcept -> char* {
+  int point_index = dec_exp + !extra_digit, len = 0;
+
+#if ZMIJ_USE_NEON && !ZMIJ_OPTIMIZE_SIZE
+  uint64_t a = dec_sig / 10000000000000000ull;
+  uint64_t remaining = dec_sig - a * 10000000000000000ull;
+  buffer = write_if(buffer, uint32_t(a), extra_digit);
+  auto unshuffled_digits = to_unshuffled_digits<true>(remaining);
+  auto unshuffled_str = vaddq_u16(vreinterpretq_u16_u8(unshuffled_digits),
+                                  vreinterpretq_u16_s8(vdupq_n_s8('0')));
+  auto str = vqtbl1q_u8(vreinterpretq_u8_u16(unshuffled_str),
+                        vld1q_u8(shuffles.get_shuffler(point_index)));
+
+  // Count trailing zeros.
+  uint8x16_t is_not_zero = vcgtzq_s8(vreinterpretq_s8_u8(unshuffled_digits));
+  uint64_t zeroes = vget_lane_u64(
+      vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(is_not_zero), 4)),
+      0);
+  len = 16 - ((zeroes ? ctz(zeroes) : 64) >> 2);
+
+  // Write 20 bytes non-overlappingly.
+  uint32_t trailing_digit = vreinterpretq_u32_u16(unshuffled_str)[0];
+  memcpy(buffer, &str, sizeof(str));
+  memcpy(buffer + 16, &trailing_digit, 4);  // only need the lowest byte
+
+  char* point = buffer + point_index;
+  *point = '.';
+#elif ZMIJ_USE_SSE4_1 && !ZMIJ_OPTIMIZE_SIZE
   uint32_t abbccddee = uint32_t(dec_sig / 100'000'000);
   uint32_t ffgghhii = uint32_t(dec_sig % 100'000'000);
   uint32_t a = abbccddee / 100'000'000;
@@ -842,76 +932,38 @@ auto write_fixed_double_sse4(char* buffer, uint64_t dec_sig, int dec_exp,
 
   const auto* c = &sse_consts;
   ZMIJ_ASM(("" : "+r"(c)));  // Load constants from memory.
-  const __m128i zeros = _mm_load_si128(m128ptr(&c->zeros));
+  __m128i zeros = _mm_load_si128(m128ptr(&c->zeros));
 
-  auto unshuffled_bcd = get_double_significand_bcd_unshuffled_sse(
-      dec_sig, extra_digit, bbccddee, ffgghhii, c);
-  auto unshuffled_digits = _mm_or_si128(unshuffled_bcd, zeros);
-  auto index = dec_exp + !extra_digit;
-  assert(index < sizeof(shuffle_table) / sizeof(*shuffle_table));
-  const __m128i shuffler = _mm_load_si128(m128ptr(&shuffle_table[index]));
-  auto digits = _mm_shuffle_epi8(unshuffled_digits, shuffler);  // SSSE3
+  auto reversed_bcd = to_unshuffled_digits(bbccddee, ffgghhii, *c);
 
   // Count trailing zeros.
-  __m128i mask128 = _mm_cmpgt_epi8(unshuffled_bcd, _mm_setzero_si128());
+  __m128i mask128 = _mm_cmpgt_epi8(reversed_bcd, _mm_setzero_si128());
   uint32_t mask = _mm_movemask_epi8(mask128) | (1u << 16);
 #  if defined(__BMI1__) && !defined(ZMIJ_NO_BUILTINS)
-  auto len = 16 - _tzcnt_u32(mask);
+  len = 16 - _tzcnt_u32(mask);
 #  else
-  auto len = 16 - ctz32(mask);
+  len = 16 - ctz(mask);
 #  endif
 
-  _mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), digits);
-  uint32_t trailing_digit = _mm_cvtsi128_si32(unshuffled_digits);
+  __m128i shuffler =
+      _mm_load_si128(m128ptr(shuffles.get_shuffler(point_index)));
+  __m128i bcd = _mm_shuffle_epi8(reversed_bcd, shuffler);  // SSSE3
+  __m128i point_mask =
+      _mm_load_si128(m128ptr(shuffles.get_point_and_zeros(point_index)));
+  __m128i digits_with_point = _mm_or_si128(bcd, point_mask);
+
+  // Write 20 bytes non-overlappingly.
+  uint32_t trailing_digit = _mm_cvtsi128_si32(reversed_bcd) + '0';
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), digits_with_point);
   memcpy(buffer + 16, &trailing_digit, 4);  // only need the lowest byte
-
-  char* point = buffer + dec_exp + !extra_digit;
-  *point = '.';
-  buffer += len;
-  return buffer > point ? buffer + 1 : point;
-}
-#endif
-
-template <int num_bits>
-auto write_fixed(char* buffer, uint64_t dec_sig, int dec_exp,
-                 bool extra_digit) noexcept -> char* {
-  if (dec_exp < 0) {
-    memcpy(buffer, "0.000000", 8);
-    return write_significand<num_bits>(buffer + 1 - dec_exp, dec_sig,
-                                       extra_digit);
-  }
-
-#if ZMIJ_USE_SSE4_1 && !ZMIJ_OPTIMIZE_SIZE
-  if (num_bits == 64)
-    return write_fixed_double_sse4(buffer, dec_sig, dec_exp, extra_digit);
-#endif
-
-  // Avoid reading uninitialized memory (would be unnecessary in asm).
-  write8(buffer + (num_bits == 64 ? 16 : 7), 0);
-
-  char* start = buffer;
-  buffer = write_significand<num_bits>(buffer, dec_sig, extra_digit);
-
-  // Branchless move to make space for the '.' without OOB accesses.
-  char* part1 = start + dec_exp + (dec_exp < 2);
-  char* part2 = part1 + (dec_exp < 2) + (dec_exp < 9 ? 7 : 0);
-  if (num_bits == 64) {
-    uint64_t value1 = read8(part1);
-    uint64_t value2 = read8(part2);
-    write8(part1 + 1, value1);
-    write8(part2 + 1, value2);
-  } else {
-    write8(part1 + 1, read8(part1));
-  }
-
-  char* point = start + dec_exp + 1;
-  *point = '.';
-  return buffer > point ? buffer + 1 : point;
+#endif  // ZMIJ_USE_SSE4_1 && !ZMIJ_OPTIMIZE_SIZE
+  return buffer + (len > point_index ? len + 1 : point_index);
 }
 
 struct to_decimal_result {
   long long sig;
   int exp;
+  int last_digit = 0;
 };
 
 template <typename UInt>
@@ -920,7 +972,7 @@ ZMIJ_INLINE auto to_decimal_schubfach(UInt bin_sig, int64_t bin_exp,
     -> to_decimal_result {
   constexpr int num_bits = std::numeric_limits<UInt>::digits;
   int dec_exp = compute_dec_exp(bin_exp, regular);
-  unsigned char exp_shift = compute_exp_shift<num_bits>(bin_exp, dec_exp);
+  unsigned char exp_shift = compute_exp_shift(bin_exp, dec_exp);
   uint128 pow10 = pow10_significands[-dec_exp];
 
   // Shubfach requires strict overestimates of powers of 10.
@@ -952,104 +1004,130 @@ ZMIJ_INLINE auto to_decimal_schubfach(UInt bin_sig, int64_t bin_exp,
   return {int64_t(lower == upper ? lower : dec_sig), dec_exp};
 }
 
+// Returns x / 10 for x <= 2**62.
+ZMIJ_INLINE auto div10(uint64_t x) noexcept -> uint64_t {
+  assert(x <= (1ull << 62));
+  // ceil(2**64 / 10) computed as (1 << 63) / 5 + 1 to avoid int128.
+  constexpr uint64_t div10_sig64 = (1ull << 63) / 5 + 1;
+  return ZMIJ_USE_INT128 ? umul128_hi64(x, div10_sig64) : x / 10;
+}
+
 // Here be 🐉s.
 // Converts a binary FP number bin_sig * 2**bin_exp to the shortest decimal
 // representation, where bin_exp = raw_exp - exp_offset.
 template <typename Float, typename UInt>
-ZMIJ_INLINE auto to_decimal_fast(UInt bin_sig, int64_t raw_exp,
-                                 bool regular) noexcept -> to_decimal_result {
+ZMIJ_INLINE auto to_decimal(UInt bin_sig, int64_t raw_exp,
+                            bool regular) noexcept -> to_decimal_result {
   using traits = float_traits<Float>;
   int64_t bin_exp = raw_exp - traits::exp_offset;
   constexpr int num_bits = std::numeric_limits<UInt>::digits;
-  // An optimization from yy by Yaoyuan Guo:
-  while (regular) [[ZMIJ_LIKELY]] {
-    constexpr uint64_t log10_2_sig = 78'913;
-    constexpr int log10_2_exp = 18;
-    int dec_exp = use_umul128_hi64
-                      ? umul128_hi64(bin_exp, log10_2_sig << (64 - log10_2_exp))
-                      : compute_dec_exp(bin_exp);
-    unsigned char exp_shift =
-        compute_exp_shift<num_bits, true>(bin_exp, dec_exp);
-    uint128 pow10 = pow10_significands[-dec_exp];
 
-    UInt integral = 0;        // integral part of bin_sig * pow10
-    uint64_t fractional = 0;  // fractional part of bin_sig * pow10
-    if (num_bits == 64) {
-      uint128 p = umul192_hi128(pow10.hi, pow10.lo, bin_sig << exp_shift);
-      integral = p.hi;
-      fractional = p.lo;
-    } else {
-      uint128_t p = umul128(pow10.hi, bin_sig << exp_shift);
-      integral = uint64_t(p >> 64);
-      fractional = uint64_t(p);
-    }
-    constexpr uint64_t half_ulp = uint64_t(1) << 63;
+  constexpr uint64_t log10_2_sig = 78'913;
+  constexpr int log10_2_exp = 18;
+  int dec_exp = use_umul128_hi64
+                    ? umul128_hi64(bin_exp, log10_2_sig << (64 - log10_2_exp))
+                    : compute_dec_exp(bin_exp);
+  uint64_t even = 1 - (bin_sig & 1);
+  constexpr uint64_t half = uint64_t(1) << 63;
+  constexpr int extra_shift = exp_shift_table::extra_shift;
 
-    // Exact half-ulp tie when rounding to nearest integer.
-    int64_t cmp = int64_t(fractional - half_ulp);
-    if (cmp == 0) [[ZMIJ_UNLIKELY]]
-      break;
+  if (!regular) [[ZMIJ_UNLIKELY]] {
+    int dec_exp = compute_dec_exp(bin_exp, false);
+    unsigned char shift = compute_exp_shift(bin_exp, dec_exp + 1) + extra_shift;
+    uint128 pow10 = pow10_significands[-dec_exp - 1];
+    uint128 p = umul192_hi128(pow10.hi, pow10.lo, bin_sig << shift);
 
-    // An optimization of integral % 10 by Dougall Johnson.
-    // Relies on range calculation: (max_bin_sig << max_exp_shift) * max_u128.
-    // (1 << 63) / 5 == (1 << 64) / 10 without an intermediate int128.
-    constexpr uint64_t div10_sig64 = (1ull << 63) / 5 + 1;
-    long long div10 =
-        ZMIJ_USE_INT128 ? umul128_hi64(integral, div10_sig64) : integral / 10;
-    uint64_t digit = integral - div10 * 10;
-    // or it narrows to 32-bit and doesn't use madd/msub
-    ZMIJ_ASM(("" : "+r"(digit)));
+    long long integral = p.hi >> extra_shift;
+    uint64_t fractional = p.hi << (64 - extra_shift) | p.lo >> extra_shift;
 
-    // Switch to a fixed-point representation with the least significant
-    // integral digit in the upper bits and fractional digits in the lower bits.
-    constexpr int num_integral_bits = num_bits == 64 ? 4 : 32;
-    constexpr int num_fractional_bits = 64 - num_integral_bits;
-    constexpr uint64_t ten = uint64_t(10) << num_fractional_bits;
-    // Fixed-point remainder of the scaled significand modulo 10.
-    uint64_t scaled_sig_mod10 =
-        (digit << num_fractional_bits) | (fractional >> num_integral_bits);
+    uint64_t half_ulp = pow10.hi >> (extra_shift + 1 - shift);
+    uint64_t down_half_ulp = half_ulp >> 1;
+    bool round_up = half_ulp > ~uint64_t(0) - fractional;
+    bool round_down = down_half_ulp > fractional;
+    integral += round_up;
 
-    // scaled_half_ulp = 0.5 * pow10 in the fixed-point format.
-    // dec_exp is chosen so that 10**dec_exp <= 2**bin_exp < 10**(dec_exp + 1).
-    // Since 1ulp == 2**bin_exp it will be in the range [1, 10) after scaling
-    // by 10**dec_exp. Add 1 to combine the shift with division by two.
-    uint64_t scaled_half_ulp = pow10.hi >> (num_integral_bits - exp_shift + 1);
-    uint64_t upper = scaled_sig_mod10 + scaled_half_ulp;
-
-    // value = 5.0507837461e-27
-    // next  = 5.0507837461000010e-27
-    //
-    // c = integral.fractional' = 50507837461000003.153987... (value)
-    //                            50507837461000010.328635... (next)
-    //          scaled_half_ulp =                 3.587324...
-    //
-    // fractional' = fractional / 2**64, fractional = 2840565642863009226
-    //
-    //      50507837461000000       c               upper     50507837461000010
-    //              s              l|   L             |               S
-    // ───┬────┬────┼────┬────┬────┼*-──┼────┬────┬───*┬────┬────┬────┼-*--┬───
-    //    8    9    0    1    2    3    4    5    6    7    8    9    0 |  1
-    //            └─────────────────┼─────────────────┘                next
-    //                             1ulp
-    //
-    // s - shorter underestimate, S - shorter overestimate
-    // l - longer underestimate,  L - longer overestimate
-
-    // Check for near-boundary case when rounding up to nearest 10;
-    // equivalent to upper == ten || upper == ten - 1.
-    // Case where upper == ten is insufficient: 1.342178e+08f.
-    if (ten - upper <= 1u) [[ZMIJ_UNLIKELY]]
-      break;
-
-    uint64_t even = 1 - (bin_sig & 1);
-    int64_t shorter = int64_t(integral - digit);
-    int64_t longer = int64_t(integral + (cmp >= 0));
-    int64_t dec_sig = select_if_less(scaled_sig_mod10, scaled_half_ulp + even,
-                                     shorter, longer);
-    return {select_if_less(ten, upper, shorter + 10, dec_sig), dec_exp};
+    uint64_t rem = fractional * 10;
+    int digit = int(umul128_hi64(fractional, 10));
+    // Lower midpoint of the asymmetric interval in digit space.
+    uint64_t lo_frac = fractional - down_half_ulp;
+    uint64_t lo_rem = lo_frac * 10;
+    int lo = int(umul128_hi64(lo_frac, 10) + (lo_rem != 0));
+    digit += (rem == half) ? (digit & 1) : int(rem + half < rem);
+    if (digit < lo) digit = lo;
+    digit = (round_up + round_down) != 0 ? 0 : digit;
+    if (num_bits == 64) return {integral, dec_exp, digit};
+    return {integral * 10 + digit, dec_exp};
   }
-  // Fallback to Schubfach to guarantee correctness in boundary cases.
-  return to_decimal_schubfach(bin_sig, bin_exp, regular);
+
+  if (num_bits == 32) {
+    constexpr int extra_shift = 34;
+    unsigned char shift = compute_exp_shift(bin_exp, dec_exp + 1) + extra_shift;
+    uint64_t pow10_hi = pow10_significands[-dec_exp - 1].hi;
+    uint64_t p = umul128_hi64(pow10_hi + 1, uint64_t(bin_sig) << shift);
+
+    long long integral = p >> extra_shift;
+    uint64_t fractional = p & ((1ull << extra_shift) - 1);
+
+    uint64_t half_ulp = (pow10_hi >> (65 - shift)) + even;
+    bool round_up = (fractional + half_ulp) >> extra_shift;
+    bool round_down = half_ulp > fractional;
+    integral += round_up;
+
+    uint64_t prod = fractional * 10;
+    int digit = int(prod >> extra_shift);
+    uint64_t rem = prod & ((1ull << extra_shift) - 1);
+    digit += rem > (1ull << (extra_shift - 1)) ||
+             (rem == (1ull << (extra_shift - 1)) && (digit & 1));
+    digit = (round_up + round_down) != 0 ? 0 : digit;
+    return {integral * 10 + digit, dec_exp};
+  }
+
+  // An optimization by Xiang JunBo:
+  // Scale by 10**(-dec_exp-1) to directly produce the shorter candidate
+  // (15-16 digits), deriving the extra digit from the fractional part.
+  // This eliminates div10 from the critical path.
+  //
+  // value = 5.0507837461e-27
+  // next  = 5.0507837461000010e-27
+  //
+  // c = integral.fractional' = 5050783746100000.3153987... (value)
+  //                            5050783746100001.0328635... (next)
+  //                 half_ulp =                0.3587324...
+  //
+  // fractional = fractional' * 2**64 = 5818079786399166407
+  //
+  //    5050783746100000.0       c               upper    5050783746100001.0
+  //             s              l|   L             |               S
+  // ──┬────┬────┼────┬────┬────┼*-──┼────┬────┬───*┬────┬────┬────┼-*--┬───
+  //  .8   .9   .0   .1   .2   .3   .4   .5   .6   .7   .8   .9   .0 | .1
+  //           └─────────────────┼─────────────────┘                next
+  //                            1ulp
+  //
+  // s - shorter underestimate, S - shorter overestimate
+  // l - longer underestimate,  L - longer overestimate
+  unsigned char shift =
+      exp_shift_table::enable
+          ? exp_shifts.data[bin_exp + traits::exp_offset]
+          : compute_exp_shift(bin_exp, dec_exp + 1) + extra_shift;
+  ZMIJ_ASM(("" : "+r"(dec_exp)));  // Force 32-bit reg for sxtw addressing.
+  uint128 pow10 = pow10_significands[-dec_exp - 1];
+  uint128 p = umul192_hi128(pow10.hi, pow10.lo, bin_sig << shift);
+
+  long long integral = p.hi >> extra_shift;
+  uint64_t fractional = p.hi << (64 - extra_shift) | p.lo >> extra_shift;
+
+  uint64_t half_ulp = (pow10.hi >> (extra_shift + 1 - shift)) + even;
+  bool round_up = fractional + half_ulp < fractional;
+  bool round_down = half_ulp > fractional;
+  integral += round_up;  // Compute integral before digit.
+
+  // Derive the extra digit from the fractional part (parallel with
+  // rounding). +6 is needed for boundary cases found by verify.py.
+  uint64_t rem = fractional * 10;
+  int digit = int(umul128_hi64(fractional, 10) + (rem + half + 6 < rem));
+  if (fractional == (1ull << 62)) [[ZMIJ_UNLIKELY]]
+    digit = 2;  // Round 2.5 to 2.
+  return {integral, dec_exp, (round_up + round_down) != 0 ? 0 : digit};
 }
 
 }  // namespace
@@ -1068,9 +1146,9 @@ inline auto to_decimal(double value) noexcept -> dec_fp {
     bin_exp = 1;
     bin_sig |= traits::implicit_bit;
   }
-  auto dec = to_decimal_fast<double>(bin_sig ^ traits::implicit_bit, bin_exp,
-                                     bin_sig != 0);
-  return {dec.sig, dec.exp, negative};
+  auto dec = ::to_decimal<double>(bin_sig ^ traits::implicit_bit, bin_exp,
+                                  bin_sig != 0);
+  return {dec.sig * 10 + dec.last_digit, dec.exp, negative};
 }
 
 namespace detail {
@@ -1088,7 +1166,7 @@ auto write(Float value, char* buffer) noexcept -> char* {
   buffer += traits::is_negative(bits);
 
   to_decimal_result dec;
-  constexpr uint64_t threshold = uint64_t(traits::num_bits == 64 ? 1e16 : 1e8);
+  constexpr uint64_t threshold = uint64_t(traits::num_bits == 64 ? 1e15 : 1e8);
   if (bin_exp == 0 || bin_exp == traits::exp_mask) [[ZMIJ_UNLIKELY]] {
     if (bin_exp != 0) {
       memcpy(buffer, bin_sig == 0 ? "inf" : "nan", 4);
@@ -1103,9 +1181,14 @@ auto write(Float value, char* buffer) noexcept -> char* {
       dec.sig *= 10;
       --dec.exp;
     }
+    if (traits::num_bits == 64) {
+      long long div10 = ::div10(dec.sig);
+      dec.last_digit = dec.sig - div10 * 10;
+      dec.sig = div10;
+    }
   } else {
-    dec = to_decimal_fast<Float>(bin_sig | traits::implicit_bit, bin_exp,
-                                 bin_sig != 0);
+    dec = ::to_decimal<Float>(bin_sig | traits::implicit_bit, bin_exp,
+                              bin_sig != 0);
   }
   int dec_exp = dec.exp;
   bool extra_digit = dec.sig >= threshold;
@@ -1115,22 +1198,53 @@ auto write(Float value, char* buffer) noexcept -> char* {
     --dec_exp;
   }
 
-  // Write significand.
-  if (dec_exp >= -4 && dec_exp < compute_dec_exp(traits::digits + 1))
-    return write_fixed<traits::num_bits>(buffer, dec.sig, dec_exp, extra_digit);
   char* start = buffer;
-  buffer =
-      write_significand<traits::num_bits>(buffer + 1, dec.sig, extra_digit);
+  constexpr bool split_last_digit = traits::num_bits == 64;
+  if (dec_exp >= traits::min_fixed_dec_exp &&
+      dec_exp <= traits::max_fixed_dec_exp) {
+    if (traits::num_bits == 64 && dec_exp >= 0 && ZMIJ_USE_SIMD_SHUFFLE) {
+      dec.sig = dec.sig * 10 + dec.last_digit;
+      return write_fixed_double_simd(buffer, dec.sig, dec_exp, extra_digit);
+    }
+    memcpy(buffer, &zeros, 8);  // For dec_exp < 0.
+    const auto& fmt = dec_exp_formats.get<traits>(dec_exp);
+    char* sig_start = buffer + fmt.start_pos;
+    auto dig = to_digits<traits::num_bits>(sig_start, dec.sig, extra_digit);
+    if (split_last_digit) {
+      memcpy(sig_start, &dig.digits, 16);
+      if (!extra_digit) memmove(sig_start, sig_start + 1, 15);
+      sig_start[15 + extra_digit] = '0' + dec.last_digit;
+    } else {
+      memcpy(sig_start + extra_digit, &dig.digits, sizeof(dig.digits));
+    }
+    memmove(start + fmt.shift_pos, start + fmt.point_pos, sizeof(dig.digits));
+    start[fmt.point_pos] = '.';
+    int total = split_last_digit
+                    ? (dec.last_digit ? 16 + extra_digit
+                                      : dig.num_digits + extra_digit - 1)
+                    : dig.num_digits + extra_digit;
+    return sig_start + fmt.exp_pos[total - 1];
+  }
+
+  auto dig = to_digits<traits::num_bits>(buffer + 1, dec.sig, extra_digit);
+  buffer += extra_digit + (split_last_digit ? 0 : 1);
+  memcpy(buffer, &dig.digits, sizeof(dig.digits));
+  if (split_last_digit) {
+    buffer[16] = '0' + dec.last_digit;
+    buffer += dec.last_digit ? 17 : dig.num_digits;
+  } else {
+    buffer += dig.num_digits;
+  }
   start[0] = start[1];
   start[1] = '.';
   buffer -= (buffer - 1 == start + 1);  // Remove trailing point.
 
   // Write exponent.
-  if (exp_string_table::enable) {
+  if (exp_string_table::enable && traits::num_bits == 64) {
     uint64_t exp_data = exp_strings.data[dec_exp + exp_string_table::offset];
     int len = int(exp_data >> 48);
     if (is_big_endian) exp_data = bswap64(exp_data);
-    memcpy(buffer, &exp_data, 5);
+    memcpy(buffer, &exp_data, traits::max_exponent10 >= 100 ? 8 : 4);
     return buffer + len;
   }
   uint16_t e_sign = dec_exp >= 0 ? ('+' << 8 | 'e') : ('-' << 8 | 'e');

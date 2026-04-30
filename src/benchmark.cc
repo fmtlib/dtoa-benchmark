@@ -5,13 +5,16 @@
 #include "benchmark.h"
 
 #include <benchmark/benchmark.h>
-#include <math.h>    // isnan
+#include <math.h>    // isnan, isinf
 #include <stdint.h>  // uint64_t
 #include <stdio.h>   // snprintf
+#include <string.h>  // memcpy, strcmp, strlen
 
 #include <algorithm>  // std::sort, std::shuffle
 #include <cmath>      // std::abs
+#include <exception>
 #include <fstream>
+#include <limits>
 #include <optional>
 #include <random>  // std::mt19937
 #include <string>

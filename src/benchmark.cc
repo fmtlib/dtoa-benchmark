@@ -76,7 +76,7 @@ auto from_chars(const char* buffer) -> from_chars_result {
   return {value, size_t(count)};
 }
 
-// Random number generator from dtoa-benchmark.
+// Random number generator from the original dtoa-benchmark.
 class rng {
  private:
   unsigned seed_;

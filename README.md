@@ -59,8 +59,7 @@ results/<cpu>_<os>_<compiler>_<commit>.json
 and automatically converted to a self-contained HTML report with the same
 base name. The JSON `context` block carries CPU/cache info, library
 version, and `commit_hash`/`machine`/`os`/`compiler` keys for downstream
-analysis. Older `*.csv` files in `results/` from before the JSON switch
-are still rendered.
+analysis.
 
 [gb-json]: https://github.com/google/benchmark/blob/main/docs/user_guide.md#output-formats
 

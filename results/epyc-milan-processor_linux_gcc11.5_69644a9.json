@@ -1,0 +1,2051 @@
+{
+  "context": {
+    "library_version": "(legacy CSV migration)",
+    "commit_hash": "69644a9",
+    "compiler": "gcc11.5",
+    "os": "linux",
+    "machine": "epyc-milan-processor"
+  },
+  "benchmarks": [
+    {
+      "name": "double-conversion/d1",
+      "run_name": "double-conversion/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6660178.100000001,
+      "cpu_time": 6660178.100000001,
+      "time_unit": "ns",
+      "ns_per_double": 66.601781
+    },
+    {
+      "name": "double-conversion/d2",
+      "run_name": "double-conversion/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7496204.199999999,
+      "cpu_time": 7496204.199999999,
+      "time_unit": "ns",
+      "ns_per_double": 74.962042
+    },
+    {
+      "name": "double-conversion/d3",
+      "run_name": "double-conversion/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 8107337.9,
+      "cpu_time": 8107337.9,
+      "time_unit": "ns",
+      "ns_per_double": 81.073379
+    },
+    {
+      "name": "double-conversion/d4",
+      "run_name": "double-conversion/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 8458849.9,
+      "cpu_time": 8458849.9,
+      "time_unit": "ns",
+      "ns_per_double": 84.588499
+    },
+    {
+      "name": "double-conversion/d5",
+      "run_name": "double-conversion/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 8798531.8,
+      "cpu_time": 8798531.8,
+      "time_unit": "ns",
+      "ns_per_double": 87.985318
+    },
+    {
+      "name": "double-conversion/d6",
+      "run_name": "double-conversion/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 9095733.6,
+      "cpu_time": 9095733.6,
+      "time_unit": "ns",
+      "ns_per_double": 90.957336
+    },
+    {
+      "name": "double-conversion/d7",
+      "run_name": "double-conversion/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 9354006.3,
+      "cpu_time": 9354006.3,
+      "time_unit": "ns",
+      "ns_per_double": 93.540063
+    },
+    {
+      "name": "double-conversion/d8",
+      "run_name": "double-conversion/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 9519391.7,
+      "cpu_time": 9519391.7,
+      "time_unit": "ns",
+      "ns_per_double": 95.193917
+    },
+    {
+      "name": "double-conversion/d9",
+      "run_name": "double-conversion/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 9623074.0,
+      "cpu_time": 9623074.0,
+      "time_unit": "ns",
+      "ns_per_double": 96.23074
+    },
+    {
+      "name": "double-conversion/d10",
+      "run_name": "double-conversion/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 9783536.4,
+      "cpu_time": 9783536.4,
+      "time_unit": "ns",
+      "ns_per_double": 97.835364
+    },
+    {
+      "name": "double-conversion/d11",
+      "run_name": "double-conversion/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 10001556.9,
+      "cpu_time": 10001556.9,
+      "time_unit": "ns",
+      "ns_per_double": 100.015569
+    },
+    {
+      "name": "double-conversion/d12",
+      "run_name": "double-conversion/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 10230940.7,
+      "cpu_time": 10230940.7,
+      "time_unit": "ns",
+      "ns_per_double": 102.309407
+    },
+    {
+      "name": "double-conversion/d13",
+      "run_name": "double-conversion/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 10465299.2,
+      "cpu_time": 10465299.2,
+      "time_unit": "ns",
+      "ns_per_double": 104.652992
+    },
+    {
+      "name": "double-conversion/d14",
+      "run_name": "double-conversion/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 10677729.9,
+      "cpu_time": 10677729.9,
+      "time_unit": "ns",
+      "ns_per_double": 106.777299
+    },
+    {
+      "name": "double-conversion/d15",
+      "run_name": "double-conversion/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 10991687.7,
+      "cpu_time": 10991687.7,
+      "time_unit": "ns",
+      "ns_per_double": 109.916877
+    },
+    {
+      "name": "double-conversion/d16",
+      "run_name": "double-conversion/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 11390877.799999999,
+      "cpu_time": 11390877.799999999,
+      "time_unit": "ns",
+      "ns_per_double": 113.908778
+    },
+    {
+      "name": "double-conversion/d17",
+      "run_name": "double-conversion/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 12045403.6,
+      "cpu_time": 12045403.6,
+      "time_unit": "ns",
+      "ns_per_double": 120.454036
+    },
+    {
+      "name": "dragonbox/d1",
+      "run_name": "dragonbox/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2785099.5999999996,
+      "cpu_time": 2785099.5999999996,
+      "time_unit": "ns",
+      "ns_per_double": 27.850996
+    },
+    {
+      "name": "dragonbox/d2",
+      "run_name": "dragonbox/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2947025.9,
+      "cpu_time": 2947025.9,
+      "time_unit": "ns",
+      "ns_per_double": 29.470259
+    },
+    {
+      "name": "dragonbox/d3",
+      "run_name": "dragonbox/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2927993.9,
+      "cpu_time": 2927993.9,
+      "time_unit": "ns",
+      "ns_per_double": 29.279939
+    },
+    {
+      "name": "dragonbox/d4",
+      "run_name": "dragonbox/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3022673.1999999997,
+      "cpu_time": 3022673.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 30.226732
+    },
+    {
+      "name": "dragonbox/d5",
+      "run_name": "dragonbox/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2946422.0,
+      "cpu_time": 2946422.0,
+      "time_unit": "ns",
+      "ns_per_double": 29.46422
+    },
+    {
+      "name": "dragonbox/d6",
+      "run_name": "dragonbox/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3047787.3,
+      "cpu_time": 3047787.3,
+      "time_unit": "ns",
+      "ns_per_double": 30.477873
+    },
+    {
+      "name": "dragonbox/d7",
+      "run_name": "dragonbox/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2988295.0,
+      "cpu_time": 2988295.0,
+      "time_unit": "ns",
+      "ns_per_double": 29.88295
+    },
+    {
+      "name": "dragonbox/d8",
+      "run_name": "dragonbox/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3065526.4,
+      "cpu_time": 3065526.4,
+      "time_unit": "ns",
+      "ns_per_double": 30.655264
+    },
+    {
+      "name": "dragonbox/d9",
+      "run_name": "dragonbox/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3036083.1999999997,
+      "cpu_time": 3036083.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 30.360832
+    },
+    {
+      "name": "dragonbox/d10",
+      "run_name": "dragonbox/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3102172.4,
+      "cpu_time": 3102172.4,
+      "time_unit": "ns",
+      "ns_per_double": 31.021724
+    },
+    {
+      "name": "dragonbox/d11",
+      "run_name": "dragonbox/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3068340.3,
+      "cpu_time": 3068340.3,
+      "time_unit": "ns",
+      "ns_per_double": 30.683403
+    },
+    {
+      "name": "dragonbox/d12",
+      "run_name": "dragonbox/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3171635.6,
+      "cpu_time": 3171635.6,
+      "time_unit": "ns",
+      "ns_per_double": 31.716356
+    },
+    {
+      "name": "dragonbox/d13",
+      "run_name": "dragonbox/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3124780.4,
+      "cpu_time": 3124780.4,
+      "time_unit": "ns",
+      "ns_per_double": 31.247804
+    },
+    {
+      "name": "dragonbox/d14",
+      "run_name": "dragonbox/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3227388.7,
+      "cpu_time": 3227388.7,
+      "time_unit": "ns",
+      "ns_per_double": 32.273887
+    },
+    {
+      "name": "dragonbox/d15",
+      "run_name": "dragonbox/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3209692.7,
+      "cpu_time": 3209692.7,
+      "time_unit": "ns",
+      "ns_per_double": 32.096927
+    },
+    {
+      "name": "dragonbox/d16",
+      "run_name": "dragonbox/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3301984.9,
+      "cpu_time": 3301984.9,
+      "time_unit": "ns",
+      "ns_per_double": 33.019849
+    },
+    {
+      "name": "dragonbox/d17",
+      "run_name": "dragonbox/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3549479.6,
+      "cpu_time": 3549479.6,
+      "time_unit": "ns",
+      "ns_per_double": 35.494796
+    },
+    {
+      "name": "fmt/d1",
+      "run_name": "fmt/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3516693.5,
+      "cpu_time": 3516693.5,
+      "time_unit": "ns",
+      "ns_per_double": 35.166935
+    },
+    {
+      "name": "fmt/d2",
+      "run_name": "fmt/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3667172.9999999995,
+      "cpu_time": 3667172.9999999995,
+      "time_unit": "ns",
+      "ns_per_double": 36.67173
+    },
+    {
+      "name": "fmt/d3",
+      "run_name": "fmt/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3766545.2,
+      "cpu_time": 3766545.2,
+      "time_unit": "ns",
+      "ns_per_double": 37.665452
+    },
+    {
+      "name": "fmt/d4",
+      "run_name": "fmt/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3712279.1,
+      "cpu_time": 3712279.1,
+      "time_unit": "ns",
+      "ns_per_double": 37.122791
+    },
+    {
+      "name": "fmt/d5",
+      "run_name": "fmt/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3810784.3000000003,
+      "cpu_time": 3810784.3000000003,
+      "time_unit": "ns",
+      "ns_per_double": 38.107843
+    },
+    {
+      "name": "fmt/d6",
+      "run_name": "fmt/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3737657.0999999996,
+      "cpu_time": 3737657.0999999996,
+      "time_unit": "ns",
+      "ns_per_double": 37.376571
+    },
+    {
+      "name": "fmt/d7",
+      "run_name": "fmt/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3823599.3000000003,
+      "cpu_time": 3823599.3000000003,
+      "time_unit": "ns",
+      "ns_per_double": 38.235993
+    },
+    {
+      "name": "fmt/d8",
+      "run_name": "fmt/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3791888.3000000003,
+      "cpu_time": 3791888.3000000003,
+      "time_unit": "ns",
+      "ns_per_double": 37.918883
+    },
+    {
+      "name": "fmt/d9",
+      "run_name": "fmt/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4200125.3,
+      "cpu_time": 4200125.3,
+      "time_unit": "ns",
+      "ns_per_double": 42.001253
+    },
+    {
+      "name": "fmt/d10",
+      "run_name": "fmt/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4125572.1999999997,
+      "cpu_time": 4125572.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 41.255722
+    },
+    {
+      "name": "fmt/d11",
+      "run_name": "fmt/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4221907.4,
+      "cpu_time": 4221907.4,
+      "time_unit": "ns",
+      "ns_per_double": 42.219074
+    },
+    {
+      "name": "fmt/d12",
+      "run_name": "fmt/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4173527.2,
+      "cpu_time": 4173527.2,
+      "time_unit": "ns",
+      "ns_per_double": 41.735272
+    },
+    {
+      "name": "fmt/d13",
+      "run_name": "fmt/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4216276.4,
+      "cpu_time": 4216276.4,
+      "time_unit": "ns",
+      "ns_per_double": 42.162764
+    },
+    {
+      "name": "fmt/d14",
+      "run_name": "fmt/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4206731.5,
+      "cpu_time": 4206731.5,
+      "time_unit": "ns",
+      "ns_per_double": 42.067315
+    },
+    {
+      "name": "fmt/d15",
+      "run_name": "fmt/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4215542.399999999,
+      "cpu_time": 4215542.399999999,
+      "time_unit": "ns",
+      "ns_per_double": 42.155424
+    },
+    {
+      "name": "fmt/d16",
+      "run_name": "fmt/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4161093.1999999997,
+      "cpu_time": 4161093.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 41.610932
+    },
+    {
+      "name": "fmt/d17",
+      "run_name": "fmt/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4818632.1,
+      "cpu_time": 4818632.1,
+      "time_unit": "ns",
+      "ns_per_double": 48.186321
+    },
+    {
+      "name": "null/d1",
+      "run_name": "null/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276168.8,
+      "cpu_time": 276168.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.761688
+    },
+    {
+      "name": "null/d2",
+      "run_name": "null/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276277.69999999995,
+      "cpu_time": 276277.69999999995,
+      "time_unit": "ns",
+      "ns_per_double": 2.762777
+    },
+    {
+      "name": "null/d3",
+      "run_name": "null/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276841.7,
+      "cpu_time": 276841.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.768417
+    },
+    {
+      "name": "null/d4",
+      "run_name": "null/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276378.8,
+      "cpu_time": 276378.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.763788
+    },
+    {
+      "name": "null/d5",
+      "run_name": "null/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276549.8,
+      "cpu_time": 276549.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.765498
+    },
+    {
+      "name": "null/d6",
+      "run_name": "null/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276733.7,
+      "cpu_time": 276733.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.767337
+    },
+    {
+      "name": "null/d7",
+      "run_name": "null/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276423.7,
+      "cpu_time": 276423.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.764237
+    },
+    {
+      "name": "null/d8",
+      "run_name": "null/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276477.7,
+      "cpu_time": 276477.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.764777
+    },
+    {
+      "name": "null/d9",
+      "run_name": "null/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276702.8,
+      "cpu_time": 276702.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.767028
+    },
+    {
+      "name": "null/d10",
+      "run_name": "null/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276811.7,
+      "cpu_time": 276811.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.768117
+    },
+    {
+      "name": "null/d11",
+      "run_name": "null/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276411.7,
+      "cpu_time": 276411.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.764117
+    },
+    {
+      "name": "null/d12",
+      "run_name": "null/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276324.8,
+      "cpu_time": 276324.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.763248
+    },
+    {
+      "name": "null/d13",
+      "run_name": "null/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276758.69999999995,
+      "cpu_time": 276758.69999999995,
+      "time_unit": "ns",
+      "ns_per_double": 2.767587
+    },
+    {
+      "name": "null/d14",
+      "run_name": "null/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276640.80000000005,
+      "cpu_time": 276640.80000000005,
+      "time_unit": "ns",
+      "ns_per_double": 2.766408
+    },
+    {
+      "name": "null/d15",
+      "run_name": "null/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276643.69999999995,
+      "cpu_time": 276643.69999999995,
+      "time_unit": "ns",
+      "ns_per_double": 2.766437
+    },
+    {
+      "name": "null/d16",
+      "run_name": "null/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276531.7,
+      "cpu_time": 276531.7,
+      "time_unit": "ns",
+      "ns_per_double": 2.765317
+    },
+    {
+      "name": "null/d17",
+      "run_name": "null/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 276862.8,
+      "cpu_time": 276862.8,
+      "time_unit": "ns",
+      "ns_per_double": 2.768628
+    },
+    {
+      "name": "ostringstream/d1",
+      "run_name": "ostringstream/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 91946437.3,
+      "cpu_time": 91946437.3,
+      "time_unit": "ns",
+      "ns_per_double": 919.464373
+    },
+    {
+      "name": "ostringstream/d2",
+      "run_name": "ostringstream/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 92679582.2,
+      "cpu_time": 92679582.2,
+      "time_unit": "ns",
+      "ns_per_double": 926.795822
+    },
+    {
+      "name": "ostringstream/d3",
+      "run_name": "ostringstream/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 93409584.3,
+      "cpu_time": 93409584.3,
+      "time_unit": "ns",
+      "ns_per_double": 934.095843
+    },
+    {
+      "name": "ostringstream/d4",
+      "run_name": "ostringstream/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 93858499.4,
+      "cpu_time": 93858499.4,
+      "time_unit": "ns",
+      "ns_per_double": 938.584994
+    },
+    {
+      "name": "ostringstream/d5",
+      "run_name": "ostringstream/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 94546763.3,
+      "cpu_time": 94546763.3,
+      "time_unit": "ns",
+      "ns_per_double": 945.467633
+    },
+    {
+      "name": "ostringstream/d6",
+      "run_name": "ostringstream/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 95185527.10000001,
+      "cpu_time": 95185527.10000001,
+      "time_unit": "ns",
+      "ns_per_double": 951.855271
+    },
+    {
+      "name": "ostringstream/d7",
+      "run_name": "ostringstream/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 93920666.7,
+      "cpu_time": 93920666.7,
+      "time_unit": "ns",
+      "ns_per_double": 939.206667
+    },
+    {
+      "name": "ostringstream/d8",
+      "run_name": "ostringstream/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 94154156.3,
+      "cpu_time": 94154156.3,
+      "time_unit": "ns",
+      "ns_per_double": 941.541563
+    },
+    {
+      "name": "ostringstream/d9",
+      "run_name": "ostringstream/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 95238900.2,
+      "cpu_time": 95238900.2,
+      "time_unit": "ns",
+      "ns_per_double": 952.389002
+    },
+    {
+      "name": "ostringstream/d10",
+      "run_name": "ostringstream/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 96815589.5,
+      "cpu_time": 96815589.5,
+      "time_unit": "ns",
+      "ns_per_double": 968.155895
+    },
+    {
+      "name": "ostringstream/d11",
+      "run_name": "ostringstream/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 97592827.5,
+      "cpu_time": 97592827.5,
+      "time_unit": "ns",
+      "ns_per_double": 975.928275
+    },
+    {
+      "name": "ostringstream/d12",
+      "run_name": "ostringstream/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98122028.4,
+      "cpu_time": 98122028.4,
+      "time_unit": "ns",
+      "ns_per_double": 981.220284
+    },
+    {
+      "name": "ostringstream/d13",
+      "run_name": "ostringstream/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98487036.3,
+      "cpu_time": 98487036.3,
+      "time_unit": "ns",
+      "ns_per_double": 984.870363
+    },
+    {
+      "name": "ostringstream/d14",
+      "run_name": "ostringstream/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98686621.8,
+      "cpu_time": 98686621.8,
+      "time_unit": "ns",
+      "ns_per_double": 986.866218
+    },
+    {
+      "name": "ostringstream/d15",
+      "run_name": "ostringstream/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98514203.39999999,
+      "cpu_time": 98514203.39999999,
+      "time_unit": "ns",
+      "ns_per_double": 985.142034
+    },
+    {
+      "name": "ostringstream/d16",
+      "run_name": "ostringstream/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98724792.0,
+      "cpu_time": 98724792.0,
+      "time_unit": "ns",
+      "ns_per_double": 987.24792
+    },
+    {
+      "name": "ostringstream/d17",
+      "run_name": "ostringstream/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 98227389.5,
+      "cpu_time": 98227389.5,
+      "time_unit": "ns",
+      "ns_per_double": 982.273895
+    },
+    {
+      "name": "ryu/d1",
+      "run_name": "ryu/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6348557.1,
+      "cpu_time": 6348557.1,
+      "time_unit": "ns",
+      "ns_per_double": 63.485571
+    },
+    {
+      "name": "ryu/d2",
+      "run_name": "ryu/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6366451.2,
+      "cpu_time": 6366451.2,
+      "time_unit": "ns",
+      "ns_per_double": 63.664512
+    },
+    {
+      "name": "ryu/d3",
+      "run_name": "ryu/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6139917.6,
+      "cpu_time": 6139917.6,
+      "time_unit": "ns",
+      "ns_per_double": 61.399176
+    },
+    {
+      "name": "ryu/d4",
+      "run_name": "ryu/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6027384.2,
+      "cpu_time": 6027384.2,
+      "time_unit": "ns",
+      "ns_per_double": 60.273842
+    },
+    {
+      "name": "ryu/d5",
+      "run_name": "ryu/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5891813.8,
+      "cpu_time": 5891813.8,
+      "time_unit": "ns",
+      "ns_per_double": 58.918138
+    },
+    {
+      "name": "ryu/d6",
+      "run_name": "ryu/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5719875.4,
+      "cpu_time": 5719875.4,
+      "time_unit": "ns",
+      "ns_per_double": 57.198754
+    },
+    {
+      "name": "ryu/d7",
+      "run_name": "ryu/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5619078.100000001,
+      "cpu_time": 5619078.100000001,
+      "time_unit": "ns",
+      "ns_per_double": 56.190781
+    },
+    {
+      "name": "ryu/d8",
+      "run_name": "ryu/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5500925.8,
+      "cpu_time": 5500925.8,
+      "time_unit": "ns",
+      "ns_per_double": 55.009258
+    },
+    {
+      "name": "ryu/d9",
+      "run_name": "ryu/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5384833.600000001,
+      "cpu_time": 5384833.600000001,
+      "time_unit": "ns",
+      "ns_per_double": 53.848336
+    },
+    {
+      "name": "ryu/d10",
+      "run_name": "ryu/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5451222.7,
+      "cpu_time": 5451222.7,
+      "time_unit": "ns",
+      "ns_per_double": 54.512227
+    },
+    {
+      "name": "ryu/d11",
+      "run_name": "ryu/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5250206.0,
+      "cpu_time": 5250206.0,
+      "time_unit": "ns",
+      "ns_per_double": 52.50206
+    },
+    {
+      "name": "ryu/d12",
+      "run_name": "ryu/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5098044.8,
+      "cpu_time": 5098044.8,
+      "time_unit": "ns",
+      "ns_per_double": 50.980448
+    },
+    {
+      "name": "ryu/d13",
+      "run_name": "ryu/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4911632.199999999,
+      "cpu_time": 4911632.199999999,
+      "time_unit": "ns",
+      "ns_per_double": 49.116322
+    },
+    {
+      "name": "ryu/d14",
+      "run_name": "ryu/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4726184.8,
+      "cpu_time": 4726184.8,
+      "time_unit": "ns",
+      "ns_per_double": 47.261848
+    },
+    {
+      "name": "ryu/d15",
+      "run_name": "ryu/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4665069.5,
+      "cpu_time": 4665069.5,
+      "time_unit": "ns",
+      "ns_per_double": 46.650695
+    },
+    {
+      "name": "ryu/d16",
+      "run_name": "ryu/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4457131.100000001,
+      "cpu_time": 4457131.100000001,
+      "time_unit": "ns",
+      "ns_per_double": 44.571311
+    },
+    {
+      "name": "ryu/d17",
+      "run_name": "ryu/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4486772.100000001,
+      "cpu_time": 4486772.100000001,
+      "time_unit": "ns",
+      "ns_per_double": 44.867721
+    },
+    {
+      "name": "schubfach/d1",
+      "run_name": "schubfach/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3935694.6,
+      "cpu_time": 3935694.6,
+      "time_unit": "ns",
+      "ns_per_double": 39.356946
+    },
+    {
+      "name": "schubfach/d2",
+      "run_name": "schubfach/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4162195.3,
+      "cpu_time": 4162195.3,
+      "time_unit": "ns",
+      "ns_per_double": 41.621953
+    },
+    {
+      "name": "schubfach/d3",
+      "run_name": "schubfach/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4081599.0,
+      "cpu_time": 4081599.0,
+      "time_unit": "ns",
+      "ns_per_double": 40.81599
+    },
+    {
+      "name": "schubfach/d4",
+      "run_name": "schubfach/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4001831.7,
+      "cpu_time": 4001831.7,
+      "time_unit": "ns",
+      "ns_per_double": 40.018317
+    },
+    {
+      "name": "schubfach/d5",
+      "run_name": "schubfach/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3954945.6999999997,
+      "cpu_time": 3954945.6999999997,
+      "time_unit": "ns",
+      "ns_per_double": 39.549457
+    },
+    {
+      "name": "schubfach/d6",
+      "run_name": "schubfach/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3910194.5,
+      "cpu_time": 3910194.5,
+      "time_unit": "ns",
+      "ns_per_double": 39.101945
+    },
+    {
+      "name": "schubfach/d7",
+      "run_name": "schubfach/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3889057.5,
+      "cpu_time": 3889057.5,
+      "time_unit": "ns",
+      "ns_per_double": 38.890575
+    },
+    {
+      "name": "schubfach/d8",
+      "run_name": "schubfach/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3829943.4,
+      "cpu_time": 3829943.4,
+      "time_unit": "ns",
+      "ns_per_double": 38.299434
+    },
+    {
+      "name": "schubfach/d9",
+      "run_name": "schubfach/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3754185.1999999997,
+      "cpu_time": 3754185.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 37.541852
+    },
+    {
+      "name": "schubfach/d10",
+      "run_name": "schubfach/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4889437.199999999,
+      "cpu_time": 4889437.199999999,
+      "time_unit": "ns",
+      "ns_per_double": 48.894372
+    },
+    {
+      "name": "schubfach/d11",
+      "run_name": "schubfach/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5037694.6,
+      "cpu_time": 5037694.6,
+      "time_unit": "ns",
+      "ns_per_double": 50.376946
+    },
+    {
+      "name": "schubfach/d12",
+      "run_name": "schubfach/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5004461.6,
+      "cpu_time": 5004461.6,
+      "time_unit": "ns",
+      "ns_per_double": 50.044616
+    },
+    {
+      "name": "schubfach/d13",
+      "run_name": "schubfach/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4974456.3,
+      "cpu_time": 4974456.3,
+      "time_unit": "ns",
+      "ns_per_double": 49.744563
+    },
+    {
+      "name": "schubfach/d14",
+      "run_name": "schubfach/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4897858.2,
+      "cpu_time": 4897858.2,
+      "time_unit": "ns",
+      "ns_per_double": 48.978582
+    },
+    {
+      "name": "schubfach/d15",
+      "run_name": "schubfach/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4873785.199999999,
+      "cpu_time": 4873785.199999999,
+      "time_unit": "ns",
+      "ns_per_double": 48.737852
+    },
+    {
+      "name": "schubfach/d16",
+      "run_name": "schubfach/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 4979949.3,
+      "cpu_time": 4979949.3,
+      "time_unit": "ns",
+      "ns_per_double": 49.799493
+    },
+    {
+      "name": "schubfach/d17",
+      "run_name": "schubfach/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5362925.4,
+      "cpu_time": 5362925.4,
+      "time_unit": "ns",
+      "ns_per_double": 53.629254
+    },
+    {
+      "name": "sprintf/d1",
+      "run_name": "sprintf/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 52281432.800000004,
+      "cpu_time": 52281432.800000004,
+      "time_unit": "ns",
+      "ns_per_double": 522.814328
+    },
+    {
+      "name": "sprintf/d2",
+      "run_name": "sprintf/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 53164043.2,
+      "cpu_time": 53164043.2,
+      "time_unit": "ns",
+      "ns_per_double": 531.640432
+    },
+    {
+      "name": "sprintf/d3",
+      "run_name": "sprintf/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 54034648.6,
+      "cpu_time": 54034648.6,
+      "time_unit": "ns",
+      "ns_per_double": 540.346486
+    },
+    {
+      "name": "sprintf/d4",
+      "run_name": "sprintf/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 54199444.1,
+      "cpu_time": 54199444.1,
+      "time_unit": "ns",
+      "ns_per_double": 541.994441
+    },
+    {
+      "name": "sprintf/d5",
+      "run_name": "sprintf/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 55124461.4,
+      "cpu_time": 55124461.4,
+      "time_unit": "ns",
+      "ns_per_double": 551.244614
+    },
+    {
+      "name": "sprintf/d6",
+      "run_name": "sprintf/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 55547692.50000001,
+      "cpu_time": 55547692.50000001,
+      "time_unit": "ns",
+      "ns_per_double": 555.476925
+    },
+    {
+      "name": "sprintf/d7",
+      "run_name": "sprintf/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 55680128.0,
+      "cpu_time": 55680128.0,
+      "time_unit": "ns",
+      "ns_per_double": 556.80128
+    },
+    {
+      "name": "sprintf/d8",
+      "run_name": "sprintf/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 56365306.8,
+      "cpu_time": 56365306.8,
+      "time_unit": "ns",
+      "ns_per_double": 563.653068
+    },
+    {
+      "name": "sprintf/d9",
+      "run_name": "sprintf/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 56457982.1,
+      "cpu_time": 56457982.1,
+      "time_unit": "ns",
+      "ns_per_double": 564.579821
+    },
+    {
+      "name": "sprintf/d10",
+      "run_name": "sprintf/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 57089993.800000004,
+      "cpu_time": 57089993.800000004,
+      "time_unit": "ns",
+      "ns_per_double": 570.899938
+    },
+    {
+      "name": "sprintf/d11",
+      "run_name": "sprintf/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 57635514.2,
+      "cpu_time": 57635514.2,
+      "time_unit": "ns",
+      "ns_per_double": 576.355142
+    },
+    {
+      "name": "sprintf/d12",
+      "run_name": "sprintf/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 57849551.699999996,
+      "cpu_time": 57849551.699999996,
+      "time_unit": "ns",
+      "ns_per_double": 578.495517
+    },
+    {
+      "name": "sprintf/d13",
+      "run_name": "sprintf/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 58272524.9,
+      "cpu_time": 58272524.9,
+      "time_unit": "ns",
+      "ns_per_double": 582.725249
+    },
+    {
+      "name": "sprintf/d14",
+      "run_name": "sprintf/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 58613872.9,
+      "cpu_time": 58613872.9,
+      "time_unit": "ns",
+      "ns_per_double": 586.138729
+    },
+    {
+      "name": "sprintf/d15",
+      "run_name": "sprintf/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 58159749.6,
+      "cpu_time": 58159749.6,
+      "time_unit": "ns",
+      "ns_per_double": 581.597496
+    },
+    {
+      "name": "sprintf/d16",
+      "run_name": "sprintf/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 58524282.6,
+      "cpu_time": 58524282.6,
+      "time_unit": "ns",
+      "ns_per_double": 585.242826
+    },
+    {
+      "name": "sprintf/d17",
+      "run_name": "sprintf/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 58135982.6,
+      "cpu_time": 58135982.6,
+      "time_unit": "ns",
+      "ns_per_double": 581.359826
+    },
+    {
+      "name": "to_chars/d1",
+      "run_name": "to_chars/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7656356.6,
+      "cpu_time": 7656356.6,
+      "time_unit": "ns",
+      "ns_per_double": 76.563566
+    },
+    {
+      "name": "to_chars/d2",
+      "run_name": "to_chars/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7751492.899999999,
+      "cpu_time": 7751492.899999999,
+      "time_unit": "ns",
+      "ns_per_double": 77.514929
+    },
+    {
+      "name": "to_chars/d3",
+      "run_name": "to_chars/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7549256.200000001,
+      "cpu_time": 7549256.200000001,
+      "time_unit": "ns",
+      "ns_per_double": 75.492562
+    },
+    {
+      "name": "to_chars/d4",
+      "run_name": "to_chars/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7396917.999999999,
+      "cpu_time": 7396917.999999999,
+      "time_unit": "ns",
+      "ns_per_double": 73.96918
+    },
+    {
+      "name": "to_chars/d5",
+      "run_name": "to_chars/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7296603.600000001,
+      "cpu_time": 7296603.600000001,
+      "time_unit": "ns",
+      "ns_per_double": 72.966036
+    },
+    {
+      "name": "to_chars/d6",
+      "run_name": "to_chars/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 7096693.000000001,
+      "cpu_time": 7096693.000000001,
+      "time_unit": "ns",
+      "ns_per_double": 70.96693
+    },
+    {
+      "name": "to_chars/d7",
+      "run_name": "to_chars/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6958024.8,
+      "cpu_time": 6958024.8,
+      "time_unit": "ns",
+      "ns_per_double": 69.580248
+    },
+    {
+      "name": "to_chars/d8",
+      "run_name": "to_chars/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6822456.5,
+      "cpu_time": 6822456.5,
+      "time_unit": "ns",
+      "ns_per_double": 68.224565
+    },
+    {
+      "name": "to_chars/d9",
+      "run_name": "to_chars/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6597095.7,
+      "cpu_time": 6597095.7,
+      "time_unit": "ns",
+      "ns_per_double": 65.970957
+    },
+    {
+      "name": "to_chars/d10",
+      "run_name": "to_chars/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6663157.0,
+      "cpu_time": 6663157.0,
+      "time_unit": "ns",
+      "ns_per_double": 66.63157
+    },
+    {
+      "name": "to_chars/d11",
+      "run_name": "to_chars/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6513407.5,
+      "cpu_time": 6513407.5,
+      "time_unit": "ns",
+      "ns_per_double": 65.134075
+    },
+    {
+      "name": "to_chars/d12",
+      "run_name": "to_chars/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6329519.0,
+      "cpu_time": 6329519.0,
+      "time_unit": "ns",
+      "ns_per_double": 63.29519
+    },
+    {
+      "name": "to_chars/d13",
+      "run_name": "to_chars/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6139797.6,
+      "cpu_time": 6139797.6,
+      "time_unit": "ns",
+      "ns_per_double": 61.397976
+    },
+    {
+      "name": "to_chars/d14",
+      "run_name": "to_chars/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 6013793.2,
+      "cpu_time": 6013793.2,
+      "time_unit": "ns",
+      "ns_per_double": 60.137932
+    },
+    {
+      "name": "to_chars/d15",
+      "run_name": "to_chars/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5831832.699999999,
+      "cpu_time": 5831832.699999999,
+      "time_unit": "ns",
+      "ns_per_double": 58.318327
+    },
+    {
+      "name": "to_chars/d16",
+      "run_name": "to_chars/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5684074.4,
+      "cpu_time": 5684074.4,
+      "time_unit": "ns",
+      "ns_per_double": 56.840744
+    },
+    {
+      "name": "to_chars/d17",
+      "run_name": "to_chars/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 5794521.7,
+      "cpu_time": 5794521.7,
+      "time_unit": "ns",
+      "ns_per_double": 57.945217
+    },
+    {
+      "name": "xjb64/d1",
+      "run_name": "xjb64/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1909171.1,
+      "cpu_time": 1909171.1,
+      "time_unit": "ns",
+      "ns_per_double": 19.091711
+    },
+    {
+      "name": "xjb64/d2",
+      "run_name": "xjb64/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1924587.2,
+      "cpu_time": 1924587.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.245872
+    },
+    {
+      "name": "xjb64/d3",
+      "run_name": "xjb64/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1928927.2,
+      "cpu_time": 1928927.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.289272
+    },
+    {
+      "name": "xjb64/d4",
+      "run_name": "xjb64/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1930577.1,
+      "cpu_time": 1930577.1,
+      "time_unit": "ns",
+      "ns_per_double": 19.305771
+    },
+    {
+      "name": "xjb64/d5",
+      "run_name": "xjb64/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1929430.3,
+      "cpu_time": 1929430.3,
+      "time_unit": "ns",
+      "ns_per_double": 19.294303
+    },
+    {
+      "name": "xjb64/d6",
+      "run_name": "xjb64/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1933227.2,
+      "cpu_time": 1933227.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.332272
+    },
+    {
+      "name": "xjb64/d7",
+      "run_name": "xjb64/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1928794.2999999998,
+      "cpu_time": 1928794.2999999998,
+      "time_unit": "ns",
+      "ns_per_double": 19.287943
+    },
+    {
+      "name": "xjb64/d8",
+      "run_name": "xjb64/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1928107.1,
+      "cpu_time": 1928107.1,
+      "time_unit": "ns",
+      "ns_per_double": 19.281071
+    },
+    {
+      "name": "xjb64/d9",
+      "run_name": "xjb64/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1930810.1,
+      "cpu_time": 1930810.1,
+      "time_unit": "ns",
+      "ns_per_double": 19.308101
+    },
+    {
+      "name": "xjb64/d10",
+      "run_name": "xjb64/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1929276.0999999999,
+      "cpu_time": 1929276.0999999999,
+      "time_unit": "ns",
+      "ns_per_double": 19.292761
+    },
+    {
+      "name": "xjb64/d11",
+      "run_name": "xjb64/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1932045.3,
+      "cpu_time": 1932045.3,
+      "time_unit": "ns",
+      "ns_per_double": 19.320453
+    },
+    {
+      "name": "xjb64/d12",
+      "run_name": "xjb64/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1929620.2000000002,
+      "cpu_time": 1929620.2000000002,
+      "time_unit": "ns",
+      "ns_per_double": 19.296202
+    },
+    {
+      "name": "xjb64/d13",
+      "run_name": "xjb64/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1931078.0999999999,
+      "cpu_time": 1931078.0999999999,
+      "time_unit": "ns",
+      "ns_per_double": 19.310781
+    },
+    {
+      "name": "xjb64/d14",
+      "run_name": "xjb64/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1929133.2,
+      "cpu_time": 1929133.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.291332
+    },
+    {
+      "name": "xjb64/d15",
+      "run_name": "xjb64/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1928660.2,
+      "cpu_time": 1928660.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.286602
+    },
+    {
+      "name": "xjb64/d16",
+      "run_name": "xjb64/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1920965.2,
+      "cpu_time": 1920965.2,
+      "time_unit": "ns",
+      "ns_per_double": 19.209652
+    },
+    {
+      "name": "xjb64/d17",
+      "run_name": "xjb64/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1922609.2000000002,
+      "cpu_time": 1922609.2000000002,
+      "time_unit": "ns",
+      "ns_per_double": 19.226092
+    },
+    {
+      "name": "yy/d1",
+      "run_name": "yy/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2281134.1,
+      "cpu_time": 2281134.1,
+      "time_unit": "ns",
+      "ns_per_double": 22.811341
+    },
+    {
+      "name": "yy/d2",
+      "run_name": "yy/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2283142.2,
+      "cpu_time": 2283142.2,
+      "time_unit": "ns",
+      "ns_per_double": 22.831422
+    },
+    {
+      "name": "yy/d3",
+      "run_name": "yy/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2284822.1,
+      "cpu_time": 2284822.1,
+      "time_unit": "ns",
+      "ns_per_double": 22.848221
+    },
+    {
+      "name": "yy/d4",
+      "run_name": "yy/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2284113.2,
+      "cpu_time": 2284113.2,
+      "time_unit": "ns",
+      "ns_per_double": 22.841132
+    },
+    {
+      "name": "yy/d5",
+      "run_name": "yy/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2483394.6999999997,
+      "cpu_time": 2483394.6999999997,
+      "time_unit": "ns",
+      "ns_per_double": 24.833947
+    },
+    {
+      "name": "yy/d6",
+      "run_name": "yy/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2678678.1999999997,
+      "cpu_time": 2678678.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 26.786782
+    },
+    {
+      "name": "yy/d7",
+      "run_name": "yy/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2635633.1,
+      "cpu_time": 2635633.1,
+      "time_unit": "ns",
+      "ns_per_double": 26.356331
+    },
+    {
+      "name": "yy/d8",
+      "run_name": "yy/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2634232.0,
+      "cpu_time": 2634232.0,
+      "time_unit": "ns",
+      "ns_per_double": 26.34232
+    },
+    {
+      "name": "yy/d9",
+      "run_name": "yy/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2757282.3,
+      "cpu_time": 2757282.3,
+      "time_unit": "ns",
+      "ns_per_double": 27.572823
+    },
+    {
+      "name": "yy/d10",
+      "run_name": "yy/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2832745.6,
+      "cpu_time": 2832745.6,
+      "time_unit": "ns",
+      "ns_per_double": 28.327456
+    },
+    {
+      "name": "yy/d11",
+      "run_name": "yy/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2811948.6999999997,
+      "cpu_time": 2811948.6999999997,
+      "time_unit": "ns",
+      "ns_per_double": 28.119487
+    },
+    {
+      "name": "yy/d12",
+      "run_name": "yy/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2812172.6,
+      "cpu_time": 2812172.6,
+      "time_unit": "ns",
+      "ns_per_double": 28.121726
+    },
+    {
+      "name": "yy/d13",
+      "run_name": "yy/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2925468.9,
+      "cpu_time": 2925468.9,
+      "time_unit": "ns",
+      "ns_per_double": 29.254689
+    },
+    {
+      "name": "yy/d14",
+      "run_name": "yy/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3051455.1999999997,
+      "cpu_time": 3051455.1999999997,
+      "time_unit": "ns",
+      "ns_per_double": 30.514552
+    },
+    {
+      "name": "yy/d15",
+      "run_name": "yy/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3038054.1,
+      "cpu_time": 3038054.1,
+      "time_unit": "ns",
+      "ns_per_double": 30.380541
+    },
+    {
+      "name": "yy/d16",
+      "run_name": "yy/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2960931.0,
+      "cpu_time": 2960931.0,
+      "time_unit": "ns",
+      "ns_per_double": 29.60931
+    },
+    {
+      "name": "yy/d17",
+      "run_name": "yy/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 3074970.3,
+      "cpu_time": 3074970.3,
+      "time_unit": "ns",
+      "ns_per_double": 30.749703
+    },
+    {
+      "name": "zmij/d1",
+      "run_name": "zmij/d1",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1890155.1,
+      "cpu_time": 1890155.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.901551
+    },
+    {
+      "name": "zmij/d2",
+      "run_name": "zmij/d2",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1891174.0999999999,
+      "cpu_time": 1891174.0999999999,
+      "time_unit": "ns",
+      "ns_per_double": 18.911741
+    },
+    {
+      "name": "zmij/d3",
+      "run_name": "zmij/d3",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1892965.1,
+      "cpu_time": 1892965.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.929651
+    },
+    {
+      "name": "zmij/d4",
+      "run_name": "zmij/d4",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1890736.1,
+      "cpu_time": 1890736.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.907361
+    },
+    {
+      "name": "zmij/d5",
+      "run_name": "zmij/d5",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1889040.1,
+      "cpu_time": 1889040.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.890401
+    },
+    {
+      "name": "zmij/d6",
+      "run_name": "zmij/d6",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1890376.2,
+      "cpu_time": 1890376.2,
+      "time_unit": "ns",
+      "ns_per_double": 18.903762
+    },
+    {
+      "name": "zmij/d7",
+      "run_name": "zmij/d7",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1889257.1,
+      "cpu_time": 1889257.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.892571
+    },
+    {
+      "name": "zmij/d8",
+      "run_name": "zmij/d8",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1889548.0,
+      "cpu_time": 1889548.0,
+      "time_unit": "ns",
+      "ns_per_double": 18.89548
+    },
+    {
+      "name": "zmij/d9",
+      "run_name": "zmij/d9",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1891995.1,
+      "cpu_time": 1891995.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.919951
+    },
+    {
+      "name": "zmij/d10",
+      "run_name": "zmij/d10",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1891331.1,
+      "cpu_time": 1891331.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.913311
+    },
+    {
+      "name": "zmij/d11",
+      "run_name": "zmij/d11",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1890130.1,
+      "cpu_time": 1890130.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.901301
+    },
+    {
+      "name": "zmij/d12",
+      "run_name": "zmij/d12",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1890251.2000000002,
+      "cpu_time": 1890251.2000000002,
+      "time_unit": "ns",
+      "ns_per_double": 18.902512
+    },
+    {
+      "name": "zmij/d13",
+      "run_name": "zmij/d13",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1889359.1,
+      "cpu_time": 1889359.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.893591
+    },
+    {
+      "name": "zmij/d14",
+      "run_name": "zmij/d14",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1888769.1,
+      "cpu_time": 1888769.1,
+      "time_unit": "ns",
+      "ns_per_double": 18.887691
+    },
+    {
+      "name": "zmij/d15",
+      "run_name": "zmij/d15",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 1884153.9999999998,
+      "cpu_time": 1884153.9999999998,
+      "time_unit": "ns",
+      "ns_per_double": 18.84154
+    },
+    {
+      "name": "zmij/d16",
+      "run_name": "zmij/d16",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2039574.5000000002,
+      "cpu_time": 2039574.5000000002,
+      "time_unit": "ns",
+      "ns_per_double": 20.395745
+    },
+    {
+      "name": "zmij/d17",
+      "run_name": "zmij/d17",
+      "run_type": "iteration",
+      "iterations": 1,
+      "real_time": 2241124.0,
+      "cpu_time": 2241124.0,
+      "time_unit": "ns",
+      "ns_per_double": 22.41124
+    }
+  ]
+}

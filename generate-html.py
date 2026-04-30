@@ -1,28 +1,23 @@
 #!/usr/bin/env python3
 """Generate static HTML reports from dtoa-benchmark results.
 
-Each result file under ``results/`` is rendered to a self-contained ``.html``
-file alongside it: server-rendered SVG charts, no external dependencies,
-a tiny inline script for table interactivity.
+Each ``results/*.json`` file (Google Benchmark's native JSON output) is
+rendered to a self-contained ``.html`` file alongside it: server-rendered
+SVG charts, no external dependencies, a tiny inline script for table
+interactivity.
 
-Two input formats are supported:
-
-* ``*.json``  -- Google Benchmark's native JSON output, written by current
-  builds. Carries a rich ``context`` block (CPU info, caches, library
-  version, custom keys such as ``commit_hash``/``machine``/``os``/
-  ``compiler``) plus per-benchmark ``real_time``/``iterations``/counters.
-* ``*.csv``   -- legacy ``Type,Method,Digit,Time(ns)`` files committed
-  before the JSON migration. Read but never produced.
+The JSON ``context`` block carries CPU info, caches, library version, and
+custom keys such as ``commit_hash``/``machine``/``os``/``compiler``;
+per-benchmark entries carry ``real_time``/``iterations``/counters.
 
 Usage:
-    python3 generate-html.py results/foo.json [results/bar.csv ...]
+    python3 generate-html.py results/foo.json [results/bar.json ...]
     python3 generate-html.py --all
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
 import html
 import json
 import math
@@ -57,40 +52,25 @@ PALETTE = [
 # Data loading
 # ---------------------------------------------------------------------------
 
-# Single bucket name for the rendered section. Originally the CSV's "Type"
-# column distinguished different benchmark families; today there's only one,
-# but the rendering pipeline still groups by type, so we keep a constant.
+# Single bucket name for the rendered section. Vestige of an older
+# multi-family layout; today every row goes into one bucket but the
+# rendering pipeline still groups by type, so we keep a constant.
 DEFAULT_TYPE = "randomdigit"
-
-
-def load_csv(path: Path) -> list[tuple[str, str, int, float]]:
-    """Read a legacy ``Type,Method,Digit,Time(ns)`` CSV.
-
-    Returns rows of (type, method, digit, time_ns). Kept for backwards
-    compatibility with CSV result files committed before the JSON switch."""
-    with path.open(newline="") as f:
-        reader = csv.reader(f)
-        next(reader, None)  # header
-        rows: list[tuple[str, str, int, float]] = []
-        for row in reader:
-            if len(row) < 4:
-                continue
-            type_, method, digit, time = row[0], row[1], row[2], row[3]
-            try:
-                rows.append((type_, method, int(digit), float(time)))
-            except ValueError:
-                continue
-    return rows
 
 
 def load_json(path: Path) -> list[tuple[str, str, int, float]]:
     """Read Google Benchmark's native JSON output.
 
     Each ``benchmarks[]`` entry has a name like ``method`` (mixed pool) or
-    ``method/d<N>`` (per-digit). Ns-per-double is derived from the
-    ``Time/double`` user counter set in src/benchmark.cc, which is
-    seconds-per-double after Google Benchmark's counter ``Finish()`` step
-    (``kIsIterationInvariantRate | kInvert``)."""
+    ``method/d<N>`` (per-digit). Ns-per-double resolution priority:
+
+    1. ``ns_per_double`` -- exact value written verbatim by
+       migrate-csv-to-json.py for files that originated as the legacy CSV.
+    2. ``Time/double``   -- seconds-per-double user counter registered by
+       src/benchmark.cc on current runs.
+    3. ``real_time / items_per_iter`` -- last-resort fallback derived from
+       the benchmark name suffix.
+    """
     with path.open() as f:
         data = json.load(f)
 
@@ -113,9 +93,9 @@ def load_json(path: Path) -> list[tuple[str, str, int, float]]:
                 digit = int(name[sep + 2:])
             except ValueError:
                 continue
-        # Prefer the pre-computed counter; fall back to real_time/iterations
-        # math if a future config drops the counter.
-        if "Time/double" in r:
+        if "ns_per_double" in r:
+            time_ns = float(r["ns_per_double"])
+        elif "Time/double" in r:
             time_ns = float(r["Time/double"]) * 1e9
         else:
             unit_to_ns = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
@@ -125,15 +105,6 @@ def load_json(path: Path) -> list[tuple[str, str, int, float]]:
             time_ns = real_time * unit_to_ns.get(unit, 1.0) / items
         rows.append((DEFAULT_TYPE, method, digit, time_ns))
     return rows
-
-
-def load_results(path: Path) -> list[tuple[str, str, int, float]]:
-    """Dispatch on file extension; supports .json (current) and .csv (legacy)."""
-    if path.suffix == ".json":
-        return load_json(path)
-    if path.suffix == ".csv":
-        return load_csv(path)
-    raise ValueError(f"unsupported result file extension: {path.suffix}")
 
 
 def aggregate(rows: Iterable[tuple[str, str, int, float]]) -> dict:
@@ -1228,7 +1199,7 @@ def render_section(type_name: str, bucket: dict) -> str:
 
 def render_page(src_path: Path) -> str:
     name = src_path.stem
-    rows = load_results(src_path)
+    rows = load_json(src_path)
     by_type = aggregate(rows)
     types = sorted(by_type.keys())
 
@@ -1294,36 +1265,24 @@ def is_stale(src_path: Path) -> bool:
     return src_path.stat().st_mtime > out.stat().st_mtime
 
 
-def discover_all(results_dir: Path) -> list[Path]:
-    """Return one source file per result base name, preferring .json over
-    .csv when both exist for the same base (e.g. an old CSV next to a
-    freshly-produced JSON for the same machine+commit)."""
-    by_stem: dict[str, Path] = {}
-    for path in sorted(results_dir.glob("*.json")):
-        by_stem[path.stem] = path
-    for path in sorted(results_dir.glob("*.csv")):
-        by_stem.setdefault(path.stem, path)
-    return [by_stem[stem] for stem in sorted(by_stem)]
-
-
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("inputs", nargs="*", type=Path,
-                        help="Result files (.json or .csv) to convert.")
+                        help="JSON result files to convert.")
     parser.add_argument("--all", action="store_true",
-                        help="Process every results/*.{json,csv} file.")
+                        help="Process every results/*.json file.")
     parser.add_argument("--force", action="store_true",
                         help="Regenerate even if the .html is up to date.")
     args = parser.parse_args(argv)
 
     if args.all:
         repo_root = Path(__file__).resolve().parent
-        targets = discover_all(repo_root / "results")
+        targets = sorted((repo_root / "results").glob("*.json"))
     else:
         targets = list(args.inputs)
 
     if not targets:
-        parser.error("no result files specified (use --all or pass paths).")
+        parser.error("no JSON files specified (use --all or pass paths).")
 
     for src_path in targets:
         if not src_path.exists():

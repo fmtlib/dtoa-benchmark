@@ -42,7 +42,7 @@ auto os_name() -> const char* {
   return "linux";
 #elif defined(__APPLE__)
   return "macos";
-#elif define(_WIN32)
+#elif defined(_WIN32)
   return "windows";
 #endif
   return "unknown";

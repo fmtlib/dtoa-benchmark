@@ -81,6 +81,20 @@ header.site nav {
   margin-left: auto;
   flex-wrap: wrap;
 }
+header.site nav .nav-link {
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-soft);
+  color: var(--fg);
+  text-decoration: none;
+  user-select: none;
+  transition: all 120ms ease;
+}
+header.site nav .nav-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 header.site nav .picker {
   position: relative;
 }
@@ -385,7 +399,7 @@ footer a { color: inherit; }
 <header class="site">
   <div class="row">
     <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
-    
+    <nav><a class="nav-link" href="index.html">All results</a></nav>
   </div>
 </header>
 <main>

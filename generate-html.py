@@ -23,6 +23,7 @@ import json
 import math
 import sys
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -556,6 +557,20 @@ header.site nav {
   align-items: center;
   margin-left: auto;
   flex-wrap: wrap;
+}
+header.site nav .nav-link {
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-soft);
+  color: var(--fg);
+  text-decoration: none;
+  user-select: none;
+  transition: all 120ms ease;
+}
+header.site nav .nav-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 header.site nav .picker {
   position: relative;
@@ -1132,6 +1147,351 @@ PAGE_JS = r"""
 """
 
 
+INDEX_CSS = """
+.intro {
+  color: var(--fg-muted);
+  margin: 4px 0 24px;
+  max-width: 64ch;
+}
+.intro a { color: var(--accent); }
+.results-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 760px) {
+  .results-grid { grid-template-columns: 1fr 1fr; }
+}
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: border-color 120ms ease, transform 120ms ease,
+              box-shadow 120ms ease;
+}
+.entry:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06),
+              0 8px 18px rgba(15, 23, 42, 0.06);
+}
+.entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.entry-machine {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  font-size: 16px;
+  font-weight: 600;
+  word-break: break-word;
+}
+.entry-date {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.entry-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.entry-tags .tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.entry-tags .tag.commit {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  color: var(--fg);
+}
+.entry-tags .tag.latest {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  font-weight: 600;
+}
+.entry-bars {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) 1fr max-content;
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.entry-bars .b-name {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  font-size: 13px;
+}
+.entry-bars .b-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.entry-bars .b-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.entry-bars .b-row.top .b-fill { opacity: 1; }
+.entry-bars .b-time {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.entry-bars .b-row.top .b-time {
+  color: var(--fg);
+  font-weight: 600;
+}
+.entry-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.entry-foot .arrow {
+  color: var(--accent);
+  font-weight: 500;
+}
+.empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-muted);
+}
+"""
+
+
+# ---------------------------------------------------------------------------
+# Index page
+# ---------------------------------------------------------------------------
+
+# How many top methods to visualize as mini bars on each entry card. Small
+# enough to keep the card compact, large enough to give a useful taste of
+# the result.
+INDEX_TOP_N = 5
+
+
+def _format_date(s: str) -> tuple[str, str]:
+    """Return (display_string, sort_key) for a Google Benchmark date string.
+
+    Google Benchmark writes dates in ISO 8601 with timezone offset; legacy
+    runs may be missing the ``date`` field entirely. ``sort_key`` is the
+    raw string so that lexicographic comparison matches chronological
+    order; ``display_string`` is a short, human-readable form.
+    """
+    if not s:
+        return ("", "")
+    try:
+        dt = datetime.fromisoformat(s)
+        return (dt.strftime("%Y-%m-%d"), s)
+    except (TypeError, ValueError):
+        return (s[:10], s)
+
+
+def collect_index_entries(results_dir: Path) -> list[dict]:
+    """Read every ``results/*.json`` and build a metadata + ranking summary
+    suitable for rendering the listing page."""
+    entries: list[dict] = []
+    for json_path in sorted(results_dir.glob("*.json")):
+        try:
+            with json_path.open() as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            continue
+        ctx = data.get("context", {}) or {}
+        rows = load_json(json_path)
+        by_type = aggregate(rows)
+        # All current results have a single type bucket; if multiple
+        # exist we just pick the first deterministically.
+        bucket = by_type[next(iter(sorted(by_type)))] if by_type else None
+        means = bucket["mean"] if bucket else {}
+        ranking = sorted(
+            ((m, t) for m, t in means.items()
+             if m != BASELINE_METHOD and t > 0),
+            key=lambda kv: kv[1],
+        )
+        date_display, date_sort = _format_date(ctx.get("date", ""))
+        entries.append({
+            "json_name": json_path.name,
+            "html_name": json_path.with_suffix(".html").name,
+            "stem": json_path.stem,
+            "date_display": date_display,
+            "date_sort": date_sort,
+            "machine": ctx.get("machine", ""),
+            "os": ctx.get("os", ""),
+            "compiler": ctx.get("compiler", ""),
+            "commit_hash": ctx.get("commit_hash", ""),
+            "ranking": ranking,
+            "method_count": len(ranking),
+        })
+
+    # Most-recent first; entries without a date sink to the bottom but
+    # remain alphabetized among themselves.
+    entries.sort(
+        key=lambda e: (e["date_sort"] == "", -_lex(e["date_sort"]),
+                       e["stem"]),
+    )
+    # Mark the newest dated entry; used for the "Latest" tag.
+    for e in entries:
+        if e["date_sort"]:
+            e["is_latest"] = True
+            break
+    return entries
+
+
+def _lex(s: str) -> int:
+    """Map a string to a sortable integer that respects lexicographic
+    order for fixed-width ISO-8601 strings. We return 0 for the empty
+    string and a stable hash-free numeric representation otherwise.
+
+    The trick: convert the first 25 chars to a single integer by treating
+    them as base-128 digits. This keeps the comparison consistent with
+    string ordering for ISO-8601 timestamps that share the same length
+    (``YYYY-MM-DDThh:mm:ss±hh:mm``)."""
+    if not s:
+        return 0
+    n = 0
+    for ch in s[:25]:
+        n = (n << 7) | (ord(ch) & 0x7F)
+    return n
+
+
+def render_entry_card(entry: dict) -> str:
+    top = entry["ranking"][:INDEX_TOP_N]
+    if top:
+        max_v = max(t for _, t in top)
+    else:
+        max_v = 1.0
+
+    bar_rows: list[str] = []
+    for i, (method, t) in enumerate(top):
+        pct = (t / max_v * 100) if max_v > 0 else 0
+        cls = "b-row top" if i == 0 else "b-row"
+        bar_rows.append(
+            f'<div class="{cls} b-name">{_esc(method)}</div>'
+            f'<div class="{cls} b-track">'
+            f'<div class="b-fill" style="width:{pct:.1f}%"></div>'
+            f'</div>'
+            f'<div class="{cls} b-time">{t:,.2f} ns</div>'
+        )
+
+    tags: list[str] = []
+    if entry.get("is_latest"):
+        tags.append('<span class="tag latest">Latest</span>')
+    if entry["os"]:
+        tags.append(f'<span class="tag">{_esc(entry["os"])}</span>')
+    if entry["compiler"]:
+        tags.append(f'<span class="tag">{_esc(entry["compiler"])}</span>')
+    if entry["commit_hash"]:
+        tags.append(
+            f'<span class="tag commit">'
+            f'<code>{_esc(entry["commit_hash"])}</code></span>'
+        )
+
+    title = entry["machine"] or entry["stem"]
+    date_html = (f'<span class="entry-date">{_esc(entry["date_display"])}'
+                 f'</span>') if entry["date_display"] else ''
+
+    if bar_rows:
+        bars_html = (
+            f'<div class="entry-bars">{"".join(bar_rows)}</div>'
+        )
+    else:
+        bars_html = ''
+
+    method_count = entry["method_count"]
+    foot_count = (f'{method_count} methods' if method_count != 1
+                  else '1 method')
+
+    return (
+        f'<a class="entry" href="{_esc(entry["html_name"])}">'
+        f'<div class="entry-head">'
+        f'<span class="entry-machine">{_esc(title)}</span>'
+        f'{date_html}'
+        f'</div>'
+        f'<div class="entry-tags">{"".join(tags)}</div>'
+        f'{bars_html}'
+        f'<div class="entry-foot">'
+        f'<span>{foot_count}</span>'
+        f'<span class="arrow">View report →</span>'
+        f'</div>'
+        f'</a>'
+    )
+
+
+def render_index_page(entries: list[dict]) -> str:
+    cards = "".join(render_entry_card(e) for e in entries)
+    if not entries:
+        cards = (
+            '<div class="empty">No benchmark results found yet. '
+            'Run <code>make run-benchmark</code> to populate this folder.'
+            '</div>'
+        )
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results — dtoa-benchmark</title>
+<style>{PAGE_CSS}{INDEX_CSS}</style>
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
+    <nav>
+      <a class="nav-link" href="https://github.com/fmtlib/dtoa-benchmark">Source</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>Benchmark results</h1>
+  <p class="intro">Each card below summarises one
+    <a href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
+    run. The mini chart shows the top {INDEX_TOP_N} fastest methods for
+    that run; click through for the full report with per-digit timings,
+    interactive charts, and a copyable table.</p>
+  <div class="results-grid">{cards}</div>
+</main>
+<footer>
+  <a href="https://github.com/fmtlib/dtoa-benchmark">fmtlib/dtoa-benchmark</a>
+  &middot; {len(entries)} run{('s' if len(entries) != 1 else '')}
+</footer>
+</body>
+</html>
+"""
+
+
 def render_section(type_name: str, bucket: dict) -> str:
     methods = bucket["methods"]
     means = bucket["mean"]
@@ -1216,7 +1576,12 @@ def render_page(src_path: Path) -> str:
             f'<div class="menu">{section_links}</div></details>'
         )
 
-    nav_html = f'<nav>{section_menu}</nav>' if section_menu else ''
+    nav_html = (
+        '<nav>'
+        '<a class="nav-link" href="index.html">All results</a>'
+        f'{section_menu}'
+        '</nav>'
+    )
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1273,16 +1638,27 @@ def main(argv: list[str]) -> int:
                         help="Process every results/*.json file.")
     parser.add_argument("--force", action="store_true",
                         help="Regenerate even if the .html is up to date.")
+    parser.add_argument("--no-index", action="store_true",
+                        help="Skip regenerating results/index.html.")
+    parser.add_argument("--index-only", action="store_true",
+                        help="Only regenerate results/index.html.")
     args = parser.parse_args(argv)
 
-    if args.all:
-        repo_root = Path(__file__).resolve().parent
-        targets = sorted((repo_root / "results").glob("*.json"))
+    repo_root = Path(__file__).resolve().parent
+    results_dir = repo_root / "results"
+
+    if args.index_only:
+        targets: list[Path] = []
+    elif args.all:
+        targets = sorted(results_dir.glob("*.json"))
     else:
         targets = list(args.inputs)
 
-    if not targets:
-        parser.error("no JSON files specified (use --all or pass paths).")
+    if not targets and not (args.all or args.index_only):
+        parser.error(
+            "no JSON files specified (use --all, --index-only, or pass "
+            "paths)."
+        )
 
     for src_path in targets:
         if not src_path.exists():
@@ -1293,6 +1669,12 @@ def main(argv: list[str]) -> int:
             continue
         out = process(src_path)
         print(f"  {src_path} -> {out}")
+
+    if not args.no_index:
+        entries = collect_index_entries(results_dir)
+        index_path = results_dir / "index.html"
+        index_path.write_text(render_index_page(entries), encoding="utf-8")
+        print(f"  {results_dir} -> {index_path}")
     return 0
 
 

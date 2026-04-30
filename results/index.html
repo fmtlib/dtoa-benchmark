@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results — dtoa-benchmark</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f6f7f9;
+  --fg: #0f172a;
+  --fg-muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --grid: #cccccc;
+  --grid-major: #b8bcc4;
+  --grid-minor: #e6e6e6;
+  --selected: #fef3c7;
+  --selected-fg: #78350f;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+            0 4px 12px rgba(15, 23, 42, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --bg-soft: #111a2e;
+    --fg: #e2e8f0;
+    --fg-muted: #94a3b8;
+    --border: #1e293b;
+    --border-strong: #334155;
+    --accent: #60a5fa;
+    --accent-soft: #1e3a8a;
+    --grid: #2f3641;
+    --grid-major: #44505f;
+    --grid-minor: #1a2230;
+    --selected: #422006;
+    --selected-fg: #fde68a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
+              0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+}
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+header.site {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: saturate(160%) blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+header.site .row {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+header.site a.brand {
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+header.site a.brand:hover { color: var(--accent); }
+header.site nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+header.site nav .nav-link {
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-soft);
+  color: var(--fg);
+  text-decoration: none;
+  user-select: none;
+  transition: all 120ms ease;
+}
+header.site nav .nav-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+header.site nav .picker {
+  position: relative;
+}
+header.site nav .picker > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-soft);
+  user-select: none;
+}
+header.site nav .picker > summary::-webkit-details-marker { display: none; }
+header.site nav .picker > summary::after {
+  content: " ▾";
+  color: var(--fg-muted);
+}
+header.site nav .picker[open] > summary {
+  border-color: var(--accent);
+}
+header.site nav .picker .menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+}
+header.site nav .picker .menu a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--fg);
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  font-size: 13px;
+}
+header.site nav .picker .menu a:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+header.site nav .picker .menu a.current {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px;
+}
+h1 {
+  font-size: 22px;
+  margin: 8px 0 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  word-break: break-all;
+}
+h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card .hint {
+  color: var(--fg-muted);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.card .card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 24px -20px;
+}
+table.results {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+table.results th,
+table.results td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+table.results th {
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+table.results td.num,
+table.results th.num { text-align: right; }
+table.results tbody tr {
+  cursor: pointer;
+  transition: background-color 80ms ease;
+}
+table.results tbody tr:hover { background: var(--bg-soft); }
+table.results tbody tr.selected {
+  background: var(--selected);
+  color: var(--selected-fg);
+}
+table.results tbody tr.selected td.f { font-weight: 600; }
+table.results tbody tr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.chart-wrap {
+  position: relative;
+}
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.chart .lbl,
+.chart .val,
+.chart .ax {
+  fill: var(--fg);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.chart .ax,
+.chart .val { fill: var(--fg-muted); }
+.chart .ax-title {
+  fill: var(--fg-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+.line-chart .ax,
+.line-chart .ax-title { fill: var(--fg); }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .grid-major { stroke: var(--grid-major); stroke-width: 1; }
+.chart .grid-minor { stroke: var(--grid-minor); stroke-width: 1; }
+.chart .plot-bg { fill: var(--bg-soft); }
+.line-chart .plot-bg { fill: var(--bg); }
+.chart .plot-border {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+.bar-chart .bar .fill { transition: filter 120ms ease; }
+.bar-chart .bar.focused .fill {
+  filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
+}
+@media (prefers-color-scheme: dark) {
+  .bar-chart .bar.focused .fill {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
+  }
+}
+.line-chart .ln {
+  transition: opacity 120ms ease;
+}
+.line-chart.has-focus .ln { opacity: 0.2; }
+.line-chart .ln.focused { opacity: 1; }
+.line-chart .focus .crosshair {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.line-chart .baseline polyline {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.25;
+  stroke-dasharray: 6 4;
+  opacity: 0.55;
+}
+.line-chart .baseline-lbl {
+  fill: var(--fg-muted);
+  font-size: 11px;
+  font-style: italic;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  opacity: 0.85;
+}
+.tt {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: nowrap;
+  z-index: 5;
+  transition: opacity 80ms ease;
+}
+.tt[hidden] { display: none; }
+.tt .d {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--fg);
+}
+.tt .r {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-muted);
+}
+.tt .r .sw {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+.tt .r .f { color: var(--fg); }
+.tt .r .v { color: var(--fg); font-weight: 600; }
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.legend .lg:hover { border-color: var(--border-strong); }
+.legend .lg.dim { opacity: 0.35; }
+.legend .lg.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.legend .sw {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 0;
+}
+.hint-row .hint { margin: 0; }
+.copy-md {
+  background: var(--bg);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+.copy-md:hover {
+  border-color: var(--border-strong);
+  color: var(--fg);
+}
+.copy-md.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+footer {
+  max-width: 920px;
+  margin: 32px auto 48px;
+  padding: 16px 24px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+footer a { color: inherit; }
+
+.intro {
+  color: var(--fg-muted);
+  margin: 4px 0 24px;
+  max-width: 64ch;
+}
+.intro a { color: var(--accent); }
+.results-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 760px) {
+  .results-grid { grid-template-columns: 1fr 1fr; }
+}
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: border-color 120ms ease, transform 120ms ease,
+              box-shadow 120ms ease;
+}
+.entry:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06),
+              0 8px 18px rgba(15, 23, 42, 0.06);
+}
+.entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.entry-machine {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  font-size: 16px;
+  font-weight: 600;
+  word-break: break-word;
+}
+.entry-date {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.entry-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.entry-tags .tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.entry-tags .tag.commit {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  color: var(--fg);
+}
+.entry-tags .tag.latest {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  font-weight: 600;
+}
+.entry-bars {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) 1fr max-content;
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.entry-bars .b-name {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               monospace;
+  font-size: 13px;
+}
+.entry-bars .b-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.entry-bars .b-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.entry-bars .b-row.top .b-fill { opacity: 1; }
+.entry-bars .b-time {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.entry-bars .b-row.top .b-time {
+  color: var(--fg);
+  font-weight: 600;
+}
+.entry-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.entry-foot .arrow {
+  color: var(--accent);
+  font-weight: 500;
+}
+.empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-muted);
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="row">
+    <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
+    <nav>
+      <a class="nav-link" href="https://github.com/fmtlib/dtoa-benchmark">Source</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>Benchmark results</h1>
+  <p class="intro">Each card below summarises one
+    <a href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
+    run. The mini chart shows the top 5 fastest methods for
+    that run; click through for the full report with per-digit timings,
+    interactive charts, and a copyable table.</p>
+  <div class="results-grid"><a class="entry" href="apple-m1-pro_macos_clang21.0_45ff4d4.html"><div class="entry-head"><span class="entry-machine">apple-m1-pro</span><span class="entry-date">2026-04-30</span></div><div class="entry-tags"><span class="tag latest">Latest</span><span class="tag">macos</span><span class="tag">clang21.0</span><span class="tag commit"><code>45ff4d4</code></span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:17.5%"></div></div><div class="b-row top b-time">6.45 ns</div><div class="b-row b-name">xjb64</div><div class="b-row b-track"><div class="b-fill" style="width:19.0%"></div></div><div class="b-row b-time">6.99 ns</div><div class="b-row b-name">yy</div><div class="b-row b-track"><div class="b-fill" style="width:66.9%"></div></div><div class="b-row b-time">24.63 ns</div><div class="b-row b-name">dragonbox</div><div class="b-row b-track"><div class="b-fill" style="width:78.6%"></div></div><div class="b-row b-time">28.95 ns</div><div class="b-row b-name">fmt</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">36.84 ns</div></div><div class="entry-foot"><span>12 methods</span><span class="arrow">View report →</span></div></a><a class="entry" href="apple-m1-pro_macos_clang17.0_03adc84.html"><div class="entry-head"><span class="entry-machine">apple-m1-pro</span></div><div class="entry-tags"><span class="tag">macos</span><span class="tag">clang17.0</span><span class="tag commit"><code>03adc84</code></span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:39.0%"></div></div><div class="b-row top b-time">8.66 ns</div><div class="b-row b-name">xjb64</div><div class="b-row b-track"><div class="b-fill" style="width:47.4%"></div></div><div class="b-row b-time">10.54 ns</div><div class="b-row b-name">yy</div><div class="b-row b-track"><div class="b-fill" style="width:63.0%"></div></div><div class="b-row b-time">14.01 ns</div><div class="b-row b-name">dragonbox</div><div class="b-row b-track"><div class="b-fill" style="width:92.4%"></div></div><div class="b-row b-time">20.53 ns</div><div class="b-row b-name">fmt</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">22.22 ns</div></div><div class="entry-foot"><span>11 methods</span><span class="arrow">View report →</span></div></a><a class="entry" href="apple-m1-pro_macos_clang21.0.html"><div class="entry-head"><span class="entry-machine">apple-m1-pro</span></div><div class="entry-tags"><span class="tag">macos</span><span class="tag">clang21.0</span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row top b-time">6.69 ns</div></div><div class="entry-foot"><span>1 method</span><span class="arrow">View report →</span></div></a><a class="entry" href="apple-m1-pro_macos_clang21.0_359383b.html"><div class="entry-head"><span class="entry-machine">apple-m1-pro</span></div><div class="entry-tags"><span class="tag">macos</span><span class="tag">clang21.0</span><span class="tag commit"><code>359383b</code></span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:29.4%"></div></div><div class="b-row top b-time">6.51 ns</div><div class="b-row b-name">xjb64</div><div class="b-row b-track"><div class="b-fill" style="width:31.2%"></div></div><div class="b-row b-time">6.92 ns</div><div class="b-row b-name">yy</div><div class="b-row b-track"><div class="b-fill" style="width:60.4%"></div></div><div class="b-row b-time">13.38 ns</div><div class="b-row b-name">dragonbox</div><div class="b-row b-track"><div class="b-fill" style="width:94.5%"></div></div><div class="b-row b-time">20.92 ns</div><div class="b-row b-name">fmt</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">22.13 ns</div></div><div class="entry-foot"><span>12 methods</span><span class="arrow">View report →</span></div></a><a class="entry" href="corei7920@2.67_win32_vc2013.html"><div class="entry-head"><span class="entry-machine">corei7920@2.67</span></div><div class="entry-tags"><span class="tag">win32</span><span class="tag">vc2013</span></div><div class="entry-bars"><div class="b-row top b-name">milo</div><div class="b-row top b-track"><div class="b-fill" style="width:21.5%"></div></div><div class="b-row top b-time">288.10 ns</div><div class="b-row b-name">grisu2</div><div class="b-row b-track"><div class="b-fill" style="width:28.8%"></div></div><div class="b-row b-time">385.39 ns</div><div class="b-row b-name">doubleconv</div><div class="b-row b-track"><div class="b-fill" style="width:30.8%"></div></div><div class="b-row b-time">412.39 ns</div><div class="b-row b-name">fpconv</div><div class="b-row b-track"><div class="b-fill" style="width:35.1%"></div></div><div class="b-row b-time">470.22 ns</div><div class="b-row b-name">sprintf</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">1,338.50 ns</div></div><div class="entry-foot"><span>8 methods</span><span class="arrow">View report →</span></div></a><a class="entry" href="epyc-milan-processor_linux_gcc11.5_69644a9.html"><div class="entry-head"><span class="entry-machine">epyc-milan-processor</span></div><div class="entry-tags"><span class="tag">linux</span><span class="tag">gcc11.5</span><span class="tag commit"><code>69644a9</code></span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:47.9%"></div></div><div class="b-row top b-time">19.19 ns</div><div class="b-row b-name">xjb64</div><div class="b-row b-track"><div class="b-fill" style="width:48.1%"></div></div><div class="b-row b-time">19.27 ns</div><div class="b-row b-name">yy</div><div class="b-row b-track"><div class="b-fill" style="width:67.2%"></div></div><div class="b-row b-time">26.96 ns</div><div class="b-row b-name">dragonbox</div><div class="b-row b-track"><div class="b-fill" style="width:77.1%"></div></div><div class="b-row b-time">30.90 ns</div><div class="b-row b-name">fmt</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">40.10 ns</div></div><div class="entry-foot"><span>11 methods</span><span class="arrow">View report →</span></div></a><a class="entry" href="ryzen-threadripper-3960x_linux_gcc13.3_a10220f.html"><div class="entry-head"><span class="entry-machine">ryzen-threadripper-3960x</span></div><div class="entry-tags"><span class="tag">linux</span><span class="tag">gcc13.3</span><span class="tag commit"><code>a10220f</code></span></div><div class="entry-bars"><div class="b-row top b-name">zmij</div><div class="b-row top b-track"><div class="b-fill" style="width:56.1%"></div></div><div class="b-row top b-time">16.24 ns</div><div class="b-row b-name">xjb64</div><div class="b-row b-track"><div class="b-fill" style="width:67.8%"></div></div><div class="b-row b-time">19.62 ns</div><div class="b-row b-name">yy</div><div class="b-row b-track"><div class="b-fill" style="width:73.9%"></div></div><div class="b-row b-time">21.40 ns</div><div class="b-row b-name">dragonbox</div><div class="b-row b-track"><div class="b-fill" style="width:85.5%"></div></div><div class="b-row b-time">24.76 ns</div><div class="b-row b-name">uscale</div><div class="b-row b-track"><div class="b-fill" style="width:100.0%"></div></div><div class="b-row b-time">28.96 ns</div></div><div class="entry-foot"><span>12 methods</span><span class="arrow">View report →</span></div></a></div>
+</main>
+<footer>
+  <a href="https://github.com/fmtlib/dtoa-benchmark">fmtlib/dtoa-benchmark</a>
+  &middot; 7 runs
+</footer>
+</body>
+</html>

@@ -11,6 +11,7 @@
 #include <string.h>  // memcpy, strcmp, strlen
 
 #include <algorithm>  // std::sort, std::shuffle
+#include <charconv>   // std::from_chars
 #include <cmath>      // std::abs
 #include <exception>
 #include <fstream>
@@ -333,12 +334,10 @@ class csv_reporter : public benchmark::BenchmarkReporter {
         method = name;
         items_per_iter = num_doubles_per_digit * max_digits;
       } else {
+        const char* first = name.data() + pos + 2;
+        const char* last = name.data() + name.size();
+        if (std::from_chars(first, last, digit).ec != std::errc{}) continue;
         method = name.substr(0, pos);
-        try {
-          digit = std::stoi(name.substr(pos + 2));
-        } catch (...) {
-          continue;
-        }
         items_per_iter = num_doubles_per_digit;
       }
       double ns_per_double = r.GetAdjustedRealTime() / items_per_iter;

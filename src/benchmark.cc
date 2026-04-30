@@ -311,10 +311,13 @@ class pretty_reporter : public benchmark::ConsoleReporter {
   }
 };
 
-// CSV reporter that buffers per-digit benchmark rows in the legacy
-// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py. The
-// buffer is flushed to disk by main() only after benchmarks finish so an
-// interrupted run never leaves an empty CSV file behind.
+// CSV reporter that buffers benchmark rows in the legacy
+// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py. Per-digit
+// runs are emitted with their digit count (1..max_digits); the mixed-pool run
+// is emitted with digit=0 and is the per-method summary time used by
+// generate-html.py for the results table and bar chart. The buffer is flushed
+// to disk by main() only after benchmarks finish so an interrupted run never
+// leaves an empty CSV file behind.
 class csv_reporter : public benchmark::BenchmarkReporter {
  public:
   csv_reporter() : buffer_("Type,Method,Digit,Time(ns)\n") {}
@@ -323,15 +326,22 @@ class csv_reporter : public benchmark::BenchmarkReporter {
     for (const auto& r : runs) {
       const std::string& name = r.run_name.function_name;
       auto pos = name.rfind("/d");
-      if (pos == std::string::npos) continue;
-      std::string method = name.substr(0, pos);
+      std::string method;
       int digit = 0;
-      try {
-        digit = std::stoi(name.substr(pos + 2));
-      } catch (...) {
-        continue;
+      size_t items_per_iter = 0;
+      if (pos == std::string::npos) {
+        method = name;
+        items_per_iter = num_doubles_per_digit * max_digits;
+      } else {
+        method = name.substr(0, pos);
+        try {
+          digit = std::stoi(name.substr(pos + 2));
+        } catch (...) {
+          continue;
+        }
+        items_per_iter = num_doubles_per_digit;
       }
-      double ns_per_double = r.GetAdjustedRealTime() / num_doubles_per_digit;
+      double ns_per_double = r.GetAdjustedRealTime() / items_per_iter;
       buffer_ += fmt::format("randomdigit,{},{},{:f}\n", method, digit,
                              ns_per_double);
     }

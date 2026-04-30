@@ -5,7 +5,8 @@
 #ifndef BENCHMARK_H_
 #define BENCHMARK_H_
 
-// Returns nullptr if the buffer is null-terminated, pointer past the end otherwise.
+// Returns a pointer to one past the last character written. The result is not
+// required to be null-terminated.
 using dtoa_fun = auto (*)(double, char*) -> char*;
 
 struct register_method {

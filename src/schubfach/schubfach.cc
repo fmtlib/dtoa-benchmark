@@ -738,8 +738,9 @@ const uint64_t pow10[] = {
     100'000'000'000'000'000,
 };
 
-// Writes the decimal FP number dec_sig * 10**dec_exp to buffer.
-void write(char* buffer, uint64_t dec_sig, int dec_exp) noexcept {
+// Writes the decimal FP number dec_sig * 10**dec_exp to buffer and returns a
+// pointer to one past the last character written.
+char* write(char* buffer, uint64_t dec_sig, int dec_exp) noexcept {
   int len = floor_log10_pow2(std::numeric_limits<uint64_t>::digits -
                              std::countl_zero(dec_sig));
   if (dec_sig >= pow10[len]) ++len;
@@ -770,12 +771,12 @@ void write(char* buffer, uint64_t dec_sig, int dec_exp) noexcept {
   }
   *buffer++ = '0' + dec_exp / 10;
   *buffer++ = '0' + dec_exp % 10;
-  *buffer = '\0';
+  return buffer;
 }
 
 }  // namespace
 
-void schubfach::dtoa(double value, char* buffer) noexcept {
+char* schubfach::dtoa(double value, char* buffer) noexcept {
   uint64_t bits = std::bit_cast<uint64_t>(value);
   *buffer = '-';
   buffer += bits >> 63;
@@ -790,12 +791,12 @@ void schubfach::dtoa(double value, char* buffer) noexcept {
   bool regular = bin_sig != 0;
   if (((bin_exp + 1) & exp_mask) <= 1) [[unlikely]] {
     if (bin_exp != 0) {
-      memcpy(buffer, bin_sig == 0 ? "inf" : "nan", 4);
-      return;
+      memcpy(buffer, bin_sig == 0 ? "inf" : "nan", 3);
+      return buffer + 3;
     }
     if (bin_sig == 0) {
-      memcpy(buffer, "0", 2);
-      return;
+      *buffer = '0';
+      return buffer + 1;
     }
     // Handle subnormals.
     bin_sig ^= implicit_bit;

@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
-"""Generate static HTML reports from dtoa-benchmark CSV results.
+"""Generate static HTML reports from dtoa-benchmark results.
 
-Each CSV under ``results/*.csv`` is rendered to a self-contained ``.html``
+Each result file under ``results/`` is rendered to a self-contained ``.html``
 file alongside it: server-rendered SVG charts, no external dependencies,
 a tiny inline script for table interactivity.
 
+Two input formats are supported:
+
+* ``*.json``  -- Google Benchmark's native JSON output, written by current
+  builds. Carries a rich ``context`` block (CPU info, caches, library
+  version, custom keys such as ``commit_hash``/``machine``/``os``/
+  ``compiler``) plus per-benchmark ``real_time``/``iterations``/counters.
+* ``*.csv``   -- legacy ``Type,Method,Digit,Time(ns)`` files committed
+  before the JSON migration. Read but never produced.
+
 Usage:
-    python3 generate-html.py results/foo.csv [results/bar.csv ...]
+    python3 generate-html.py results/foo.json [results/bar.csv ...]
     python3 generate-html.py --all
 """
 
@@ -48,11 +57,20 @@ PALETTE = [
 # Data loading
 # ---------------------------------------------------------------------------
 
-def load_csv(path: Path) -> tuple[list[str], list[tuple[str, str, int, float]]]:
-    """Returns (header, rows). Rows are (type, method, digit, time_ns)."""
+# Single bucket name for the rendered section. Originally the CSV's "Type"
+# column distinguished different benchmark families; today there's only one,
+# but the rendering pipeline still groups by type, so we keep a constant.
+DEFAULT_TYPE = "randomdigit"
+
+
+def load_csv(path: Path) -> list[tuple[str, str, int, float]]:
+    """Read a legacy ``Type,Method,Digit,Time(ns)`` CSV.
+
+    Returns rows of (type, method, digit, time_ns). Kept for backwards
+    compatibility with CSV result files committed before the JSON switch."""
     with path.open(newline="") as f:
         reader = csv.reader(f)
-        header = next(reader)
+        next(reader, None)  # header
         rows: list[tuple[str, str, int, float]] = []
         for row in reader:
             if len(row) < 4:
@@ -62,7 +80,60 @@ def load_csv(path: Path) -> tuple[list[str], list[tuple[str, str, int, float]]]:
                 rows.append((type_, method, int(digit), float(time)))
             except ValueError:
                 continue
-    return header, rows
+    return rows
+
+
+def load_json(path: Path) -> list[tuple[str, str, int, float]]:
+    """Read Google Benchmark's native JSON output.
+
+    Each ``benchmarks[]`` entry has a name like ``method`` (mixed pool) or
+    ``method/d<N>`` (per-digit). Ns-per-double is derived from the
+    ``Time/double`` user counter set in src/benchmark.cc, which is
+    seconds-per-double after Google Benchmark's counter ``Finish()`` step
+    (``kIsIterationInvariantRate | kInvert``)."""
+    with path.open() as f:
+        data = json.load(f)
+
+    rows: list[tuple[str, str, int, float]] = []
+    for r in data.get("benchmarks", []):
+        # Skip aggregate rows (mean/median/stddev) when --benchmark_repetitions
+        # is used; we want the raw per-iteration timings only.
+        if r.get("run_type") and r["run_type"] != "iteration":
+            continue
+        if r.get("error_occurred"):
+            continue
+        name = r.get("run_name") or r.get("name") or ""
+        sep = name.rfind("/d")
+        if sep == -1:
+            method = name
+            digit = 0
+        else:
+            method = name[:sep]
+            try:
+                digit = int(name[sep + 2:])
+            except ValueError:
+                continue
+        # Prefer the pre-computed counter; fall back to real_time/iterations
+        # math if a future config drops the counter.
+        if "Time/double" in r:
+            time_ns = float(r["Time/double"]) * 1e9
+        else:
+            unit_to_ns = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
+            unit = r.get("time_unit", "ns")
+            real_time = float(r["real_time"])
+            items = 100_000 if digit > 0 else 100_000 * 17
+            time_ns = real_time * unit_to_ns.get(unit, 1.0) / items
+        rows.append((DEFAULT_TYPE, method, digit, time_ns))
+    return rows
+
+
+def load_results(path: Path) -> list[tuple[str, str, int, float]]:
+    """Dispatch on file extension; supports .json (current) and .csv (legacy)."""
+    if path.suffix == ".json":
+        return load_json(path)
+    if path.suffix == ".csv":
+        return load_csv(path)
+    raise ValueError(f"unsupported result file extension: {path.suffix}")
 
 
 def aggregate(rows: Iterable[tuple[str, str, int, float]]) -> dict:
@@ -1155,9 +1226,9 @@ def render_section(type_name: str, bucket: dict) -> str:
     return "".join(section)
 
 
-def render_page(csv_path: Path) -> str:
-    name = csv_path.stem
-    _header, rows = load_csv(csv_path)
+def render_page(src_path: Path) -> str:
+    name = src_path.stem
+    rows = load_results(src_path)
     by_type = aggregate(rows)
     types = sorted(by_type.keys())
 
@@ -1196,7 +1267,7 @@ def render_page(csv_path: Path) -> str:
   {sections_html}
 </main>
 <footer>
-  Generated from <code>{_esc(csv_path.name)}</code> by
+  Generated from <code>{_esc(src_path.name)}</code> by
   <a href="https://github.com/fmtlib/dtoa-benchmark">fmtlib/dtoa-benchmark</a>.
 </footer>
 <script>{PAGE_JS}</script>
@@ -1209,48 +1280,60 @@ def render_page(csv_path: Path) -> str:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def process(csv_path: Path) -> Path:
-    out = csv_path.with_suffix(".html")
-    out.write_text(render_page(csv_path), encoding="utf-8")
+def process(src_path: Path) -> Path:
+    out = src_path.with_suffix(".html")
+    out.write_text(render_page(src_path), encoding="utf-8")
     return out
 
 
-def is_stale(csv_path: Path) -> bool:
-    """True if the matching .html is missing or older than the CSV."""
-    out = csv_path.with_suffix(".html")
+def is_stale(src_path: Path) -> bool:
+    """True if the matching .html is missing or older than the source."""
+    out = src_path.with_suffix(".html")
     if not out.exists():
         return True
-    return csv_path.stat().st_mtime > out.stat().st_mtime
+    return src_path.stat().st_mtime > out.stat().st_mtime
+
+
+def discover_all(results_dir: Path) -> list[Path]:
+    """Return one source file per result base name, preferring .json over
+    .csv when both exist for the same base (e.g. an old CSV next to a
+    freshly-produced JSON for the same machine+commit)."""
+    by_stem: dict[str, Path] = {}
+    for path in sorted(results_dir.glob("*.json")):
+        by_stem[path.stem] = path
+    for path in sorted(results_dir.glob("*.csv")):
+        by_stem.setdefault(path.stem, path)
+    return [by_stem[stem] for stem in sorted(by_stem)]
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("csv", nargs="*", type=Path,
-                        help="CSV files to convert.")
+    parser.add_argument("inputs", nargs="*", type=Path,
+                        help="Result files (.json or .csv) to convert.")
     parser.add_argument("--all", action="store_true",
-                        help="Process every results/*.csv file.")
+                        help="Process every results/*.{json,csv} file.")
     parser.add_argument("--force", action="store_true",
                         help="Regenerate even if the .html is up to date.")
     args = parser.parse_args(argv)
 
     if args.all:
         repo_root = Path(__file__).resolve().parent
-        targets = sorted((repo_root / "results").glob("*.csv"))
+        targets = discover_all(repo_root / "results")
     else:
-        targets = list(args.csv)
+        targets = list(args.inputs)
 
     if not targets:
-        parser.error("no CSV files specified (use --all or pass paths).")
+        parser.error("no result files specified (use --all or pass paths).")
 
-    for csv_path in targets:
-        if not csv_path.exists():
-            print(f"warning: {csv_path} does not exist; skipping",
+    for src_path in targets:
+        if not src_path.exists():
+            print(f"warning: {src_path} does not exist; skipping",
                   file=sys.stderr)
             continue
-        if not args.force and not is_stale(csv_path):
+        if not args.force and not is_stale(src_path):
             continue
-        out = process(csv_path)
-        print(f"  {csv_path} -> {out}")
+        out = process(src_path)
+        print(f"  {src_path} -> {out}")
     return 0
 
 

@@ -11,12 +11,10 @@
 #include <string.h>  // memcpy, strcmp, strlen
 
 #include <algorithm>  // std::sort, std::shuffle
-#include <charconv>   // std::from_chars
 #include <cmath>      // std::abs
 #include <exception>
 #include <fstream>
 #include <limits>
-#include <optional>
 #include <random>  // std::mt19937
 #include <string>
 #include <string_view>
@@ -312,45 +310,6 @@ class pretty_reporter : public benchmark::ConsoleReporter {
   }
 };
 
-// CSV reporter that buffers benchmark rows in the legacy
-// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py. Per-digit
-// runs are emitted with their digit count (1..max_digits); the mixed-pool run
-// is emitted with digit=0 and is the per-method summary time used by
-// generate-html.py for the results table and bar chart. The buffer is flushed
-// to disk by main() only after benchmarks finish so an interrupted run never
-// leaves an empty CSV file behind.
-class csv_reporter : public benchmark::BenchmarkReporter {
- public:
-  csv_reporter() : buffer_("Type,Method,Digit,Time(ns)\n") {}
-  bool ReportContext(const Context&) override { return true; }
-  void ReportRuns(const std::vector<Run>& runs) override {
-    for (const auto& r : runs) {
-      const std::string& name = r.run_name.function_name;
-      auto pos = name.rfind("/d");
-      std::string method;
-      int digit = 0;
-      size_t items_per_iter = 0;
-      if (pos == std::string::npos) {
-        method = name;
-        items_per_iter = num_doubles_per_digit * max_digits;
-      } else {
-        const char* first = name.data() + pos + 2;
-        const char* last = name.data() + name.size();
-        if (std::from_chars(first, last, digit).ec != std::errc{}) continue;
-        method = name.substr(0, pos);
-        items_per_iter = num_doubles_per_digit;
-      }
-      double ns_per_double = r.GetAdjustedRealTime() / items_per_iter;
-      buffer_ += fmt::format("randomdigit,{},{},{:f}\n", method, digit,
-                             ns_per_double);
-    }
-  }
-  auto buffer() const -> const std::string& { return buffer_; }
-
- private:
-  std::string buffer_;
-};
-
 }  // namespace
 
 register_method::register_method(const char* name, dtoa_fun dtoa) {
@@ -360,7 +319,6 @@ register_method::register_method(const char* name, dtoa_fun dtoa) {
 auto main(int argc, char** argv) -> int {
   bool per_digit = true;
   std::string commit_hash;
-  std::string csv_out;
   std::string json_out;
   int out = 1;
   for (int i = 1; i < argc; ++i) {
@@ -371,8 +329,6 @@ auto main(int argc, char** argv) -> int {
       per_digit = false;
     } else if (arg.substr(0, 14) == "--commit-hash=") {
       commit_hash = std::string(arg.substr(14));
-    } else if (arg.substr(0, 10) == "--csv-out=") {
-      csv_out = std::string(arg.substr(10));
     } else if (arg.substr(0, 11) == "--json-out=") {
       json_out = std::string(arg.substr(11));
     } else {
@@ -387,24 +343,22 @@ auto main(int argc, char** argv) -> int {
 
   for (const method& m : methods) verify(m);
 
-  // Default CSV output path matches the pre-google-benchmark layout so that
-  // generate-html.py keeps working unchanged.
-  if (csv_out.empty() && json_out.empty() && per_digit) {
+  // Default output path matches the layout consumed by generate-html.py:
+  // results/<machine>_<os>_<compiler>_<commit>.json
+  if (json_out.empty() && per_digit) {
     std::string suffix = commit_hash.empty() ? "" : "_" + commit_hash;
-    csv_out = fmt::format("results/{}_{}_{}{}.csv", MACHINE, os_name(),
-                          compiler_name(), suffix);
+    json_out = fmt::format("results/{}_{}_{}{}.json", MACHINE, os_name(),
+                           compiler_name(), suffix);
   }
 
   register_all(per_digit);
 
-  // Google Benchmark requires --benchmark_out=<path> to be set whenever a
-  // custom file reporter is supplied, even though the reporter writes to its
-  // own stream. Synthesize the flag from --csv-out / --json-out.
+  // Google Benchmark requires --benchmark_out=<path> when a custom file
+  // reporter is supplied, even though the reporter writes to its own stream.
   std::vector<char*> extra_argv(argv, argv + argc);
   std::string benchmark_out_arg;
-  const std::string& out_path = !json_out.empty() ? json_out : csv_out;
-  if (!out_path.empty()) {
-    benchmark_out_arg = "--benchmark_out=" + out_path;
+  if (!json_out.empty()) {
+    benchmark_out_arg = "--benchmark_out=" + json_out;
     extra_argv.push_back(benchmark_out_arg.data());
   }
   int extra_argc = static_cast<int>(extra_argv.size());
@@ -412,10 +366,18 @@ auto main(int argc, char** argv) -> int {
   if (benchmark::ReportUnrecognizedArguments(extra_argc, extra_argv.data()))
     return 1;
 
+  // Stash provenance in the JSON `context` block. This is in addition to the
+  // information already encoded in the file name so consumers don't have to
+  // parse the path.
+  benchmark::AddCustomContext("machine", MACHINE);
+  benchmark::AddCustomContext("os", os_name());
+  benchmark::AddCustomContext("compiler", compiler_name());
+  if (!commit_hash.empty())
+    benchmark::AddCustomContext("commit_hash", commit_hash);
+
   pretty_reporter console;
   std::ofstream json_file;
-  std::optional<csv_reporter> csv_rep;
-  std::optional<benchmark::JSONReporter> json_rep;
+  benchmark::JSONReporter json_rep;
   benchmark::BenchmarkReporter* file_reporter = nullptr;
   if (!json_out.empty()) {
     json_file.open(json_out);
@@ -423,12 +385,8 @@ auto main(int argc, char** argv) -> int {
       fmt::print("error: cannot open '{}' for writing\n", json_out);
       return 1;
     }
-    json_rep.emplace();
-    json_rep->SetOutputStream(&json_file);
-    file_reporter = &*json_rep;
-  } else if (!csv_out.empty()) {
-    csv_rep.emplace();
-    file_reporter = &*csv_rep;
+    json_rep.SetOutputStream(&json_file);
+    file_reporter = &json_rep;
   }
 
   if (file_reporter)
@@ -436,16 +394,5 @@ auto main(int argc, char** argv) -> int {
   else
     benchmark::RunSpecifiedBenchmarks(&console);
   benchmark::Shutdown();
-
-  // Write the CSV only after benchmarks finish so an interrupted run does
-  // not leave an empty file that confuses generate-html.py.
-  if (csv_rep) {
-    std::ofstream csv_file(csv_out);
-    if (!csv_file) {
-      fmt::print("error: cannot open '{}' for writing\n", csv_out);
-      return 1;
-    }
-    csv_file << csv_rep->buffer();
-  }
   return 0;
 }

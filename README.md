@@ -72,26 +72,26 @@ The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 
 | Method            | Time (ns) |  Speedup |
 |-------------------|----------:|---------:|
-| zmij              |      6.51 | 112.188x |
-| xjb64             |      6.92 | 105.621x |
-| yy                |     13.38 |  54.605x |
-| dragonbox         |     20.92 |  34.909x |
-| fmt               |     22.13 |  33.003x |
-| schubfach         |     25.06 |  29.140x |
-| uscale            |     28.50 |  25.625x |
-| ryu               |     36.92 |  19.782x |
-| to_chars          |     41.77 |  17.484x |
-| double-conversion |     84.70 |   8.624x |
-| sprintf           |    730.38 |   1.000x |
-| ostringstream     |    871.91 |   0.838x |
+| zmij              |      6.45 | 115.440x |
+| xjb64             |      6.99 | 106.465x |
+| yy                |     24.63 |  30.235x |
+| dragonbox         |     28.95 |  25.723x |
+| fmt               |     36.84 |  20.214x |
+| uscale            |     45.86 |  16.239x |
+| ryu               |     46.07 |  16.164x |
+| to_chars          |     51.35 |  14.503x |
+| schubfach         |     53.62 |  13.889x |
+| double-conversion |     87.43 |   8.518x |
+| sprintf           |    744.72 |   1.000x |
+| ostringstream     |    885.30 |   0.841x |
 
 **Time per double (smaller is better)**:
-<img width="865" height="405" alt="image" src="https://github.com/user-attachments/assets/6fb860f1-3cd6-4285-89f1-da7f573f3a8b" />
+<img width="861" height="401" alt="image" src="https://github.com/user-attachments/assets/3678bc4a-9405-489e-8ce1-ca702829cdaa" />
 
 `ostringstream` and `sprintf` omitted; they are an order of magnitude slower than the rest.
 
 **Time vs digit count (log scale)**:
-<img width="868" height="661" alt="image" src="https://github.com/user-attachments/assets/c21d9c08-66d7-48f6-ac1e-ce12dce63fba" />
+<img width="857" height="619" alt="image" src="https://github.com/user-attachments/assets/de97d1d7-f035-4086-9666-e3bd4e42b271" />
 
 ### Notes
 

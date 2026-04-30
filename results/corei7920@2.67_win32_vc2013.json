@@ -1,6 +1,8 @@
 {
   "context": {
+    "date": "2014-08-08T14:59:47+08:00",
     "library_version": "(legacy CSV migration)",
+    "commit_hash": "9a4863a",
     "compiler": "vc2013",
     "os": "win32",
     "machine": "corei7920@2.67"

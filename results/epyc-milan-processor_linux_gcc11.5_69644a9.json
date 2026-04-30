@@ -1,5 +1,6 @@
 {
   "context": {
+    "date": "2026-01-21T07:37:19-08:00",
     "library_version": "(legacy CSV migration)",
     "commit_hash": "69644a9",
     "compiler": "gcc11.5",

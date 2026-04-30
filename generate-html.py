@@ -775,6 +775,35 @@ table.results tbody tr:focus-visible {
   height: 10px;
   border-radius: 2px;
 }
+.hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 0;
+}
+.hint-row .hint { margin: 0; }
+.copy-md {
+  background: var(--bg);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+.copy-md:hover {
+  border-color: var(--border-strong);
+  color: var(--fg);
+}
+.copy-md.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 footer {
   max-width: 920px;
   margin: 32px auto 48px;
@@ -816,6 +845,81 @@ PAGE_JS = r"""
       return r.dataset.method === "sprintf";
     }) || rows[0];
     if (defaultRow) recompute(defaultRow, false);
+  });
+
+  // Copy-as-Markdown button: serializes the adjacent results table to a
+  // GitHub-flavored markdown table with right-aligned numeric columns.
+  document.querySelectorAll(".copy-md").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var card = btn.closest(".card");
+      var tbl = card && card.querySelector("table.results");
+      if (!tbl) return;
+      var ths = Array.prototype.slice.call(tbl.querySelectorAll("thead th"));
+      var heads = ths.map(function (th) { return th.textContent.trim(); });
+      var rights = ths.map(function (th) {
+        return th.classList.contains("num");
+      });
+      var rows = Array.prototype.slice.call(
+        tbl.querySelectorAll("tbody tr")
+      ).map(function (tr) {
+        return Array.prototype.slice.call(tr.cells).map(function (td) {
+          return td.textContent.trim();
+        });
+      });
+      var widths = heads.map(function (h, i) {
+        var w = h.length;
+        rows.forEach(function (r) {
+          if (r[i] && r[i].length > w) w = r[i].length;
+        });
+        return w;
+      });
+      function pad(s, w, right) {
+        while (s.length < w) s = right ? " " + s : s + " ";
+        return s;
+      }
+      function fmtRow(cells) {
+        return "| " + cells.map(function (c, i) {
+          return pad(c, widths[i], rights[i]);
+        }).join(" | ") + " |";
+      }
+      var sep = "|" + widths.map(function (w, i) {
+        var len = w + 2;
+        return rights[i]
+          ? new Array(len).join("-") + ":"
+          : new Array(len + 1).join("-");
+      }).join("|") + "|";
+      var md = [fmtRow(heads), sep]
+        .concat(rows.map(fmtRow)).join("\n") + "\n";
+
+      function done(ok) {
+        var orig = btn.dataset.label || btn.textContent;
+        btn.dataset.label = orig;
+        btn.textContent = ok ? "Copied!" : "Copy failed";
+        btn.classList.toggle("copied", ok);
+        setTimeout(function () {
+          btn.textContent = orig;
+          btn.classList.remove("copied");
+        }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(
+          function () { done(true); },
+          function () { done(false); }
+        );
+      } else {
+        // Fallback for non-secure contexts (e.g. file:// + old browsers).
+        var ta = document.createElement("textarea");
+        ta.value = md;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(ta);
+        done(ok);
+      }
+    });
   });
 
   // Line chart: legend hover/click highlights a series; pointer movement
@@ -1004,7 +1108,11 @@ def render_section(type_name: str, bucket: dict) -> str:
         '<div class="card">',
         '<h3>Time per double (lower is better)</h3>',
         render_table(display_methods, means),
-        '<p class="hint">Click any row to use it as the speedup baseline.</p>',
+        '<div class="hint-row">'
+        '<p class="hint">Click any row to use it as the speedup '
+        'baseline.</p>'
+        '<button type="button" class="copy-md">Copy as Markdown</button>'
+        '</div>',
     ]
     if has_baseline:
         section.append(

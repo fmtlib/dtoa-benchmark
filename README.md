@@ -59,32 +59,31 @@ They are also automatically converted to HTML with the same base name.
 
 The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 
-* Compiler: Apple clang 17.0.0 (clang-1700.0.13.5)
+* Compiler: Apple clang version 21.0.0 (clang-2100.0.123.102)
 * OS: macOS
 
-| Function           | Time (ns) | Speedup |
-|--------------------|----------:|--------:|
-| ostringstream      | 870.478   | 1.00x   |
-| sprintf            | 734.033   | 1.19x   |
-| double-conversion  | 82.903    | 10.50x  |
-| to_chars           | 42.537    | 20.46x  |
-| ryu                | 36.805    | 23.65x  |
-| schubfach          | 24.653    | 35.31x  |
-| fmt                | 22.201    | 39.21x  |
-| dragonbox          | 20.544    | 42.37x  |
-| yy                 | 13.963    | 62.34x  |
-| xjb64              | 10.500    | 82.90x  |
-| zmij               | 8.895     | 97.87x  |
-| null               | 0.929     | 936.55x |
+| Method            | Time (ns) |  Speedup |
+|-------------------|----------:|---------:|
+| zmij              |      6.51 | 112.188x |
+| xjb64             |      6.92 | 105.621x |
+| yy                |     13.38 |  54.605x |
+| dragonbox         |     20.92 |  34.909x |
+| fmt               |     22.13 |  33.003x |
+| schubfach         |     25.06 |  29.140x |
+| uscale            |     28.50 |  25.625x |
+| ryu               |     36.92 |  19.782x |
+| to_chars          |     41.77 |  17.484x |
+| double-conversion |     84.70 |   8.624x |
+| sprintf           |    730.38 |   1.000x |
+| ostringstream     |    871.91 |   0.838x |
 
-**Conversion time (smaller is better):**
+**Time per double (smaller is better)**:
+<img width="865" height="405" alt="image" src="https://github.com/user-attachments/assets/6fb860f1-3cd6-4285-89f1-da7f573f3a8b" />
 
-<img width="816" height="358" alt="image" src="https://github.com/user-attachments/assets/c6eea19d-f824-4069-bc26-d701a419916e" />
+`ostringstream` and `sprintf` omitted; they are an order of magnitude slower than the rest.
 
-`ostringstream` and `sprintf` are excluded due to their significantly slower
-performance.
-
-<img width="857" height="687" alt="image" src="https://github.com/user-attachments/assets/13cb86d3-4d76-4903-a13e-d4845a4388b4" />
+**Time vs digit count (log scale)**:
+<img width="868" height="661" alt="image" src="https://github.com/user-attachments/assets/c21d9c08-66d7-48f6-ac1e-ce12dce63fba" />
 
 ### Notes
 
@@ -104,7 +103,7 @@ directory and viewable online using
 
 ## Methods
 
-| Function | Description |
+| Method | Description |
 |----------|-------------|
 | [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` |
 | [double-conversion](https://github.com/google/double-conversion) | `EcmaScriptConverter::ToShortest` which implements Grisu3 with bignum fallback |

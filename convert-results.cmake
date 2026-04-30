@@ -1,5 +1,12 @@
 # Converts results from CSV to HTML.
 
+find_package(Python3 COMPONENTS Interpreter)
+if (NOT Python3_FOUND)
+  message(WARNING "Python 3 not found. HTML files will not be generated.")
+  return()
+endif ()
+
+set(stale_csvs)
 file(GLOB csv_files results/*.csv)
 foreach (csv_file IN LISTS csv_files)
   file(RELATIVE_PATH csv_file ${CMAKE_CURRENT_SOURCE_DIR} ${csv_file})
@@ -10,14 +17,14 @@ foreach (csv_file IN LISTS csv_files)
   if (NOT csv_time STRGREATER html_time)
     continue()
   endif ()
-  find_program("PHP" NAMES php)
-  if (PHP)
-    message(STATUS "Converting ${csv_file} to ${html_file}")
-    execute_process(
-      COMMAND ${PHP} results/template.php ${csv_file} OUTPUT_FILE ${html_file}
-      COMMAND_ERROR_IS_FATAL ANY
-    )
-  else()
-    message(WARNING "PHP not found. HTML file will not be generated")
-  endif()
+
+  list(APPEND stale_csvs ${csv_file})
 endforeach ()
+
+if (stale_csvs)
+  message(STATUS "Converting CSV results to HTML")
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} results/generate_html.py ${stale_csvs}
+    COMMAND_ERROR_IS_FATAL ANY
+  )
+endif ()

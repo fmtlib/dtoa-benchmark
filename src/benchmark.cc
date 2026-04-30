@@ -308,13 +308,13 @@ class pretty_reporter : public benchmark::ConsoleReporter {
   }
 };
 
-// CSV reporter that emits one row per per-digit benchmark in the legacy
-// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py.
+// CSV reporter that buffers per-digit benchmark rows in the legacy
+// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py. The
+// buffer is flushed to disk by main() only after benchmarks finish so an
+// interrupted run never leaves an empty CSV file behind.
 class csv_reporter : public benchmark::BenchmarkReporter {
  public:
-  explicit csv_reporter(std::ostream& os) : os_(os) {
-    os_ << "Type,Method,Digit,Time(ns)\n";
-  }
+  csv_reporter() : buffer_("Type,Method,Digit,Time(ns)\n") {}
   bool ReportContext(const Context&) override { return true; }
   void ReportRuns(const std::vector<Run>& runs) override {
     for (const auto& r : runs) {
@@ -329,13 +329,14 @@ class csv_reporter : public benchmark::BenchmarkReporter {
         continue;
       }
       double ns_per_double = r.GetAdjustedRealTime() / num_doubles_per_digit;
-      os_ << fmt::format("randomdigit,{},{},{:f}\n", method, digit,
-                         ns_per_double);
+      buffer_ += fmt::format("randomdigit,{},{},{:f}\n", method, digit,
+                             ns_per_double);
     }
   }
+  auto buffer() const -> const std::string& { return buffer_; }
 
  private:
-  std::ostream& os_;
+  std::string buffer_;
 };
 
 }  // namespace
@@ -405,26 +406,21 @@ auto main(int argc, char** argv) -> int {
     return 1;
 
   pretty_reporter console;
-  std::ofstream file_out;
+  std::ofstream json_file;
   std::optional<csv_reporter> csv_rep;
   std::optional<benchmark::JSONReporter> json_rep;
   benchmark::BenchmarkReporter* file_reporter = nullptr;
   if (!json_out.empty()) {
-    file_out.open(json_out);
-    if (!file_out) {
+    json_file.open(json_out);
+    if (!json_file) {
       fmt::print("error: cannot open '{}' for writing\n", json_out);
       return 1;
     }
     json_rep.emplace();
-    json_rep->SetOutputStream(&file_out);
+    json_rep->SetOutputStream(&json_file);
     file_reporter = &*json_rep;
   } else if (!csv_out.empty()) {
-    file_out.open(csv_out);
-    if (!file_out) {
-      fmt::print("error: cannot open '{}' for writing\n", csv_out);
-      return 1;
-    }
-    csv_rep.emplace(file_out);
+    csv_rep.emplace();
     file_reporter = &*csv_rep;
   }
 
@@ -433,4 +429,16 @@ auto main(int argc, char** argv) -> int {
   else
     benchmark::RunSpecifiedBenchmarks(&console);
   benchmark::Shutdown();
+
+  // Write the CSV only after benchmarks finish so an interrupted run does
+  // not leave an empty file that confuses generate-html.py.
+  if (csv_rep) {
+    std::ofstream csv_file(csv_out);
+    if (!csv_file) {
+      fmt::print("error: cannot open '{}' for writing\n", csv_out);
+      return 1;
+    }
+    csv_file << csv_rep->buffer();
+  }
+  return 0;
 }

@@ -104,7 +104,7 @@ directory and viewable online:
 |----------|-------------|
 | [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` |
 | [double-conversion](https://github.com/google/double-conversion) | `EcmaScriptConverter::ToShortest` which implements Grisu3 with bignum fallback |
-| [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables |
+| [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars_n` with the full cache table |
 | [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (uses Dragonbox) |
 | null | no-op implementation; measures benchmark loop overhead |
 | [ostringstream](https://en.cppreference.com/w/cpp/io/basic_ostringstream.html) | `std::ostringstream` with `setprecision(17)` |

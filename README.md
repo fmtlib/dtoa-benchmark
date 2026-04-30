@@ -30,12 +30,18 @@ The benchmark runs in two phases:
    set of edge cases and 100,000 random `double` values (excluding `±inf` and
    `NaN`) to confirm round-trip correctness.
 
-2. **Performance measurement.** For each implementation, the benchmark runs
-   17 sub-benchmarks corresponding to inputs with 1–17 significant decimal
-   digits. Each sub-benchmark converts a pool of 100,000 `double` values and
-   reports the mean time per conversion. Iteration counts and statistical
-   stabilization are handled by [Google Benchmark](
-   https://github.com/google/benchmark).
+2. **Performance measurement.** For each implementation the benchmark runs:
+
+   * 17 *per-digit* sub-benchmarks. Each converts a pool of 100,000 random
+     `double` values reduced to a fixed precision of 1–17 significant decimal
+     digits. These produce the **time vs. digit count** chart.
+   * One *mixed* benchmark over a single shuffled pool containing all 1.7M
+     values from the per-digit pools combined. Its mean time per conversion
+     is reported as the headline `Time (ns)` in the results table; this is
+     the metric to use for an at-a-glance comparison.
+
+   Iteration counts and statistical stabilization are handled by
+   [Google Benchmark](https://github.com/google/benchmark).
 
 ## Build and Run
 

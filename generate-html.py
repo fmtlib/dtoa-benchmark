@@ -6,8 +6,8 @@ file alongside it: server-rendered SVG charts, no external dependencies,
 a tiny inline script for table interactivity.
 
 Usage:
-    python3 results/generate_html.py results/foo.csv [results/bar.csv ...]
-    python3 results/generate_html.py --all
+    python3 generate-html.py results/foo.csv [results/bar.csv ...]
+    python3 generate-html.py --all
 """
 
 from __future__ import annotations
@@ -298,7 +298,7 @@ def render_line_chart(funcs: list[str], digits: list[int],
     # Axis titles
     parts.append(
         f'<text x="{plot_left + plot_w / 2:.2f}" y="{height - 8}" '
-        f'text-anchor="middle" class="ax-title">Digit</text>'
+        f'text-anchor="middle" class="ax-title">Digits</text>'
     )
     parts.append(
         f'<text transform="translate(16 {plot_top + plot_h / 2:.2f}) '
@@ -391,14 +391,14 @@ def render_table(funcs: list[str], means: dict[str, float]) -> str:
         body_rows.append(
             f'<tr data-func="{_esc(f)}" data-mean="{means[f]}" tabindex="0">'
             f'<td class="f">{_esc(f)}</td>'
-            f'<td class="t num">{means[f]:,.3f}</td>'
+            f'<td class="t num">{means[f]:,.2f}</td>'
             f'<td class="s num"></td>'
             f'</tr>'
         )
     return (
         '<table class="results">'
         '<thead><tr>'
-        '<th scope="col">Function</th>'
+        '<th scope="col">Method</th>'
         '<th scope="col" class="num">Time (ns)</th>'
         '<th scope="col" class="num">Speedup</th>'
         '</tr></thead>'
@@ -426,7 +426,6 @@ PAGE_CSS = """
   --grid-minor: #e6e6e6;
   --selected: #fef3c7;
   --selected-fg: #78350f;
-  --code-bg: #f8fafc;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
             0 4px 12px rgba(15, 23, 42, 0.04);
 }
@@ -445,7 +444,6 @@ PAGE_CSS = """
     --grid-minor: #1a2230;
     --selected: #422006;
     --selected-fg: #fde68a;
-    --code-bg: #0f172a;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
               0 4px 12px rgba(0, 0, 0, 0.25);
   }
@@ -555,17 +553,6 @@ h1 {
                monospace;
   word-break: break-all;
 }
-h1 + .meta {
-  color: var(--fg-muted);
-  margin-bottom: 24px;
-}
-h2 {
-  font-size: 18px;
-  margin: 32px 0 12px;
-  padding-top: 64px;
-  margin-top: -32px;
-  scroll-margin-top: 64px;
-}
 h3 {
   font-size: 14px;
   text-transform: uppercase;
@@ -586,6 +573,11 @@ h3 {
   color: var(--fg-muted);
   font-size: 12px;
   margin: 8px 0 0;
+}
+.card .card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 24px -20px;
 }
 table.results {
   width: 100%;
@@ -742,38 +734,6 @@ table.results tbody tr:focus-visible {
   height: 10px;
   border-radius: 2px;
 }
-details.source {
-  margin-top: 24px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-}
-details.source > summary {
-  cursor: pointer;
-  padding: 12px 16px;
-  font-weight: 600;
-  color: var(--fg-muted);
-  list-style: none;
-}
-details.source > summary::-webkit-details-marker { display: none; }
-details.source > summary::before {
-  content: "▸";
-  display: inline-block;
-  width: 1em;
-  color: var(--fg-muted);
-  transition: transform 120ms ease;
-}
-details.source[open] > summary::before { transform: rotate(90deg); }
-details.source pre {
-  margin: 0;
-  padding: 12px 16px;
-  overflow: auto;
-  background: var(--code-bg);
-  border-top: 1px solid var(--border);
-  font: 12px/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-        monospace;
-  max-height: 320px;
-}
 footer {
   max-width: 920px;
   margin: 32px auto 48px;
@@ -809,7 +769,10 @@ PAGE_JS = r"""
         }
       });
     });
-    if (rows.length) recompute(rows[0]);
+    var defaultRow = rows.find(function (r) {
+      return r.dataset.func === "sprintf";
+    }) || rows[0];
+    if (defaultRow) recompute(defaultRow);
   });
 
   // Line chart: legend hover/click highlights a series; pointer movement
@@ -901,7 +864,7 @@ PAGE_JS = r"""
 
       // Render tooltip content + position.
       tooltip.innerHTML =
-        '<div class="d">' + best.point.d + '</div>' +
+        '<div class="d">' + best.point.d + ' digits</div>' +
         '<div class="r"><span class="sw" style="background:' +
         best.series.color + '"></span><span class="f">' +
         escapeHtml(best.series.func) + '</span>:&nbsp;<span class="v">' +
@@ -974,9 +937,7 @@ PAGE_JS = r"""
     });
   }
   function formatNs(v) {
-    if (v >= 100) return v.toFixed(2);
-    if (v >= 10) return v.toFixed(2);
-    return v.toFixed(3);
+    return v.toFixed(2);
   }
 })();
 """
@@ -991,29 +952,28 @@ def render_section(type_name: str, bucket: dict) -> str:
 
     section = [
         f'<section data-type="{_esc(type_name)}" id="{_esc(anchor)}">',
-        f'<h2>{_esc(type_name)}</h2>',
         '<div class="card">',
-        '<h3>Mean conversion time</h3>',
+        '<h3>Time per double (lower is better)</h3>',
         render_table(funcs, means),
         '<p class="hint">Click any row to use it as the speedup baseline.</p>',
-        '</div>',
     ]
 
     bar_funcs = [f for f in funcs if f not in BAR_CHART_EXCLUDED]
     if bar_funcs:
         excluded_present = sorted(BAR_CHART_EXCLUDED & set(funcs))
         if excluded_present:
-            hint = (f'<p class="hint">Excluding {_esc(", ".join(excluded_present))}'
-                    f' for scale.</p>')
+            names = " and ".join(f"<code>{_esc(n)}</code>"
+                                 for n in excluded_present)
+            hint = (f'<p class="hint">{names} omitted; they are an order '
+                    f'of magnitude slower than the rest.</p>')
         else:
             hint = '<p class="hint">All measured functions shown.</p>'
         section += [
-            '<div class="card">',
-            '<h3>Mean time (lower is better)</h3>',
+            '<div class="card-divider"></div>',
             render_bar_chart(funcs, means, funcs),
             hint,
-            '</div>',
         ]
+    section.append('</div>')
 
     if digits and times:
         section += [
@@ -1030,25 +990,13 @@ def render_section(type_name: str, bucket: dict) -> str:
     return "".join(section)
 
 
-def render_page(csv_path: Path, siblings: list[Path]) -> str:
+def render_page(csv_path: Path) -> str:
     name = csv_path.stem
-    header, rows = load_csv(csv_path)
+    _header, rows = load_csv(csv_path)
     by_type = aggregate(rows)
     types = sorted(by_type.keys())
 
     sections_html = "".join(render_section(t, by_type[t]) for t in types)
-
-    nav_items = []
-    for s in siblings:
-        cls = "current" if s.stem == name else ""
-        href = s.with_suffix(".html").name
-        nav_items.append(
-            f'<a class="{cls}" href="{_esc(href)}">{_esc(s.stem)}</a>'
-        )
-    config_menu = (
-        '<details class="picker"><summary>Configuration</summary>'
-        f'<div class="menu">{"".join(nav_items)}</div></details>'
-    )
 
     section_links = "".join(
         f'<a href="#{_esc(t.lower().replace(" ", "-"))}">{_esc(t)}</a>'
@@ -1061,8 +1009,7 @@ def render_page(csv_path: Path, siblings: list[Path]) -> str:
             f'<div class="menu">{section_links}</div></details>'
         )
 
-    with csv_path.open() as f:
-        csv_text = f.read()
+    nav_html = f'<nav>{section_menu}</nav>' if section_menu else ''
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1076,20 +1023,12 @@ def render_page(csv_path: Path, siblings: list[Path]) -> str:
 <header class="site">
   <div class="row">
     <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
-    <nav>
-      {section_menu}
-      {config_menu}
-    </nav>
+    {nav_html}
   </div>
 </header>
 <main>
   <h1 id="title">{_esc(name)}</h1>
-  <div class="meta">{len(rows):,} rows · {len(types)} type{"s" if len(types) != 1 else ""} · {len(by_type[types[0]]["funcs"]) if types else 0} functions</div>
   {sections_html}
-  <details class="source">
-    <summary>Source CSV ({_esc(csv_path.name)})</summary>
-    <pre><code>{_esc(csv_text)}</code></pre>
-  </details>
 </main>
 <footer>
   Generated from <code>{_esc(csv_path.name)}</code> by
@@ -1106,10 +1045,17 @@ def render_page(csv_path: Path, siblings: list[Path]) -> str:
 # ---------------------------------------------------------------------------
 
 def process(csv_path: Path) -> Path:
-    siblings = sorted(csv_path.parent.glob("*.csv"))
     out = csv_path.with_suffix(".html")
-    out.write_text(render_page(csv_path, siblings), encoding="utf-8")
+    out.write_text(render_page(csv_path), encoding="utf-8")
     return out
+
+
+def is_stale(csv_path: Path) -> bool:
+    """True if the matching .html is missing or older than the CSV."""
+    out = csv_path.with_suffix(".html")
+    if not out.exists():
+        return True
+    return csv_path.stat().st_mtime > out.stat().st_mtime
 
 
 def main(argv: list[str]) -> int:
@@ -1118,10 +1064,12 @@ def main(argv: list[str]) -> int:
                         help="CSV files to convert.")
     parser.add_argument("--all", action="store_true",
                         help="Process every results/*.csv file.")
+    parser.add_argument("--force", action="store_true",
+                        help="Regenerate even if the .html is up to date.")
     args = parser.parse_args(argv)
 
     if args.all:
-        repo_root = Path(__file__).resolve().parent.parent
+        repo_root = Path(__file__).resolve().parent
         targets = sorted((repo_root / "results").glob("*.csv"))
     else:
         targets = list(args.csv)
@@ -1133,6 +1081,8 @@ def main(argv: list[str]) -> int:
         if not csv_path.exists():
             print(f"warning: {csv_path} does not exist; skipping",
                   file=sys.stderr)
+            continue
+        if not args.force and not is_stale(csv_path):
             continue
         out = process(csv_path)
         print(f"  {csv_path} -> {out}")

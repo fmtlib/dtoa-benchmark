@@ -88,11 +88,19 @@ target_compile_definitions(dtoa-benchmark PRIVATE MACHINE="${CPU_NAME}")
 execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE COMMIT_HASH)
 string(STRIP "${COMMIT_HASH}" COMMIT_HASH)
 
+find_package(Python3 COMPONENTS Interpreter)
+if (Python3_FOUND)
+  set(GENERATE_HTML COMMAND ${Python3_EXECUTABLE} generate-html.py --all)
+else ()
+  message(WARNING "Python 3 not found. HTML files will not be generated.")
+  set(GENERATE_HTML)
+endif ()
+
 function(add_benchmark_target name num_trials)
   add_custom_target(
     ${name}
     COMMAND dtoa-benchmark ${COMMIT_HASH} ${num_trials}
-    COMMAND cmake -P convert-results.cmake
+    ${GENERATE_HTML}
     # Run in the source directory because we want results to be in the source
     # results directory.
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

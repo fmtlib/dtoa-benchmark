@@ -19,7 +19,6 @@
   --grid-minor: #e6e6e6;
   --selected: #fef3c7;
   --selected-fg: #78350f;
-  --code-bg: #f8fafc;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
             0 4px 12px rgba(15, 23, 42, 0.04);
 }
@@ -38,7 +37,6 @@
     --grid-minor: #1a2230;
     --selected: #422006;
     --selected-fg: #fde68a;
-    --code-bg: #0f172a;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
               0 4px 12px rgba(0, 0, 0, 0.25);
   }
@@ -148,17 +146,6 @@ h1 {
                monospace;
   word-break: break-all;
 }
-h1 + .meta {
-  color: var(--fg-muted);
-  margin-bottom: 24px;
-}
-h2 {
-  font-size: 18px;
-  margin: 32px 0 12px;
-  padding-top: 64px;
-  margin-top: -32px;
-  scroll-margin-top: 64px;
-}
 h3 {
   font-size: 14px;
   text-transform: uppercase;
@@ -179,6 +166,11 @@ h3 {
   color: var(--fg-muted);
   font-size: 12px;
   margin: 8px 0 0;
+}
+.card .card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 24px -20px;
 }
 table.results {
   width: 100%;
@@ -335,38 +327,6 @@ table.results tbody tr:focus-visible {
   height: 10px;
   border-radius: 2px;
 }
-details.source {
-  margin-top: 24px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-}
-details.source > summary {
-  cursor: pointer;
-  padding: 12px 16px;
-  font-weight: 600;
-  color: var(--fg-muted);
-  list-style: none;
-}
-details.source > summary::-webkit-details-marker { display: none; }
-details.source > summary::before {
-  content: "▸";
-  display: inline-block;
-  width: 1em;
-  color: var(--fg-muted);
-  transition: transform 120ms ease;
-}
-details.source[open] > summary::before { transform: rotate(90deg); }
-details.source pre {
-  margin: 0;
-  padding: 12px 16px;
-  overflow: auto;
-  background: var(--code-bg);
-  border-top: 1px solid var(--border);
-  font: 12px/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-        monospace;
-  max-height: 320px;
-}
 footer {
   max-width: 920px;
   margin: 32px auto 48px;
@@ -382,174 +342,12 @@ footer a { color: inherit; }
 <header class="site">
   <div class="row">
     <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
-    <nav>
-      
-      <details class="picker"><summary>Configuration</summary><div class="menu"><a class="" href="apple-m1-pro_macos_clang17.0_03adc84.html">apple-m1-pro_macos_clang17.0_03adc84</a><a class="" href="apple-m1-pro_macos_clang17.0_f0f753f.html">apple-m1-pro_macos_clang17.0_f0f753f</a><a class="" href="apple-m1-pro_macos_clang21.0_f5b8cb5.html">apple-m1-pro_macos_clang21.0_f5b8cb5</a><a class="current" href="corei7920@2.67_win32_vc2013.html">corei7920@2.67_win32_vc2013</a><a class="" href="epyc-milan-processor_linux_gcc11.5_69644a9.html">epyc-milan-processor_linux_gcc11.5_69644a9</a><a class="" href="ryzen-threadripper-3960x_linux_gcc13.3_0d8bdc4.html">ryzen-threadripper-3960x_linux_gcc13.3_0d8bdc4</a><a class="" href="ryzen-threadripper-3960x_linux_gcc13.3_a10220f.html">ryzen-threadripper-3960x_linux_gcc13.3_a10220f</a></div></details>
-    </nav>
+    
   </div>
 </header>
 <main>
   <h1 id="title">corei7920@2.67_win32_vc2013</h1>
-  <div class="meta">153 rows · 1 type · 9 functions</div>
-  <section data-type="randomdigit" id="randomdigit"><h2>randomdigit</h2><div class="card"><h3>Mean conversion time</h3><table class="results"><thead><tr><th scope="col">Function</th><th scope="col" class="num">Time (ns)</th><th scope="col" class="num">Speedup</th></tr></thead><tbody><tr data-func="null" data-mean="2.498003" tabindex="0"><td class="f">null</td><td class="t num">2.498</td><td class="s num"></td></tr><tr data-func="milo" data-mean="288.0978972941177" tabindex="0"><td class="f">milo</td><td class="t num">288.098</td><td class="s num"></td></tr><tr data-func="grisu2" data-mean="385.38614182352944" tabindex="0"><td class="f">grisu2</td><td class="t num">385.386</td><td class="s num"></td></tr><tr data-func="doubleconv" data-mean="412.38638952941176" tabindex="0"><td class="f">doubleconv</td><td class="t num">412.386</td><td class="s num"></td></tr><tr data-func="fpconv" data-mean="470.22133252941177" tabindex="0"><td class="f">fpconv</td><td class="t num">470.221</td><td class="s num"></td></tr><tr data-func="sprintf" data-mean="1338.4975405294117" tabindex="0"><td class="f">sprintf</td><td class="t num">1,338.498</td><td class="s num"></td></tr><tr data-func="ostrstream" data-mean="2764.6938250588237" tabindex="0"><td class="f">ostrstream</td><td class="t num">2,764.694</td><td class="s num"></td></tr><tr data-func="ostringstream" data-mean="2953.6263694117647" tabindex="0"><td class="f">ostringstream</td><td class="t num">2,953.626</td><td class="s num"></td></tr><tr data-func="gay" data-mean="3064.919341764706" tabindex="0"><td class="f">gay</td><td class="t num">3,064.919</td><td class="s num"></td></tr></tbody></table><p class="hint">Click any row to use it as the speedup baseline.</p></div><div class="card"><h3>Mean time (lower is better)</h3><div class="chart-wrap bar-wrap"><svg viewBox="0 0 820 262" class="chart bar-chart" role="img" aria-label="Mean conversion time per function"><g class="bars"><g class="bar" data-func="null" data-value="2.4980"><rect class="hit" x="0" y="5.00" width="820" height="36.00" fill="transparent"/><text x="140" y="23.00" dominant-baseline="middle" text-anchor="end" class="lbl">null</text><rect class="fill" x="150" y="10" width="0.47" height="26" fill="#0099c6" rx="3" ry="3"/><text x="158.47" y="23.00" dominant-baseline="middle" class="val">2.50 ns</text></g><g class="bar" data-func="milo" data-value="288.0979"><rect class="hit" x="0" y="41.00" width="820" height="36.00" fill="transparent"/><text x="140" y="59.00" dominant-baseline="middle" text-anchor="end" class="lbl">milo</text><rect class="fill" x="150" y="46" width="53.96" height="26" fill="#990099" rx="3" ry="3"/><text x="211.96" y="59.00" dominant-baseline="middle" class="val">288.10 ns</text></g><g class="bar" data-func="grisu2" data-value="385.3861"><rect class="hit" x="0" y="77.00" width="820" height="36.00" fill="transparent"/><text x="140" y="95.00" dominant-baseline="middle" text-anchor="end" class="lbl">grisu2</text><rect class="fill" x="150" y="82" width="72.18" height="26" fill="#109618" rx="3" ry="3"/><text x="230.18" y="95.00" dominant-baseline="middle" class="val">385.39 ns</text></g><g class="bar" data-func="doubleconv" data-value="412.3864"><rect class="hit" x="0" y="113.00" width="820" height="36.00" fill="transparent"/><text x="140" y="131.00" dominant-baseline="middle" text-anchor="end" class="lbl">doubleconv</text><rect class="fill" x="150" y="118" width="77.23" height="26" fill="#3366cc" rx="3" ry="3"/><text x="235.23" y="131.00" dominant-baseline="middle" class="val">412.39 ns</text></g><g class="bar" data-func="fpconv" data-value="470.2213"><rect class="hit" x="0" y="149.00" width="820" height="36.00" fill="transparent"/><text x="140" y="167.00" dominant-baseline="middle" text-anchor="end" class="lbl">fpconv</text><rect class="fill" x="150" y="154" width="88.06" height="26" fill="#dc3912" rx="3" ry="3"/><text x="246.06" y="167.00" dominant-baseline="middle" class="val">470.22 ns</text></g><g class="bar" data-func="ostrstream" data-value="2764.6938"><rect class="hit" x="0" y="185.00" width="820" height="36.00" fill="transparent"/><text x="140" y="203.00" dominant-baseline="middle" text-anchor="end" class="lbl">ostrstream</text><rect class="fill" x="150" y="190" width="517.77" height="26" fill="#66aa00" rx="3" ry="3"/><text x="675.77" y="203.00" dominant-baseline="middle" class="val">2,764.69 ns</text></g><g class="bar" data-func="gay" data-value="3064.9193"><rect class="hit" x="0" y="221.00" width="820" height="36.00" fill="transparent"/><text x="140" y="239.00" dominant-baseline="middle" text-anchor="end" class="lbl">gay</text><rect class="fill" x="150" y="226" width="574.00" height="26" fill="#ff9900" rx="3" ry="3"/><text x="732.00" y="239.00" dominant-baseline="middle" class="val">3,064.92 ns</text></g></g></svg></div><p class="hint">Excluding ostringstream, sprintf for scale.</p></div><div class="card"><h3>Time vs. digit count (log scale)</h3><div class="chart-wrap line-wrap"><svg viewBox="0 0 820 560" class="chart line-chart" role="img" aria-label="Time vs digit count, log scale"><rect x="64" y="16" width="732" height="488" class="plot-bg"/><line x1="64.00" x2="64.00" y1="16" y2="504" class="grid"/><text x="64.00" y="522" text-anchor="middle" class="ax">1</text><line x1="109.75" x2="109.75" y1="16" y2="504" class="grid"/><text x="109.75" y="522" text-anchor="middle" class="ax">2</text><line x1="155.50" x2="155.50" y1="16" y2="504" class="grid"/><text x="155.50" y="522" text-anchor="middle" class="ax">3</text><line x1="201.25" x2="201.25" y1="16" y2="504" class="grid"/><text x="201.25" y="522" text-anchor="middle" class="ax">4</text><line x1="247.00" x2="247.00" y1="16" y2="504" class="grid"/><text x="247.00" y="522" text-anchor="middle" class="ax">5</text><line x1="292.75" x2="292.75" y1="16" y2="504" class="grid"/><text x="292.75" y="522" text-anchor="middle" class="ax">6</text><line x1="338.50" x2="338.50" y1="16" y2="504" class="grid"/><text x="338.50" y="522" text-anchor="middle" class="ax">7</text><line x1="384.25" x2="384.25" y1="16" y2="504" class="grid"/><text x="384.25" y="522" text-anchor="middle" class="ax">8</text><line x1="430.00" x2="430.00" y1="16" y2="504" class="grid"/><text x="430.00" y="522" text-anchor="middle" class="ax">9</text><line x1="475.75" x2="475.75" y1="16" y2="504" class="grid"/><text x="475.75" y="522" text-anchor="middle" class="ax">10</text><line x1="521.50" x2="521.50" y1="16" y2="504" class="grid"/><text x="521.50" y="522" text-anchor="middle" class="ax">11</text><line x1="567.25" x2="567.25" y1="16" y2="504" class="grid"/><text x="567.25" y="522" text-anchor="middle" class="ax">12</text><line x1="613.00" x2="613.00" y1="16" y2="504" class="grid"/><text x="613.00" y="522" text-anchor="middle" class="ax">13</text><line x1="658.75" x2="658.75" y1="16" y2="504" class="grid"/><text x="658.75" y="522" text-anchor="middle" class="ax">14</text><line x1="704.50" x2="704.50" y1="16" y2="504" class="grid"/><text x="704.50" y="522" text-anchor="middle" class="ax">15</text><line x1="750.25" x2="750.25" y1="16" y2="504" class="grid"/><text x="750.25" y="522" text-anchor="middle" class="ax">16</text><line x1="796.00" x2="796.00" y1="16" y2="504" class="grid"/><text x="796.00" y="522" text-anchor="middle" class="ax">17</text><line x1="64" x2="796" y1="477.31" y2="477.31" class="grid-minor"/><line x1="64" x2="796" y1="454.39" y2="454.39" class="grid-minor"/><line x1="64" x2="796" y1="438.13" y2="438.13" class="grid-minor"/><line x1="64" x2="796" y1="415.21" y2="415.21" class="grid-minor"/><line x1="64" x2="796" y1="406.50" y2="406.50" class="grid-minor"/><line x1="64" x2="796" y1="398.95" y2="398.95" class="grid-minor"/><line x1="64" x2="796" y1="392.29" y2="392.29" class="grid-minor"/><line x1="64" x2="796" y1="347.16" y2="347.16" class="grid-minor"/><line x1="64" x2="796" y1="324.24" y2="324.24" class="grid-minor"/><line x1="64" x2="796" y1="307.98" y2="307.98" class="grid-minor"/><line x1="64" x2="796" y1="285.06" y2="285.06" class="grid-minor"/><line x1="64" x2="796" y1="276.35" y2="276.35" class="grid-minor"/><line x1="64" x2="796" y1="268.80" y2="268.80" class="grid-minor"/><line x1="64" x2="796" y1="262.14" y2="262.14" class="grid-minor"/><line x1="64" x2="796" y1="217.01" y2="217.01" class="grid-minor"/><line x1="64" x2="796" y1="194.09" y2="194.09" class="grid-minor"/><line x1="64" x2="796" y1="177.83" y2="177.83" class="grid-minor"/><line x1="64" x2="796" y1="154.91" y2="154.91" class="grid-minor"/><line x1="64" x2="796" y1="146.20" y2="146.20" class="grid-minor"/><line x1="64" x2="796" y1="138.65" y2="138.65" class="grid-minor"/><line x1="64" x2="796" y1="131.99" y2="131.99" class="grid-minor"/><line x1="64" x2="796" y1="86.86" y2="86.86" class="grid-minor"/><line x1="64" x2="796" y1="63.94" y2="63.94" class="grid-minor"/><line x1="64" x2="796" y1="47.68" y2="47.68" class="grid-minor"/><line x1="64" x2="796" y1="24.76" y2="24.76" class="grid-minor"/><line x1="64" x2="796" y1="16.05" y2="16.05" class="grid-minor"/><line x1="64" x2="796" y1="425.52" y2="425.52" class="grid-major"/><text x="56" y="425.52" dominant-baseline="middle" text-anchor="end" class="ax">5</text><line x1="64" x2="796" y1="386.34" y2="386.34" class="grid-major"/><text x="56" y="386.34" dominant-baseline="middle" text-anchor="end" class="ax">10</text><line x1="64" x2="796" y1="295.37" y2="295.37" class="grid-major"/><text x="56" y="295.37" dominant-baseline="middle" text-anchor="end" class="ax">50</text><line x1="64" x2="796" y1="256.19" y2="256.19" class="grid-major"/><text x="56" y="256.19" dominant-baseline="middle" text-anchor="end" class="ax">100</text><line x1="64" x2="796" y1="165.22" y2="165.22" class="grid-major"/><text x="56" y="165.22" dominant-baseline="middle" text-anchor="end" class="ax">500</text><line x1="64" x2="796" y1="126.04" y2="126.04" class="grid-major"/><text x="56" y="126.04" dominant-baseline="middle" text-anchor="end" class="ax">1,000</text><line x1="64" x2="796" y1="35.07" y2="35.07" class="grid-major"/><text x="56" y="35.07" dominant-baseline="middle" text-anchor="end" class="ax">5,000</text><line x1="64" x2="796" y1="504.00" y2="504.00" class="grid-major"/><text x="56" y="504.00" dominant-baseline="middle" text-anchor="end" class="ax">0</text><text x="430.00" y="552" text-anchor="middle" class="ax-title">Digit</text><text transform="translate(16 260.00) rotate(-90)" text-anchor="middle" class="ax-title">Time (ns)</text><g class="series"><g class="ln" data-func="doubleconv"><polyline points="64.00,194.85 109.75,190.31 155.50,189.31 201.25,186.08 247.00,183.94 292.75,179.84 338.50,179.38 384.25,176.47 430.00,175.64 475.75,173.01 521.50,174.10 567.25,170.16 613.00,170.73 658.75,166.72 704.50,167.29 750.25,165.27 796.00,163.14" fill="none" stroke="#3366cc" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="fpconv"><polyline points="64.00,190.25 109.75,186.88 155.50,180.68 201.25,177.06 247.00,174.05 292.75,171.79 338.50,169.97 384.25,168.13 430.00,166.90 475.75,165.73 521.50,164.56 567.25,163.39 613.00,162.21 658.75,161.14 704.50,160.24 750.25,159.36 796.00,157.81" fill="none" stroke="#dc3912" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="gay"><polyline points="64.00,134.16 109.75,120.18 155.50,106.95 201.25,96.99 247.00,88.31 292.75,81.05 338.50,74.62 384.25,68.79 430.00,63.65 475.75,59.19 521.50,53.09 567.25,47.72 613.00,43.97 658.75,41.04 704.50,37.84 750.25,34.55 796.00,33.26" fill="none" stroke="#ff9900" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="grisu2"><polyline points="64.00,199.86 109.75,194.72 155.50,190.97 201.25,189.69 247.00,186.97 292.75,184.66 338.50,182.59 384.25,181.06 430.00,178.94 475.75,177.64 521.50,176.65 567.25,174.52 613.00,173.58 658.75,172.18 704.50,170.87 750.25,169.26 796.00,166.93" fill="none" stroke="#109618" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="milo"><polyline points="64.00,222.35 109.75,216.97 155.50,211.75 201.25,208.60 247.00,204.17 292.75,201.47 338.50,198.74 384.25,196.48 430.00,194.48 475.75,192.89 521.50,191.40 567.25,189.65 613.00,188.20 658.75,187.03 704.50,185.62 750.25,184.30 796.00,183.14" fill="none" stroke="#990099" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="null"><polyline points="64.00,464.74 109.75,464.74 155.50,464.74 201.25,464.74 247.00,464.74 292.75,464.74 338.50,464.74 384.25,464.74 430.00,464.74 475.75,464.74 521.50,464.74 567.25,464.74 613.00,464.74 658.75,464.74 704.50,464.74 750.25,464.74 796.00,464.74" fill="none" stroke="#0099c6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="ostringstream"><polyline points="64.00,66.36 109.75,66.29 155.50,65.96 201.25,65.86 247.00,65.53 292.75,65.27 338.50,65.13 384.25,65.23 430.00,64.92 475.75,64.31 521.50,64.23 567.25,64.05 613.00,64.02 658.75,63.82 704.50,63.53 750.25,63.75 796.00,63.86" fill="none" stroke="#dd4477" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="ostrstream"><polyline points="64.00,69.81 109.75,69.83 155.50,69.58 201.25,69.43 247.00,69.21 292.75,69.14 338.50,68.91 384.25,68.79 430.00,68.57 475.75,68.10 521.50,67.99 567.25,68.06 613.00,67.89 658.75,67.58 704.50,67.50 750.25,67.45 796.00,67.77" fill="none" stroke="#66aa00" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="sprintf"><polyline points="64.00,111.49 109.75,111.87 155.50,111.16 201.25,110.90 247.00,110.63 292.75,110.36 338.50,109.39 384.25,108.77 430.00,108.58 475.75,108.99 521.50,108.70 567.25,108.89 613.00,108.48 658.75,108.26 704.50,108.56 750.25,108.10 796.00,109.60" fill="none" stroke="#b82e2e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g></g><g class="focus" pointer-events="none" style="display:none"><line class="crosshair" y1="16" y2="504"/><circle class="dot" r="4.5" fill="currentColor" stroke="white" stroke-width="2"/></g><rect x="64" y="16" width="732" height="488" class="plot-border"/></svg><div class="tt" hidden></div><script type="application/json" class="chart-meta">{"width":820,"height":560,"plot":{"l":64,"r":796,"t":16,"b":504},"series":[{"func":"doubleconv","color":"#3366cc","points":[{"d":1,"x":64.0,"y":194.85,"v":296.024842},{"d":2,"x":109.75,"y":190.31,"v":320.759669},{"d":3,"x":155.5,"y":189.31,"v":326.475958},{"d":4,"x":201.25,"y":186.08,"v":345.670735},{"d":5,"x":247.0,"y":183.94,"v":359.053441},{"d":6,"x":292.75,"y":179.84,"v":386.064055},{"d":7,"x":338.5,"y":179.38,"v":389.221041},{"d":8,"x":384.25,"y":176.47,"v":409.749108},{"d":9,"x":430.0,"y":175.64,"v":415.794888},{"d":10,"x":475.75,"y":173.01,"v":435.614166},{"d":11,"x":521.5,"y":174.1,"v":427.281104},{"d":12,"x":567.25,"y":170.16,"v":458.111517},{"d":13,"x":613.0,"y":170.73,"v":453.544616},{"d":14,"x":658.75,"y":166.72,"v":486.930502},{"d":15,"x":704.5,"y":167.29,"v":481.999628},{"d":16,"x":750.25,"y":165.27,"v":499.520131},{"d":17,"x":796.0,"y":163.14,"v":518.753221}]},{"func":"fpconv","color":"#dc3912","points":[{"d":1,"x":64.0,"y":190.25,"v":321.077666},{"d":2,"x":109.75,"y":186.88,"v":340.850968},{"d":3,"x":155.5,"y":180.68,"v":380.351598},{"d":4,"x":201.25,"y":177.06,"v":405.48871},{"d":5,"x":247.0,"y":174.05,"v":427.679558},{"d":6,"x":292.75,"y":171.79,"v":445.131097},{"d":7,"x":338.5,"y":169.97,"v":459.716829},{"d":8,"x":384.25,"y":168.13,"v":474.930893},{"d":9,"x":430.0,"y":166.9,"v":485.329022},{"d":10,"x":475.75,"y":165.73,"v":495.497273},{"d":11,"x":521.5,"y":164.56,"v":505.899233},{"d":12,"x":567.25,"y":163.39,"v":516.408469},{"d":13,"x":613.0,"y":162.21,"v":527.358304},{"d":14,"x":658.75,"y":161.14,"v":537.411617},{"d":15,"x":704.5,"y":160.24,"v":546.009038},{"d":16,"x":750.25,"y":159.36,"v":554.583471},{"d":17,"x":796.0,"y":157.81,"v":570.038907}]},{"func":"gay","color":"#ff9900","points":[{"d":1,"x":64.0,"y":134.16,"v":866.239988},{"d":2,"x":109.75,"y":120.18,"v":1109.205256},{"d":3,"x":155.5,"y":106.95,"v":1401.670827},{"d":4,"x":201.25,"y":96.99,"v":1671.842105},{"d":5,"x":247.0,"y":88.31,"v":1949.369465},{"d":6,"x":292.75,"y":81.05,"v":2216.502528},{"d":7,"x":338.5,"y":74.62,"v":2483.762023},{"d":8,"x":384.25,"y":68.79,"v":2753.373932},{"d":9,"x":430.0,"y":63.65,"v":3015.323256},{"d":10,"x":475.75,"y":59.19,"v":3263.250047},{"d":11,"x":521.5,"y":53.09,"v":3635.092344},{"d":12,"x":567.25,"y":47.72,"v":3997.210819},{"d":13,"x":613.0,"y":43.97,"v":4271.39346},{"d":14,"x":658.75,"y":41.04,"v":4498.964593},{"d":15,"x":704.5,"y":37.84,"v":4761.18977},{"d":16,"x":750.25,"y":34.55,"v":5046.563618},{"d":17,"x":796.0,"y":33.26,"v":5162.674779}]},{"func":"grisu2","color":"#109618","points":[{"d":1,"x":64.0,"y":199.86,"v":270.891561},{"d":2,"x":109.75,"y":194.72,"v":296.672331},{"d":3,"x":155.5,"y":190.97,"v":317.024158},{"d":4,"x":201.25,"y":189.69,"v":324.288289},{"d":5,"x":247.0,"y":186.97,"v":340.264781},{"d":6,"x":292.75,"y":184.66,"v":354.490371},{"d":7,"x":338.5,"y":182.59,"v":367.670018},{"d":8,"x":384.25,"y":181.06,"v":377.796125},{"d":9,"x":430.0,"y":178.94,"v":392.240099},{"d":10,"x":475.75,"y":177.64,"v":401.324095},{"d":11,"x":521.5,"y":176.65,"v":408.457962},{"d":12,"x":567.25,"y":174.52,"v":424.120287},{"d":13,"x":613.0,"y":173.58,"v":431.208179},{"d":14,"x":658.75,"y":172.18,"v":442.096713},{"d":15,"x":704.5,"y":170.87,"v":452.410554},{"d":16,"x":750.25,"y":169.26,"v":465.502081},{"d":17,"x":796.0,"y":166.93,"v":485.106807}]},{"func":"milo","color":"#990099","points":[{"d":1,"x":64.0,"y":222.35,"v":181.982579},{"d":2,"x":109.75,"y":216.97,"v":200.142907},{"d":3,"x":155.5,"y":211.75,"v":219.487105},{"d":4,"x":201.25,"y":208.6,"v":232.069071},{"d":5,"x":247.0,"y":204.17,"v":251.026308},{"d":6,"x":292.75,"y":201.47,"v":263.278782},{"d":7,"x":338.5,"y":198.74,"v":276.328166},{"d":8,"x":384.25,"y":196.48,"v":287.580673},{"d":9,"x":430.0,"y":194.48,"v":297.932826},{"d":10,"x":475.75,"y":192.89,"v":306.422971},{"d":11,"x":521.5,"y":191.4,"v":314.652588},{"d":12,"x":567.25,"y":189.65,"v":324.52583},{"d":13,"x":613.0,"y":188.2,"v":332.947011},{"d":14,"x":658.75,"y":187.03,"v":339.931458},{"d":15,"x":704.5,"y":185.62,"v":348.482904},{"d":16,"x":750.25,"y":184.3,"v":356.731677},{"d":17,"x":796.0,"y":183.14,"v":364.141398}]},{"func":"null","color":"#0099c6","points":[{"d":1,"x":64.0,"y":464.74,"v":2.498003},{"d":2,"x":109.75,"y":464.74,"v":2.498003},{"d":3,"x":155.5,"y":464.74,"v":2.498003},{"d":4,"x":201.25,"y":464.74,"v":2.498003},{"d":5,"x":247.0,"y":464.74,"v":2.498003},{"d":6,"x":292.75,"y":464.74,"v":2.498003},{"d":7,"x":338.5,"y":464.74,"v":2.498003},{"d":8,"x":384.25,"y":464.74,"v":2.498003},{"d":9,"x":430.0,"y":464.74,"v":2.498003},{"d":10,"x":475.75,"y":464.74,"v":2.498003},{"d":11,"x":521.5,"y":464.74,"v":2.498003},{"d":12,"x":567.25,"y":464.74,"v":2.498003},{"d":13,"x":613.0,"y":464.74,"v":2.498003},{"d":14,"x":658.75,"y":464.74,"v":2.498003},{"d":15,"x":704.5,"y":464.74,"v":2.498003},{"d":16,"x":750.25,"y":464.74,"v":2.498003},{"d":17,"x":796.0,"y":464.74,"v":2.498003}]},{"func":"ostringstream","color":"#dd4477","points":[{"d":1,"x":64.0,"y":66.36,"v":2874.415967},{"d":2,"x":109.75,"y":66.29,"v":2877.975238},{"d":3,"x":155.5,"y":65.96,"v":2895.043648},{"d":4,"x":201.25,"y":65.86,"v":2899.832764},{"d":5,"x":247.0,"y":65.53,"v":2917.046763},{"d":6,"x":292.75,"y":65.27,"v":2930.40265},{"d":7,"x":338.5,"y":65.13,"v":2937.570999},{"d":8,"x":384.25,"y":65.23,"v":2932.444729},{"d":9,"x":430.0,"y":64.92,"v":2948.459533},{"d":10,"x":475.75,"y":64.31,"v":2980.408684},{"d":11,"x":521.5,"y":64.23,"v":2984.956429},{"d":12,"x":567.25,"y":64.05,"v":2994.316277},{"d":13,"x":613.0,"y":64.02,"v":2995.695542},{"d":14,"x":658.75,"y":63.82,"v":3006.335043},{"d":15,"x":704.5,"y":63.53,"v":3022.234908},{"d":16,"x":750.25,"y":63.75,"v":3010.085878},{"d":17,"x":796.0,"y":63.86,"v":3004.423228}]},{"func":"ostrstream","color":"#66aa00","points":[{"d":1,"x":64.0,"y":69.81,"v":2703.99623},{"d":2,"x":109.75,"y":69.83,"v":2703.31426},{"d":3,"x":155.5,"y":69.58,"v":2715.160617},{"d":4,"x":201.25,"y":69.43,"v":2722.424749},{"d":5,"x":247.0,"y":69.21,"v":2732.987623},{"d":6,"x":292.75,"y":69.14,"v":2736.516244},{"d":7,"x":338.5,"y":68.91,"v":2747.82622},{"d":8,"x":384.25,"y":68.79,"v":2753.228343},{"d":9,"x":430.0,"y":68.57,"v":2764.385068},{"d":10,"x":475.75,"y":68.1,"v":2787.012683},{"d":11,"x":521.5,"y":67.99,"v":2792.916706},{"d":12,"x":567.25,"y":68.06,"v":2789.123726},{"d":13,"x":613.0,"y":67.89,"v":2797.606208},{"d":14,"x":658.75,"y":67.58,"v":2813.061644},{"d":15,"x":704.5,"y":67.5,"v":2817.007875},{"d":16,"x":750.25,"y":67.45,"v":2819.620817},{"d":17,"x":796.0,"y":67.77,"v":2803.606013}]},{"func":"sprintf","color":"#b82e2e","points":[{"d":1,"x":64.0,"y":111.49,"v":1293.486611},{"d":2,"x":109.75,"y":111.87,"v":1284.83172},{"d":3,"x":155.5,"y":111.16,"v":1301.24881},{"d":4,"x":201.25,"y":110.9,"v":1307.076206},{"d":5,"x":247.0,"y":110.63,"v":1313.462972},{"d":6,"x":292.75,"y":110.36,"v":1319.688822},{"d":7,"x":338.5,"y":109.39,"v":1342.557809},{"d":8,"x":384.25,"y":108.77,"v":1357.254649},{"d":9,"x":430.0,"y":108.58,"v":1361.825381},{"d":10,"x":475.75,"y":108.99,"v":1352.170523},{"d":11,"x":521.5,"y":108.7,"v":1358.978731},{"d":12,"x":567.25,"y":108.89,"v":1354.496118},{"d":13,"x":613.0,"y":108.48,"v":1364.361697},{"d":14,"x":658.75,"y":108.26,"v":1369.714013},{"d":15,"x":704.5,"y":108.56,"v":1362.342606},{"d":16,"x":750.25,"y":108.1,"v":1373.514656},{"d":17,"x":796.0,"y":109.6,"v":1337.446865}]}]}</script></div><div class="legend"><button type="button" class="lg" data-func="doubleconv"><span class="sw" style="background:#3366cc"></span>doubleconv</button><button type="button" class="lg" data-func="fpconv"><span class="sw" style="background:#dc3912"></span>fpconv</button><button type="button" class="lg" data-func="gay"><span class="sw" style="background:#ff9900"></span>gay</button><button type="button" class="lg" data-func="grisu2"><span class="sw" style="background:#109618"></span>grisu2</button><button type="button" class="lg" data-func="milo"><span class="sw" style="background:#990099"></span>milo</button><button type="button" class="lg" data-func="null"><span class="sw" style="background:#0099c6"></span>null</button><button type="button" class="lg" data-func="ostringstream"><span class="sw" style="background:#dd4477"></span>ostringstream</button><button type="button" class="lg" data-func="ostrstream"><span class="sw" style="background:#66aa00"></span>ostrstream</button><button type="button" class="lg" data-func="sprintf"><span class="sw" style="background:#b82e2e"></span>sprintf</button></div><p class="hint">Hover or click a function to highlight its series.</p></div></section>
-  <details class="source">
-    <summary>Source CSV (corei7920@2.67_win32_vc2013.csv)</summary>
-    <pre><code>doubleype,Function,Digit,doubleime(ms)
-randomdigit,doubleconv,1,296.024842
-randomdigit,doubleconv,2,320.759669
-randomdigit,doubleconv,3,326.475958
-randomdigit,doubleconv,4,345.670735
-randomdigit,doubleconv,5,359.053441
-randomdigit,doubleconv,6,386.064055
-randomdigit,doubleconv,7,389.221041
-randomdigit,doubleconv,8,409.749108
-randomdigit,doubleconv,9,415.794888
-randomdigit,doubleconv,10,435.614166
-randomdigit,doubleconv,11,427.281104
-randomdigit,doubleconv,12,458.111517
-randomdigit,doubleconv,13,453.544616
-randomdigit,doubleconv,14,486.930502
-randomdigit,doubleconv,15,481.999628
-randomdigit,doubleconv,16,499.520131
-randomdigit,doubleconv,17,518.753221
-randomdigit,fpconv,1,321.077666
-randomdigit,fpconv,2,340.850968
-randomdigit,fpconv,3,380.351598
-randomdigit,fpconv,4,405.488710
-randomdigit,fpconv,5,427.679558
-randomdigit,fpconv,6,445.131097
-randomdigit,fpconv,7,459.716829
-randomdigit,fpconv,8,474.930893
-randomdigit,fpconv,9,485.329022
-randomdigit,fpconv,10,495.497273
-randomdigit,fpconv,11,505.899233
-randomdigit,fpconv,12,516.408469
-randomdigit,fpconv,13,527.358304
-randomdigit,fpconv,14,537.411617
-randomdigit,fpconv,15,546.009038
-randomdigit,fpconv,16,554.583471
-randomdigit,fpconv,17,570.038907
-randomdigit,gay,1,866.239988
-randomdigit,gay,2,1109.205256
-randomdigit,gay,3,1401.670827
-randomdigit,gay,4,1671.842105
-randomdigit,gay,5,1949.369465
-randomdigit,gay,6,2216.502528
-randomdigit,gay,7,2483.762023
-randomdigit,gay,8,2753.373932
-randomdigit,gay,9,3015.323256
-randomdigit,gay,10,3263.250047
-randomdigit,gay,11,3635.092344
-randomdigit,gay,12,3997.210819
-randomdigit,gay,13,4271.393460
-randomdigit,gay,14,4498.964593
-randomdigit,gay,15,4761.189770
-randomdigit,gay,16,5046.563618
-randomdigit,gay,17,5162.674779
-randomdigit,grisu2,1,270.891561
-randomdigit,grisu2,2,296.672331
-randomdigit,grisu2,3,317.024158
-randomdigit,grisu2,4,324.288289
-randomdigit,grisu2,5,340.264781
-randomdigit,grisu2,6,354.490371
-randomdigit,grisu2,7,367.670018
-randomdigit,grisu2,8,377.796125
-randomdigit,grisu2,9,392.240099
-randomdigit,grisu2,10,401.324095
-randomdigit,grisu2,11,408.457962
-randomdigit,grisu2,12,424.120287
-randomdigit,grisu2,13,431.208179
-randomdigit,grisu2,14,442.096713
-randomdigit,grisu2,15,452.410554
-randomdigit,grisu2,16,465.502081
-randomdigit,grisu2,17,485.106807
-randomdigit,milo,1,181.982579
-randomdigit,milo,2,200.142907
-randomdigit,milo,3,219.487105
-randomdigit,milo,4,232.069071
-randomdigit,milo,5,251.026308
-randomdigit,milo,6,263.278782
-randomdigit,milo,7,276.328166
-randomdigit,milo,8,287.580673
-randomdigit,milo,9,297.932826
-randomdigit,milo,10,306.422971
-randomdigit,milo,11,314.652588
-randomdigit,milo,12,324.525830
-randomdigit,milo,13,332.947011
-randomdigit,milo,14,339.931458
-randomdigit,milo,15,348.482904
-randomdigit,milo,16,356.731677
-randomdigit,milo,17,364.141398
-randomdigit,null,1,2.498003
-randomdigit,null,2,2.498003
-randomdigit,null,3,2.498003
-randomdigit,null,4,2.498003
-randomdigit,null,5,2.498003
-randomdigit,null,6,2.498003
-randomdigit,null,7,2.498003
-randomdigit,null,8,2.498003
-randomdigit,null,9,2.498003
-randomdigit,null,10,2.498003
-randomdigit,null,11,2.498003
-randomdigit,null,12,2.498003
-randomdigit,null,13,2.498003
-randomdigit,null,14,2.498003
-randomdigit,null,15,2.498003
-randomdigit,null,16,2.498003
-randomdigit,null,17,2.498003
-randomdigit,ostringstream,1,2874.415967
-randomdigit,ostringstream,2,2877.975238
-randomdigit,ostringstream,3,2895.043648
-randomdigit,ostringstream,4,2899.832764
-randomdigit,ostringstream,5,2917.046763
-randomdigit,ostringstream,6,2930.402650
-randomdigit,ostringstream,7,2937.570999
-randomdigit,ostringstream,8,2932.444729
-randomdigit,ostringstream,9,2948.459533
-randomdigit,ostringstream,10,2980.408684
-randomdigit,ostringstream,11,2984.956429
-randomdigit,ostringstream,12,2994.316277
-randomdigit,ostringstream,13,2995.695542
-randomdigit,ostringstream,14,3006.335043
-randomdigit,ostringstream,15,3022.234908
-randomdigit,ostringstream,16,3010.085878
-randomdigit,ostringstream,17,3004.423228
-randomdigit,ostrstream,1,2703.996230
-randomdigit,ostrstream,2,2703.314260
-randomdigit,ostrstream,3,2715.160617
-randomdigit,ostrstream,4,2722.424749
-randomdigit,ostrstream,5,2732.987623
-randomdigit,ostrstream,6,2736.516244
-randomdigit,ostrstream,7,2747.826220
-randomdigit,ostrstream,8,2753.228343
-randomdigit,ostrstream,9,2764.385068
-randomdigit,ostrstream,10,2787.012683
-randomdigit,ostrstream,11,2792.916706
-randomdigit,ostrstream,12,2789.123726
-randomdigit,ostrstream,13,2797.606208
-randomdigit,ostrstream,14,2813.061644
-randomdigit,ostrstream,15,2817.007875
-randomdigit,ostrstream,16,2819.620817
-randomdigit,ostrstream,17,2803.606013
-randomdigit,sprintf,1,1293.486611
-randomdigit,sprintf,2,1284.831720
-randomdigit,sprintf,3,1301.248810
-randomdigit,sprintf,4,1307.076206
-randomdigit,sprintf,5,1313.462972
-randomdigit,sprintf,6,1319.688822
-randomdigit,sprintf,7,1342.557809
-randomdigit,sprintf,8,1357.254649
-randomdigit,sprintf,9,1361.825381
-randomdigit,sprintf,10,1352.170523
-randomdigit,sprintf,11,1358.978731
-randomdigit,sprintf,12,1354.496118
-randomdigit,sprintf,13,1364.361697
-randomdigit,sprintf,14,1369.714013
-randomdigit,sprintf,15,1362.342606
-randomdigit,sprintf,16,1373.514656
-randomdigit,sprintf,17,1337.446865
-</code></pre>
-  </details>
+  <section data-type="randomdigit" id="randomdigit"><div class="card"><h3>Time per double (lower is better)</h3><table class="results"><thead><tr><th scope="col">Method</th><th scope="col" class="num">Time (ns)</th><th scope="col" class="num">Speedup</th></tr></thead><tbody><tr data-func="null" data-mean="2.498003" tabindex="0"><td class="f">null</td><td class="t num">2.50</td><td class="s num"></td></tr><tr data-func="milo" data-mean="288.0978972941177" tabindex="0"><td class="f">milo</td><td class="t num">288.10</td><td class="s num"></td></tr><tr data-func="grisu2" data-mean="385.38614182352944" tabindex="0"><td class="f">grisu2</td><td class="t num">385.39</td><td class="s num"></td></tr><tr data-func="doubleconv" data-mean="412.38638952941176" tabindex="0"><td class="f">doubleconv</td><td class="t num">412.39</td><td class="s num"></td></tr><tr data-func="fpconv" data-mean="470.22133252941177" tabindex="0"><td class="f">fpconv</td><td class="t num">470.22</td><td class="s num"></td></tr><tr data-func="sprintf" data-mean="1338.4975405294117" tabindex="0"><td class="f">sprintf</td><td class="t num">1,338.50</td><td class="s num"></td></tr><tr data-func="ostrstream" data-mean="2764.6938250588237" tabindex="0"><td class="f">ostrstream</td><td class="t num">2,764.69</td><td class="s num"></td></tr><tr data-func="ostringstream" data-mean="2953.6263694117647" tabindex="0"><td class="f">ostringstream</td><td class="t num">2,953.63</td><td class="s num"></td></tr><tr data-func="gay" data-mean="3064.919341764706" tabindex="0"><td class="f">gay</td><td class="t num">3,064.92</td><td class="s num"></td></tr></tbody></table><p class="hint">Click any row to use it as the speedup baseline.</p><div class="card-divider"></div><div class="chart-wrap bar-wrap"><svg viewBox="0 0 820 262" class="chart bar-chart" role="img" aria-label="Mean conversion time per function"><g class="bars"><g class="bar" data-func="null" data-value="2.4980"><rect class="hit" x="0" y="5.00" width="820" height="36.00" fill="transparent"/><text x="140" y="23.00" dominant-baseline="middle" text-anchor="end" class="lbl">null</text><rect class="fill" x="150" y="10" width="0.47" height="26" fill="#0099c6" rx="3" ry="3"/><text x="158.47" y="23.00" dominant-baseline="middle" class="val">2.50 ns</text></g><g class="bar" data-func="milo" data-value="288.0979"><rect class="hit" x="0" y="41.00" width="820" height="36.00" fill="transparent"/><text x="140" y="59.00" dominant-baseline="middle" text-anchor="end" class="lbl">milo</text><rect class="fill" x="150" y="46" width="53.96" height="26" fill="#990099" rx="3" ry="3"/><text x="211.96" y="59.00" dominant-baseline="middle" class="val">288.10 ns</text></g><g class="bar" data-func="grisu2" data-value="385.3861"><rect class="hit" x="0" y="77.00" width="820" height="36.00" fill="transparent"/><text x="140" y="95.00" dominant-baseline="middle" text-anchor="end" class="lbl">grisu2</text><rect class="fill" x="150" y="82" width="72.18" height="26" fill="#109618" rx="3" ry="3"/><text x="230.18" y="95.00" dominant-baseline="middle" class="val">385.39 ns</text></g><g class="bar" data-func="doubleconv" data-value="412.3864"><rect class="hit" x="0" y="113.00" width="820" height="36.00" fill="transparent"/><text x="140" y="131.00" dominant-baseline="middle" text-anchor="end" class="lbl">doubleconv</text><rect class="fill" x="150" y="118" width="77.23" height="26" fill="#3366cc" rx="3" ry="3"/><text x="235.23" y="131.00" dominant-baseline="middle" class="val">412.39 ns</text></g><g class="bar" data-func="fpconv" data-value="470.2213"><rect class="hit" x="0" y="149.00" width="820" height="36.00" fill="transparent"/><text x="140" y="167.00" dominant-baseline="middle" text-anchor="end" class="lbl">fpconv</text><rect class="fill" x="150" y="154" width="88.06" height="26" fill="#dc3912" rx="3" ry="3"/><text x="246.06" y="167.00" dominant-baseline="middle" class="val">470.22 ns</text></g><g class="bar" data-func="ostrstream" data-value="2764.6938"><rect class="hit" x="0" y="185.00" width="820" height="36.00" fill="transparent"/><text x="140" y="203.00" dominant-baseline="middle" text-anchor="end" class="lbl">ostrstream</text><rect class="fill" x="150" y="190" width="517.77" height="26" fill="#66aa00" rx="3" ry="3"/><text x="675.77" y="203.00" dominant-baseline="middle" class="val">2,764.69 ns</text></g><g class="bar" data-func="gay" data-value="3064.9193"><rect class="hit" x="0" y="221.00" width="820" height="36.00" fill="transparent"/><text x="140" y="239.00" dominant-baseline="middle" text-anchor="end" class="lbl">gay</text><rect class="fill" x="150" y="226" width="574.00" height="26" fill="#ff9900" rx="3" ry="3"/><text x="732.00" y="239.00" dominant-baseline="middle" class="val">3,064.92 ns</text></g></g></svg></div><p class="hint"><code>ostringstream</code> and <code>sprintf</code> omitted; they are an order of magnitude slower than the rest.</p></div><div class="card"><h3>Time vs. digit count (log scale)</h3><div class="chart-wrap line-wrap"><svg viewBox="0 0 820 560" class="chart line-chart" role="img" aria-label="Time vs digit count, log scale"><rect x="64" y="16" width="732" height="488" class="plot-bg"/><line x1="64.00" x2="64.00" y1="16" y2="504" class="grid"/><text x="64.00" y="522" text-anchor="middle" class="ax">1</text><line x1="109.75" x2="109.75" y1="16" y2="504" class="grid"/><text x="109.75" y="522" text-anchor="middle" class="ax">2</text><line x1="155.50" x2="155.50" y1="16" y2="504" class="grid"/><text x="155.50" y="522" text-anchor="middle" class="ax">3</text><line x1="201.25" x2="201.25" y1="16" y2="504" class="grid"/><text x="201.25" y="522" text-anchor="middle" class="ax">4</text><line x1="247.00" x2="247.00" y1="16" y2="504" class="grid"/><text x="247.00" y="522" text-anchor="middle" class="ax">5</text><line x1="292.75" x2="292.75" y1="16" y2="504" class="grid"/><text x="292.75" y="522" text-anchor="middle" class="ax">6</text><line x1="338.50" x2="338.50" y1="16" y2="504" class="grid"/><text x="338.50" y="522" text-anchor="middle" class="ax">7</text><line x1="384.25" x2="384.25" y1="16" y2="504" class="grid"/><text x="384.25" y="522" text-anchor="middle" class="ax">8</text><line x1="430.00" x2="430.00" y1="16" y2="504" class="grid"/><text x="430.00" y="522" text-anchor="middle" class="ax">9</text><line x1="475.75" x2="475.75" y1="16" y2="504" class="grid"/><text x="475.75" y="522" text-anchor="middle" class="ax">10</text><line x1="521.50" x2="521.50" y1="16" y2="504" class="grid"/><text x="521.50" y="522" text-anchor="middle" class="ax">11</text><line x1="567.25" x2="567.25" y1="16" y2="504" class="grid"/><text x="567.25" y="522" text-anchor="middle" class="ax">12</text><line x1="613.00" x2="613.00" y1="16" y2="504" class="grid"/><text x="613.00" y="522" text-anchor="middle" class="ax">13</text><line x1="658.75" x2="658.75" y1="16" y2="504" class="grid"/><text x="658.75" y="522" text-anchor="middle" class="ax">14</text><line x1="704.50" x2="704.50" y1="16" y2="504" class="grid"/><text x="704.50" y="522" text-anchor="middle" class="ax">15</text><line x1="750.25" x2="750.25" y1="16" y2="504" class="grid"/><text x="750.25" y="522" text-anchor="middle" class="ax">16</text><line x1="796.00" x2="796.00" y1="16" y2="504" class="grid"/><text x="796.00" y="522" text-anchor="middle" class="ax">17</text><line x1="64" x2="796" y1="477.31" y2="477.31" class="grid-minor"/><line x1="64" x2="796" y1="454.39" y2="454.39" class="grid-minor"/><line x1="64" x2="796" y1="438.13" y2="438.13" class="grid-minor"/><line x1="64" x2="796" y1="415.21" y2="415.21" class="grid-minor"/><line x1="64" x2="796" y1="406.50" y2="406.50" class="grid-minor"/><line x1="64" x2="796" y1="398.95" y2="398.95" class="grid-minor"/><line x1="64" x2="796" y1="392.29" y2="392.29" class="grid-minor"/><line x1="64" x2="796" y1="347.16" y2="347.16" class="grid-minor"/><line x1="64" x2="796" y1="324.24" y2="324.24" class="grid-minor"/><line x1="64" x2="796" y1="307.98" y2="307.98" class="grid-minor"/><line x1="64" x2="796" y1="285.06" y2="285.06" class="grid-minor"/><line x1="64" x2="796" y1="276.35" y2="276.35" class="grid-minor"/><line x1="64" x2="796" y1="268.80" y2="268.80" class="grid-minor"/><line x1="64" x2="796" y1="262.14" y2="262.14" class="grid-minor"/><line x1="64" x2="796" y1="217.01" y2="217.01" class="grid-minor"/><line x1="64" x2="796" y1="194.09" y2="194.09" class="grid-minor"/><line x1="64" x2="796" y1="177.83" y2="177.83" class="grid-minor"/><line x1="64" x2="796" y1="154.91" y2="154.91" class="grid-minor"/><line x1="64" x2="796" y1="146.20" y2="146.20" class="grid-minor"/><line x1="64" x2="796" y1="138.65" y2="138.65" class="grid-minor"/><line x1="64" x2="796" y1="131.99" y2="131.99" class="grid-minor"/><line x1="64" x2="796" y1="86.86" y2="86.86" class="grid-minor"/><line x1="64" x2="796" y1="63.94" y2="63.94" class="grid-minor"/><line x1="64" x2="796" y1="47.68" y2="47.68" class="grid-minor"/><line x1="64" x2="796" y1="24.76" y2="24.76" class="grid-minor"/><line x1="64" x2="796" y1="16.05" y2="16.05" class="grid-minor"/><line x1="64" x2="796" y1="425.52" y2="425.52" class="grid-major"/><text x="56" y="425.52" dominant-baseline="middle" text-anchor="end" class="ax">5</text><line x1="64" x2="796" y1="386.34" y2="386.34" class="grid-major"/><text x="56" y="386.34" dominant-baseline="middle" text-anchor="end" class="ax">10</text><line x1="64" x2="796" y1="295.37" y2="295.37" class="grid-major"/><text x="56" y="295.37" dominant-baseline="middle" text-anchor="end" class="ax">50</text><line x1="64" x2="796" y1="256.19" y2="256.19" class="grid-major"/><text x="56" y="256.19" dominant-baseline="middle" text-anchor="end" class="ax">100</text><line x1="64" x2="796" y1="165.22" y2="165.22" class="grid-major"/><text x="56" y="165.22" dominant-baseline="middle" text-anchor="end" class="ax">500</text><line x1="64" x2="796" y1="126.04" y2="126.04" class="grid-major"/><text x="56" y="126.04" dominant-baseline="middle" text-anchor="end" class="ax">1,000</text><line x1="64" x2="796" y1="35.07" y2="35.07" class="grid-major"/><text x="56" y="35.07" dominant-baseline="middle" text-anchor="end" class="ax">5,000</text><line x1="64" x2="796" y1="504.00" y2="504.00" class="grid-major"/><text x="56" y="504.00" dominant-baseline="middle" text-anchor="end" class="ax">0</text><text x="430.00" y="552" text-anchor="middle" class="ax-title">Digits</text><text transform="translate(16 260.00) rotate(-90)" text-anchor="middle" class="ax-title">Time (ns)</text><g class="series"><g class="ln" data-func="doubleconv"><polyline points="64.00,194.85 109.75,190.31 155.50,189.31 201.25,186.08 247.00,183.94 292.75,179.84 338.50,179.38 384.25,176.47 430.00,175.64 475.75,173.01 521.50,174.10 567.25,170.16 613.00,170.73 658.75,166.72 704.50,167.29 750.25,165.27 796.00,163.14" fill="none" stroke="#3366cc" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="fpconv"><polyline points="64.00,190.25 109.75,186.88 155.50,180.68 201.25,177.06 247.00,174.05 292.75,171.79 338.50,169.97 384.25,168.13 430.00,166.90 475.75,165.73 521.50,164.56 567.25,163.39 613.00,162.21 658.75,161.14 704.50,160.24 750.25,159.36 796.00,157.81" fill="none" stroke="#dc3912" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="gay"><polyline points="64.00,134.16 109.75,120.18 155.50,106.95 201.25,96.99 247.00,88.31 292.75,81.05 338.50,74.62 384.25,68.79 430.00,63.65 475.75,59.19 521.50,53.09 567.25,47.72 613.00,43.97 658.75,41.04 704.50,37.84 750.25,34.55 796.00,33.26" fill="none" stroke="#ff9900" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="grisu2"><polyline points="64.00,199.86 109.75,194.72 155.50,190.97 201.25,189.69 247.00,186.97 292.75,184.66 338.50,182.59 384.25,181.06 430.00,178.94 475.75,177.64 521.50,176.65 567.25,174.52 613.00,173.58 658.75,172.18 704.50,170.87 750.25,169.26 796.00,166.93" fill="none" stroke="#109618" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="milo"><polyline points="64.00,222.35 109.75,216.97 155.50,211.75 201.25,208.60 247.00,204.17 292.75,201.47 338.50,198.74 384.25,196.48 430.00,194.48 475.75,192.89 521.50,191.40 567.25,189.65 613.00,188.20 658.75,187.03 704.50,185.62 750.25,184.30 796.00,183.14" fill="none" stroke="#990099" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="null"><polyline points="64.00,464.74 109.75,464.74 155.50,464.74 201.25,464.74 247.00,464.74 292.75,464.74 338.50,464.74 384.25,464.74 430.00,464.74 475.75,464.74 521.50,464.74 567.25,464.74 613.00,464.74 658.75,464.74 704.50,464.74 750.25,464.74 796.00,464.74" fill="none" stroke="#0099c6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="ostringstream"><polyline points="64.00,66.36 109.75,66.29 155.50,65.96 201.25,65.86 247.00,65.53 292.75,65.27 338.50,65.13 384.25,65.23 430.00,64.92 475.75,64.31 521.50,64.23 567.25,64.05 613.00,64.02 658.75,63.82 704.50,63.53 750.25,63.75 796.00,63.86" fill="none" stroke="#dd4477" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="ostrstream"><polyline points="64.00,69.81 109.75,69.83 155.50,69.58 201.25,69.43 247.00,69.21 292.75,69.14 338.50,68.91 384.25,68.79 430.00,68.57 475.75,68.10 521.50,67.99 567.25,68.06 613.00,67.89 658.75,67.58 704.50,67.50 750.25,67.45 796.00,67.77" fill="none" stroke="#66aa00" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g><g class="ln" data-func="sprintf"><polyline points="64.00,111.49 109.75,111.87 155.50,111.16 201.25,110.90 247.00,110.63 292.75,110.36 338.50,109.39 384.25,108.77 430.00,108.58 475.75,108.99 521.50,108.70 567.25,108.89 613.00,108.48 658.75,108.26 704.50,108.56 750.25,108.10 796.00,109.60" fill="none" stroke="#b82e2e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g></g><g class="focus" pointer-events="none" style="display:none"><line class="crosshair" y1="16" y2="504"/><circle class="dot" r="4.5" fill="currentColor" stroke="white" stroke-width="2"/></g><rect x="64" y="16" width="732" height="488" class="plot-border"/></svg><div class="tt" hidden></div><script type="application/json" class="chart-meta">{"width":820,"height":560,"plot":{"l":64,"r":796,"t":16,"b":504},"series":[{"func":"doubleconv","color":"#3366cc","points":[{"d":1,"x":64.0,"y":194.85,"v":296.024842},{"d":2,"x":109.75,"y":190.31,"v":320.759669},{"d":3,"x":155.5,"y":189.31,"v":326.475958},{"d":4,"x":201.25,"y":186.08,"v":345.670735},{"d":5,"x":247.0,"y":183.94,"v":359.053441},{"d":6,"x":292.75,"y":179.84,"v":386.064055},{"d":7,"x":338.5,"y":179.38,"v":389.221041},{"d":8,"x":384.25,"y":176.47,"v":409.749108},{"d":9,"x":430.0,"y":175.64,"v":415.794888},{"d":10,"x":475.75,"y":173.01,"v":435.614166},{"d":11,"x":521.5,"y":174.1,"v":427.281104},{"d":12,"x":567.25,"y":170.16,"v":458.111517},{"d":13,"x":613.0,"y":170.73,"v":453.544616},{"d":14,"x":658.75,"y":166.72,"v":486.930502},{"d":15,"x":704.5,"y":167.29,"v":481.999628},{"d":16,"x":750.25,"y":165.27,"v":499.520131},{"d":17,"x":796.0,"y":163.14,"v":518.753221}]},{"func":"fpconv","color":"#dc3912","points":[{"d":1,"x":64.0,"y":190.25,"v":321.077666},{"d":2,"x":109.75,"y":186.88,"v":340.850968},{"d":3,"x":155.5,"y":180.68,"v":380.351598},{"d":4,"x":201.25,"y":177.06,"v":405.48871},{"d":5,"x":247.0,"y":174.05,"v":427.679558},{"d":6,"x":292.75,"y":171.79,"v":445.131097},{"d":7,"x":338.5,"y":169.97,"v":459.716829},{"d":8,"x":384.25,"y":168.13,"v":474.930893},{"d":9,"x":430.0,"y":166.9,"v":485.329022},{"d":10,"x":475.75,"y":165.73,"v":495.497273},{"d":11,"x":521.5,"y":164.56,"v":505.899233},{"d":12,"x":567.25,"y":163.39,"v":516.408469},{"d":13,"x":613.0,"y":162.21,"v":527.358304},{"d":14,"x":658.75,"y":161.14,"v":537.411617},{"d":15,"x":704.5,"y":160.24,"v":546.009038},{"d":16,"x":750.25,"y":159.36,"v":554.583471},{"d":17,"x":796.0,"y":157.81,"v":570.038907}]},{"func":"gay","color":"#ff9900","points":[{"d":1,"x":64.0,"y":134.16,"v":866.239988},{"d":2,"x":109.75,"y":120.18,"v":1109.205256},{"d":3,"x":155.5,"y":106.95,"v":1401.670827},{"d":4,"x":201.25,"y":96.99,"v":1671.842105},{"d":5,"x":247.0,"y":88.31,"v":1949.369465},{"d":6,"x":292.75,"y":81.05,"v":2216.502528},{"d":7,"x":338.5,"y":74.62,"v":2483.762023},{"d":8,"x":384.25,"y":68.79,"v":2753.373932},{"d":9,"x":430.0,"y":63.65,"v":3015.323256},{"d":10,"x":475.75,"y":59.19,"v":3263.250047},{"d":11,"x":521.5,"y":53.09,"v":3635.092344},{"d":12,"x":567.25,"y":47.72,"v":3997.210819},{"d":13,"x":613.0,"y":43.97,"v":4271.39346},{"d":14,"x":658.75,"y":41.04,"v":4498.964593},{"d":15,"x":704.5,"y":37.84,"v":4761.18977},{"d":16,"x":750.25,"y":34.55,"v":5046.563618},{"d":17,"x":796.0,"y":33.26,"v":5162.674779}]},{"func":"grisu2","color":"#109618","points":[{"d":1,"x":64.0,"y":199.86,"v":270.891561},{"d":2,"x":109.75,"y":194.72,"v":296.672331},{"d":3,"x":155.5,"y":190.97,"v":317.024158},{"d":4,"x":201.25,"y":189.69,"v":324.288289},{"d":5,"x":247.0,"y":186.97,"v":340.264781},{"d":6,"x":292.75,"y":184.66,"v":354.490371},{"d":7,"x":338.5,"y":182.59,"v":367.670018},{"d":8,"x":384.25,"y":181.06,"v":377.796125},{"d":9,"x":430.0,"y":178.94,"v":392.240099},{"d":10,"x":475.75,"y":177.64,"v":401.324095},{"d":11,"x":521.5,"y":176.65,"v":408.457962},{"d":12,"x":567.25,"y":174.52,"v":424.120287},{"d":13,"x":613.0,"y":173.58,"v":431.208179},{"d":14,"x":658.75,"y":172.18,"v":442.096713},{"d":15,"x":704.5,"y":170.87,"v":452.410554},{"d":16,"x":750.25,"y":169.26,"v":465.502081},{"d":17,"x":796.0,"y":166.93,"v":485.106807}]},{"func":"milo","color":"#990099","points":[{"d":1,"x":64.0,"y":222.35,"v":181.982579},{"d":2,"x":109.75,"y":216.97,"v":200.142907},{"d":3,"x":155.5,"y":211.75,"v":219.487105},{"d":4,"x":201.25,"y":208.6,"v":232.069071},{"d":5,"x":247.0,"y":204.17,"v":251.026308},{"d":6,"x":292.75,"y":201.47,"v":263.278782},{"d":7,"x":338.5,"y":198.74,"v":276.328166},{"d":8,"x":384.25,"y":196.48,"v":287.580673},{"d":9,"x":430.0,"y":194.48,"v":297.932826},{"d":10,"x":475.75,"y":192.89,"v":306.422971},{"d":11,"x":521.5,"y":191.4,"v":314.652588},{"d":12,"x":567.25,"y":189.65,"v":324.52583},{"d":13,"x":613.0,"y":188.2,"v":332.947011},{"d":14,"x":658.75,"y":187.03,"v":339.931458},{"d":15,"x":704.5,"y":185.62,"v":348.482904},{"d":16,"x":750.25,"y":184.3,"v":356.731677},{"d":17,"x":796.0,"y":183.14,"v":364.141398}]},{"func":"null","color":"#0099c6","points":[{"d":1,"x":64.0,"y":464.74,"v":2.498003},{"d":2,"x":109.75,"y":464.74,"v":2.498003},{"d":3,"x":155.5,"y":464.74,"v":2.498003},{"d":4,"x":201.25,"y":464.74,"v":2.498003},{"d":5,"x":247.0,"y":464.74,"v":2.498003},{"d":6,"x":292.75,"y":464.74,"v":2.498003},{"d":7,"x":338.5,"y":464.74,"v":2.498003},{"d":8,"x":384.25,"y":464.74,"v":2.498003},{"d":9,"x":430.0,"y":464.74,"v":2.498003},{"d":10,"x":475.75,"y":464.74,"v":2.498003},{"d":11,"x":521.5,"y":464.74,"v":2.498003},{"d":12,"x":567.25,"y":464.74,"v":2.498003},{"d":13,"x":613.0,"y":464.74,"v":2.498003},{"d":14,"x":658.75,"y":464.74,"v":2.498003},{"d":15,"x":704.5,"y":464.74,"v":2.498003},{"d":16,"x":750.25,"y":464.74,"v":2.498003},{"d":17,"x":796.0,"y":464.74,"v":2.498003}]},{"func":"ostringstream","color":"#dd4477","points":[{"d":1,"x":64.0,"y":66.36,"v":2874.415967},{"d":2,"x":109.75,"y":66.29,"v":2877.975238},{"d":3,"x":155.5,"y":65.96,"v":2895.043648},{"d":4,"x":201.25,"y":65.86,"v":2899.832764},{"d":5,"x":247.0,"y":65.53,"v":2917.046763},{"d":6,"x":292.75,"y":65.27,"v":2930.40265},{"d":7,"x":338.5,"y":65.13,"v":2937.570999},{"d":8,"x":384.25,"y":65.23,"v":2932.444729},{"d":9,"x":430.0,"y":64.92,"v":2948.459533},{"d":10,"x":475.75,"y":64.31,"v":2980.408684},{"d":11,"x":521.5,"y":64.23,"v":2984.956429},{"d":12,"x":567.25,"y":64.05,"v":2994.316277},{"d":13,"x":613.0,"y":64.02,"v":2995.695542},{"d":14,"x":658.75,"y":63.82,"v":3006.335043},{"d":15,"x":704.5,"y":63.53,"v":3022.234908},{"d":16,"x":750.25,"y":63.75,"v":3010.085878},{"d":17,"x":796.0,"y":63.86,"v":3004.423228}]},{"func":"ostrstream","color":"#66aa00","points":[{"d":1,"x":64.0,"y":69.81,"v":2703.99623},{"d":2,"x":109.75,"y":69.83,"v":2703.31426},{"d":3,"x":155.5,"y":69.58,"v":2715.160617},{"d":4,"x":201.25,"y":69.43,"v":2722.424749},{"d":5,"x":247.0,"y":69.21,"v":2732.987623},{"d":6,"x":292.75,"y":69.14,"v":2736.516244},{"d":7,"x":338.5,"y":68.91,"v":2747.82622},{"d":8,"x":384.25,"y":68.79,"v":2753.228343},{"d":9,"x":430.0,"y":68.57,"v":2764.385068},{"d":10,"x":475.75,"y":68.1,"v":2787.012683},{"d":11,"x":521.5,"y":67.99,"v":2792.916706},{"d":12,"x":567.25,"y":68.06,"v":2789.123726},{"d":13,"x":613.0,"y":67.89,"v":2797.606208},{"d":14,"x":658.75,"y":67.58,"v":2813.061644},{"d":15,"x":704.5,"y":67.5,"v":2817.007875},{"d":16,"x":750.25,"y":67.45,"v":2819.620817},{"d":17,"x":796.0,"y":67.77,"v":2803.606013}]},{"func":"sprintf","color":"#b82e2e","points":[{"d":1,"x":64.0,"y":111.49,"v":1293.486611},{"d":2,"x":109.75,"y":111.87,"v":1284.83172},{"d":3,"x":155.5,"y":111.16,"v":1301.24881},{"d":4,"x":201.25,"y":110.9,"v":1307.076206},{"d":5,"x":247.0,"y":110.63,"v":1313.462972},{"d":6,"x":292.75,"y":110.36,"v":1319.688822},{"d":7,"x":338.5,"y":109.39,"v":1342.557809},{"d":8,"x":384.25,"y":108.77,"v":1357.254649},{"d":9,"x":430.0,"y":108.58,"v":1361.825381},{"d":10,"x":475.75,"y":108.99,"v":1352.170523},{"d":11,"x":521.5,"y":108.7,"v":1358.978731},{"d":12,"x":567.25,"y":108.89,"v":1354.496118},{"d":13,"x":613.0,"y":108.48,"v":1364.361697},{"d":14,"x":658.75,"y":108.26,"v":1369.714013},{"d":15,"x":704.5,"y":108.56,"v":1362.342606},{"d":16,"x":750.25,"y":108.1,"v":1373.514656},{"d":17,"x":796.0,"y":109.6,"v":1337.446865}]}]}</script></div><div class="legend"><button type="button" class="lg" data-func="doubleconv"><span class="sw" style="background:#3366cc"></span>doubleconv</button><button type="button" class="lg" data-func="fpconv"><span class="sw" style="background:#dc3912"></span>fpconv</button><button type="button" class="lg" data-func="gay"><span class="sw" style="background:#ff9900"></span>gay</button><button type="button" class="lg" data-func="grisu2"><span class="sw" style="background:#109618"></span>grisu2</button><button type="button" class="lg" data-func="milo"><span class="sw" style="background:#990099"></span>milo</button><button type="button" class="lg" data-func="null"><span class="sw" style="background:#0099c6"></span>null</button><button type="button" class="lg" data-func="ostringstream"><span class="sw" style="background:#dd4477"></span>ostringstream</button><button type="button" class="lg" data-func="ostrstream"><span class="sw" style="background:#66aa00"></span>ostrstream</button><button type="button" class="lg" data-func="sprintf"><span class="sw" style="background:#b82e2e"></span>sprintf</button></div><p class="hint">Hover or click a function to highlight its series.</p></div></section>
 </main>
 <footer>
   Generated from <code>corei7920@2.67_win32_vc2013.csv</code> by
@@ -578,7 +376,10 @@ randomdigit,sprintf,17,1337.446865
         }
       });
     });
-    if (rows.length) recompute(rows[0]);
+    var defaultRow = rows.find(function (r) {
+      return r.dataset.func === "sprintf";
+    }) || rows[0];
+    if (defaultRow) recompute(defaultRow);
   });
 
   // Line chart: legend hover/click highlights a series; pointer movement
@@ -670,7 +471,7 @@ randomdigit,sprintf,17,1337.446865
 
       // Render tooltip content + position.
       tooltip.innerHTML =
-        '<div class="d">' + best.point.d + '</div>' +
+        '<div class="d">' + best.point.d + ' digits</div>' +
         '<div class="r"><span class="sw" style="background:' +
         best.series.color + '"></span><span class="f">' +
         escapeHtml(best.series.func) + '</span>:&nbsp;<span class="v">' +
@@ -743,9 +544,7 @@ randomdigit,sprintf,17,1337.446865
     });
   }
   function formatNs(v) {
-    if (v >= 100) return v.toFixed(2);
-    if (v >= 10) return v.toFixed(2);
-    return v.toFixed(3);
+    return v.toFixed(2);
   }
 })();
 </script>

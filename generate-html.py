@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import math
@@ -47,6 +48,39 @@ PALETTE = [
     "#aaaa11", "#6633cc", "#e67300", "#8b0707",
     "#651067", "#329262", "#5574a6", "#3b3eac",
 ]
+
+# Stable, name-keyed color assignments. The same method always renders in
+# the same color, regardless of which result file it appears in or its
+# position within ``benchmarks[]``. Slot indices reference ``PALETTE``;
+# methods not listed here fall back to a deterministic hash-based slot
+# (see ``_palette``), so future implementations stay consistent across
+# runs without needing a code change.
+METHOD_COLORS = {
+    # Top performers get the vivid, well-separated hues so they stay
+    # visually distinct in the line chart's "fast cluster".
+    "zmij":              PALETTE[0],   # #3366cc Google blue
+    "xjb64":             PALETTE[1],   # #dc3912 red
+    "fmt":               PALETTE[2],   # #ff9900 orange
+    "dragonbox":         PALETTE[3],   # #109618 green
+    "ryu":               PALETTE[4],   # #990099 purple
+    "to_chars":          PALETTE[5],   # #0099c6 cyan
+    "yy":                PALETTE[6],   # #dd4477 pink
+    "schubfach":         PALETTE[11],  # #22aa99 teal
+    "uscale":            PALETTE[13],  # #6633cc violet
+    # Mid / legacy methods get the deeper, more muted slots.
+    "double-conversion": PALETTE[9],   # #316395 dark blue
+    "doubleconv":        PALETTE[9],   # legacy short name; same color
+    "milo":              PALETTE[10],  # #994499 dark purple
+    "grisu2":            PALETTE[8],   # #b82e2e dark red
+    "fpconv":            PALETTE[12],  # #aaaa11 olive
+    "gay":               PALETTE[15],  # #8b0707 deep red
+    "sprintf":           PALETTE[14],  # #e67300 dark orange
+    "ostringstream":     PALETTE[7],   # #66aa00 lime
+    "ostrstream":        PALETTE[16],  # #651067 deep purple
+    "null":              PALETTE[17],  # #329262 forest (baseline ref line)
+    # PALETTE[18] (#5574a6) and PALETTE[19] (#3b3eac) intentionally left
+    # free as natural slots for future implementations.
+}
 
 
 # ---------------------------------------------------------------------------
@@ -142,10 +176,21 @@ def _esc(s: str) -> str:
 
 
 def _palette(methods: list[str]) -> dict[str, str]:
-    """Stable color assignment. Pass the FULL method list (including any
-    later-filtered methods like the baseline) so colors stay consistent
-    across charts even when one chart hides a method."""
-    return {m: PALETTE[i % len(PALETTE)] for i, m in enumerate(methods)}
+    """Stable, name-keyed color assignment. The same method always gets
+    the same color across result files (and across charts within a file).
+    Methods listed in ``METHOD_COLORS`` use their pinned color; unknown
+    methods fall back to a deterministic hash-based palette slot, so a
+    new implementation added later renders in the same color on every
+    machine without any code change.
+    """
+    out: dict[str, str] = {}
+    for m in methods:
+        if m in METHOD_COLORS:
+            out[m] = METHOD_COLORS[m]
+        else:
+            digest = hashlib.md5(m.encode("utf-8")).digest()
+            out[m] = PALETTE[int.from_bytes(digest[:4], "big") % len(PALETTE)]
+    return out
 
 
 def render_bar_chart(methods: list[str], means: dict[str, float],

@@ -53,29 +53,19 @@ PALETTE = [
 # Data loading
 # ---------------------------------------------------------------------------
 
-# Single bucket name for the rendered section. Vestige of an older
-# multi-family layout; today every row goes into one bucket but the
-# rendering pipeline still groups by type, so we keep a constant.
-DEFAULT_TYPE = "randomdigit"
-
-
-def load_json(path: Path) -> list[tuple[str, str, int, float]]:
+def load_json(path: Path) -> list[tuple[str, int, float]]:
     """Read Google Benchmark's native JSON output.
 
     Each ``benchmarks[]`` entry has a name like ``method`` (mixed pool) or
-    ``method/d<N>`` (per-digit). Ns-per-double resolution priority:
-
-    1. ``ns_per_double`` -- exact value written verbatim by
-       migrate-csv-to-json.py for files that originated as the legacy CSV.
-    2. ``Time/double``   -- seconds-per-double user counter registered by
-       src/benchmark.cc on current runs.
-    3. ``real_time / items_per_iter`` -- last-resort fallback derived from
-       the benchmark name suffix.
+    ``method/d<N>`` (per-digit). Ns-per-double comes from
+    ``ns_per_double`` if present (written by migrate-csv-to-json.py for
+    legacy CSV imports), else the ``Time/double`` user counter that
+    ``src/benchmark.cc`` always registers.
     """
     with path.open() as f:
         data = json.load(f)
 
-    rows: list[tuple[str, str, int, float]] = []
+    rows: list[tuple[str, int, float]] = []
     for r in data.get("benchmarks", []):
         # Skip aggregate rows (mean/median/stddev) when --benchmark_repetitions
         # is used; we want the raw per-iteration timings only.
@@ -86,8 +76,7 @@ def load_json(path: Path) -> list[tuple[str, str, int, float]]:
         name = r.get("run_name") or r.get("name") or ""
         sep = name.rfind("/d")
         if sep == -1:
-            method = name
-            digit = 0
+            method, digit = name, 0
         else:
             method = name[:sep]
             try:
@@ -99,51 +88,49 @@ def load_json(path: Path) -> list[tuple[str, str, int, float]]:
         elif "Time/double" in r:
             time_ns = float(r["Time/double"]) * 1e9
         else:
-            unit_to_ns = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
-            unit = r.get("time_unit", "ns")
-            real_time = float(r["real_time"])
-            items = 100_000 if digit > 0 else 100_000 * 17
-            time_ns = real_time * unit_to_ns.get(unit, 1.0) / items
-        rows.append((DEFAULT_TYPE, method, digit, time_ns))
+            continue
+        rows.append((method, digit, time_ns))
     return rows
 
 
-def aggregate(rows: Iterable[tuple[str, str, int, float]]) -> dict:
-    """Group rows by Type. For each type compute per-method digit timings
-    and a mean time matching the original PHP behaviour:
-
-    - if a method has a row with digit==0, that single value is its time;
-    - otherwise the mean is sum(time for digit>0) / max_digit_global.
+def aggregate(rows: Iterable[tuple[str, int, float]]) -> dict:
+    """Bucket rows by method. Returns ``methods``/``times``/``fixed``/
+    ``digits``/``mean``. Mean matches the original PHP behaviour: if a
+    method has a row with digit==0 that single value is its mean,
+    otherwise the mean is ``sum(time for digit>0) / max_digit_global``.
     """
-    by_type: dict[str, dict] = {}
-    max_digit = 0
-    for type_, _method, digit, _time in rows:
-        if digit > max_digit:
-            max_digit = digit
-        by_type.setdefault(type_, {"methods": [], "times": defaultdict(dict),
-                                   "fixed": {}, "digits": set()})
+    rows = list(rows)
+    methods: list[str] = []
+    times: dict[str, dict[int, float]] = defaultdict(dict)
+    fixed: dict[str, float] = {}
+    digits: set[int] = set()
+    max_digit = max((d for _, d, _ in rows), default=0)
 
-    for type_, method, digit, time in rows:
-        bucket = by_type[type_]
-        if method not in bucket["times"] and method not in bucket["fixed"]:
-            bucket["methods"].append(method)
+    for method, digit, time in rows:
+        if method not in times and method not in fixed:
+            methods.append(method)
         if digit == 0:
-            bucket["fixed"][method] = time
+            fixed[method] = time
         else:
-            bucket["times"][method][digit] = time
-            bucket["digits"].add(digit)
+            times[method][digit] = time
+            digits.add(digit)
 
-    for bucket in by_type.values():
-        bucket["digits"] = sorted(bucket["digits"])
-        bucket["mean"] = {}
-        denom = max_digit if max_digit > 0 else 1
-        for method in bucket["methods"]:
-            if method in bucket["fixed"]:
-                bucket["mean"][method] = bucket["fixed"][method]
-            else:
-                vals = bucket["times"][method].values()
-                bucket["mean"][method] = sum(vals) / denom if vals else 0.0
-    return by_type
+    denom = max_digit or 1
+    mean: dict[str, float] = {}
+    for method in methods:
+        if method in fixed:
+            mean[method] = fixed[method]
+        else:
+            vals = times[method].values()
+            mean[method] = sum(vals) / denom if vals else 0.0
+
+    return {
+        "methods": methods,
+        "times": times,
+        "fixed": fixed,
+        "digits": sorted(digits),
+        "mean": mean,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -154,12 +141,15 @@ def _esc(s: str) -> str:
     return html.escape(str(s), quote=True)
 
 
-def _color_for(method: str, all_methods: list[str]) -> str:
-    return PALETTE[all_methods.index(method) % len(PALETTE)]
+def _palette(methods: list[str]) -> dict[str, str]:
+    """Stable color assignment. Pass the FULL method list (including any
+    later-filtered methods like the baseline) so colors stay consistent
+    across charts even when one chart hides a method."""
+    return {m: PALETTE[i % len(PALETTE)] for i, m in enumerate(methods)}
 
 
 def render_bar_chart(methods: list[str], means: dict[str, float],
-                     all_methods: list[str]) -> str:
+                     colors: dict[str, str]) -> str:
     items = [(m, means[m]) for m in methods if m not in BAR_CHART_EXCLUDED]
     items.sort(key=lambda x: x[1])
     n = len(items)
@@ -186,7 +176,7 @@ def render_bar_chart(methods: list[str], means: dict[str, float],
     for i, (method, v) in enumerate(items):
         y = pad_t + i * (bar_h + gap)
         bw = (v / max_v) * plot_w if max_v > 0 else 0
-        color = _color_for(method, all_methods)
+        color = colors[method]
         parts.append(
             f'<g class="bar" data-method="{_esc(method)}" data-value="{v:.4f}">'
         )
@@ -253,7 +243,7 @@ def _nice_log_ticks(vmin: float, vmax: float) -> tuple[float, float, list[float]
 
 def render_line_chart(methods: list[str], digits: list[int],
                       times: dict[str, dict[int, float]],
-                      all_methods: list[str],
+                      colors: dict[str, str],
                       baseline_method: str | None = None) -> str:
     width, height = 820, 560
     margin = {"l": 64, "r": 24, "t": 16, "b": 56}
@@ -367,7 +357,7 @@ def render_line_chart(methods: list[str], digits: list[int],
                if times[method].get(d, 0.0) > 0]
         if not pts:
             continue
-        color = _color_for(method, all_methods)
+        color = colors[method]
         path = " ".join(f"{x_of(d):.2f},{y_of(t):.2f}" for d, t in pts)
         parts.append(
             f'<g class="ln" data-method="{_esc(method)}">'
@@ -442,13 +432,12 @@ def render_line_chart(methods: list[str], digits: list[int],
     )
 
 
-def render_legend(methods: list[str], all_methods: list[str]) -> str:
+def render_legend(methods: list[str], colors: dict[str, str]) -> str:
     items = []
     for m in methods:
-        c = _color_for(m, all_methods)
         items.append(
             f'<button type="button" class="lg" data-method="{_esc(m)}">'
-            f'<span class="sw" style="background:{c}"></span>{_esc(m)}'
+            f'<span class="sw" style="background:{colors[m]}"></span>{_esc(m)}'
             f'</button>'
         )
     return f'<div class="legend">{"".join(items)}</div>'
@@ -498,6 +487,7 @@ PAGE_CSS = """
   --selected-fg: #78350f;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
             0 4px 12px rgba(15, 23, 42, 0.04);
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -612,8 +602,7 @@ header.site nav .picker .menu a {
   color: var(--fg);
   text-decoration: none;
   white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-               monospace;
+  font-family: var(--mono);
   font-size: 13px;
 }
 header.site nav .picker .menu a:hover {
@@ -633,8 +622,7 @@ main {
 h1 {
   font-size: 22px;
   margin: 8px 0 4px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-               monospace;
+  font-family: var(--mono);
   word-break: break-all;
 }
 h3 {
@@ -710,7 +698,7 @@ table.results tbody tr:focus-visible {
 .chart .ax {
   fill: var(--fg);
   font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mono);
 }
 .chart .ax,
 .chart .val { fill: var(--fg-muted); }
@@ -761,7 +749,7 @@ table.results tbody tr:focus-visible {
   fill: var(--fg-muted);
   font-size: 11px;
   font-style: italic;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mono);
   opacity: 0.85;
 }
 .tt {
@@ -1194,8 +1182,7 @@ INDEX_CSS = """
   flex-wrap: wrap;
 }
 .entry-machine {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-               monospace;
+  font-family: var(--mono);
   font-size: 16px;
   font-weight: 600;
   word-break: break-word;
@@ -1222,8 +1209,7 @@ INDEX_CSS = """
   color: var(--fg-muted);
 }
 .entry-tags .tag.commit {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-               monospace;
+  font-family: var(--mono);
   color: var(--fg);
 }
 .entry-tags .tag.latest {
@@ -1241,8 +1227,7 @@ INDEX_CSS = """
   font-variant-numeric: tabular-nums;
 }
 .entry-bars .b-name {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-               monospace;
+  font-family: var(--mono);
   font-size: 13px;
 }
 .entry-bars .b-track {
@@ -1300,21 +1285,15 @@ INDEX_CSS = """
 INDEX_TOP_N = 5
 
 
-def _format_date(s: str) -> tuple[str, str]:
-    """Return (display_string, sort_key) for a Google Benchmark date string.
-
-    Google Benchmark writes dates in ISO 8601 with timezone offset; legacy
-    runs may be missing the ``date`` field entirely. ``sort_key`` is the
-    raw string so that lexicographic comparison matches chronological
-    order; ``display_string`` is a short, human-readable form.
-    """
+def _format_date(s: str) -> str:
+    """Render a Google Benchmark ISO-8601 date as ``YYYY-MM-DD`` for
+    display. Returns ``""`` when the field is missing (legacy runs)."""
     if not s:
-        return ("", "")
+        return ""
     try:
-        dt = datetime.fromisoformat(s)
-        return (dt.strftime("%Y-%m-%d"), s)
+        return datetime.fromisoformat(s).strftime("%Y-%m-%d")
     except (TypeError, ValueError):
-        return (s[:10], s)
+        return s[:10]
 
 
 def collect_index_entries(results_dir: Path) -> list[dict]:
@@ -1328,24 +1307,19 @@ def collect_index_entries(results_dir: Path) -> list[dict]:
         except (OSError, ValueError):
             continue
         ctx = data.get("context", {}) or {}
-        rows = load_json(json_path)
-        by_type = aggregate(rows)
-        # All current results have a single type bucket; if multiple
-        # exist we just pick the first deterministically.
-        bucket = by_type[next(iter(sorted(by_type)))] if by_type else None
-        means = bucket["mean"] if bucket else {}
+        means = aggregate(load_json(json_path))["mean"]
         ranking = sorted(
             ((m, t) for m, t in means.items()
              if m != BASELINE_METHOD and t > 0),
             key=lambda kv: kv[1],
         )
-        date_display, date_sort = _format_date(ctx.get("date", ""))
+        date_str = ctx.get("date", "")
         entries.append({
             "json_name": json_path.name,
             "html_name": json_path.with_suffix(".html").name,
             "stem": json_path.stem,
-            "date_display": date_display,
-            "date_sort": date_sort,
+            "date_display": _format_date(date_str),
+            "date_sort": date_str,
             "machine": ctx.get("machine", ""),
             "os": ctx.get("os", ""),
             "compiler": ctx.get("compiler", ""),
@@ -1354,35 +1328,16 @@ def collect_index_entries(results_dir: Path) -> list[dict]:
             "method_count": len(ranking),
         })
 
-    # Most-recent first; entries without a date sink to the bottom but
-    # remain alphabetized among themselves.
-    entries.sort(
-        key=lambda e: (e["date_sort"] == "", -_lex(e["date_sort"]),
-                       e["stem"]),
-    )
-    # Mark the newest dated entry; used for the "Latest" tag.
-    for e in entries:
-        if e["date_sort"]:
-            e["is_latest"] = True
-            break
+    # Most-recent first; undated entries sink to the bottom and are
+    # alphabetized among themselves. ISO-8601 strings sort lexicographically.
+    dated = sorted((e for e in entries if e["date_sort"]),
+                   key=lambda e: e["date_sort"], reverse=True)
+    undated = sorted((e for e in entries if not e["date_sort"]),
+                     key=lambda e: e["stem"])
+    entries = dated + undated
+    if dated:
+        dated[0]["is_latest"] = True
     return entries
-
-
-def _lex(s: str) -> int:
-    """Map a string to a sortable integer that respects lexicographic
-    order for fixed-width ISO-8601 strings. We return 0 for the empty
-    string and a stable hash-free numeric representation otherwise.
-
-    The trick: convert the first 25 chars to a single integer by treating
-    them as base-128 digits. This keeps the comparison consistent with
-    string ordering for ISO-8601 timestamps that share the same length
-    (``YYYY-MM-DDThh:mm:ss±hh:mm``)."""
-    if not s:
-        return 0
-    n = 0
-    for ch in s[:25]:
-        n = (n << 7) | (ord(ch) & 0x7F)
-    return n
 
 
 def render_entry_card(entry: dict) -> str:
@@ -1492,21 +1447,20 @@ def render_index_page(entries: list[dict]) -> str:
 """
 
 
-def render_section(type_name: str, bucket: dict) -> str:
+def render_results(bucket: dict) -> str:
     methods = bucket["methods"]
     means = bucket["mean"]
     digits = bucket["digits"]
     times = bucket["times"]
-    anchor = type_name.lower().replace(" ", "-")
 
     # `null` is a no-op pseudo-method that measures the benchmark loop's
     # overhead. Hide it from the table, bar chart and legend, and show it
     # as a footnote + dashed reference line in the line chart.
     has_baseline = BASELINE_METHOD in methods
     display_methods = [m for m in methods if m != BASELINE_METHOD]
+    colors = _palette(methods)
 
-    section = [
-        f'<section data-type="{_esc(type_name)}" id="{_esc(anchor)}">',
+    parts = [
         '<div class="card">',
         '<h3>Time per double (lower is better)</h3>',
         render_table(display_methods, means),
@@ -1517,7 +1471,7 @@ def render_section(type_name: str, bucket: dict) -> str:
         '</div>',
     ]
     if has_baseline:
-        section.append(
+        parts.append(
             f'<p class="hint">Times include a fixed loop-overhead floor of '
             f'<strong>{means[BASELINE_METHOD]:,.2f} ns</strong> '
             f'(measured with a no-op stand-in for <code>dtoa</code>).</p>'
@@ -1533,55 +1487,32 @@ def render_section(type_name: str, bucket: dict) -> str:
                     f'of magnitude slower than the rest.</p>')
         else:
             hint = '<p class="hint">All measured methods shown.</p>'
-        section += [
+        parts += [
             '<div class="card-divider"></div>',
-            render_bar_chart(display_methods, means, methods),
+            render_bar_chart(display_methods, means, colors),
             hint,
         ]
-    section.append('</div>')
+    parts.append('</div>')
 
     if digits and times:
-        section += [
+        parts += [
             '<div class="card">',
             '<h3>Time vs. digit count (log scale)</h3>',
-            render_line_chart(display_methods, digits, times, methods,
+            render_line_chart(display_methods, digits, times, colors,
                               baseline_method=(BASELINE_METHOD if has_baseline
                                                else None)),
-            render_legend(display_methods, methods),
+            render_legend(display_methods, colors),
             '<p class="hint">Hover or click a method to highlight its '
             'series.</p>',
             '</div>',
         ]
 
-    section.append('</section>')
-    return "".join(section)
+    return "".join(parts)
 
 
 def render_page(src_path: Path) -> str:
     name = src_path.stem
-    rows = load_json(src_path)
-    by_type = aggregate(rows)
-    types = sorted(by_type.keys())
-
-    sections_html = "".join(render_section(t, by_type[t]) for t in types)
-
-    section_links = "".join(
-        f'<a href="#{_esc(t.lower().replace(" ", "-"))}">{_esc(t)}</a>'
-        for t in types
-    )
-    section_menu = ""
-    if len(types) > 1:
-        section_menu = (
-            '<details class="picker"><summary>Section</summary>'
-            f'<div class="menu">{section_links}</div></details>'
-        )
-
-    nav_html = (
-        '<nav>'
-        '<a class="nav-link" href="index.html">All results</a>'
-        f'{section_menu}'
-        '</nav>'
-    )
+    body_html = render_results(aggregate(load_json(src_path)))
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1595,12 +1526,14 @@ def render_page(src_path: Path) -> str:
 <header class="site">
   <div class="row">
     <a class="brand" href="https://github.com/fmtlib/dtoa-benchmark">dtoa-benchmark</a>
-    {nav_html}
+    <nav>
+      <a class="nav-link" href="index.html">All results</a>
+    </nav>
   </div>
 </header>
 <main>
   <h1 id="title">{_esc(name)}</h1>
-  {sections_html}
+  {body_html}
 </main>
 <footer>
   Generated from <code>{_esc(src_path.name)}</code> by

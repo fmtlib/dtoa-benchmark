@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.14)
 
 # Set the default build type to Release because we want to benchmark
 # optimized code.
@@ -10,6 +10,18 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 project(DTOA_BENCHMARK C CXX)
+
+# Fetch Google Benchmark.
+include(FetchContent)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  googlebenchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG v1.9.4
+)
+FetchContent_MakeAvailable(googlebenchmark)
 
 add_executable(
   dtoa-benchmark

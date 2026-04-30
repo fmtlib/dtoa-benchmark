@@ -2,6 +2,8 @@
 CMakeFiles
 CMakeCache.txt
 Makefile
+cache-contention
+cache-pressure
 cmake_install.cmake
 dtoa-benchmark
 __pycache__

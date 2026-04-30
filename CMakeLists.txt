@@ -70,6 +70,7 @@ add_executable(
 target_compile_options(dtoa-benchmark PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
 target_compile_features(dtoa-benchmark PRIVATE cxx_std_20)
 target_include_directories(dtoa-benchmark PRIVATE src src/fmt/include)
+target_link_libraries(dtoa-benchmark PRIVATE benchmark::benchmark)
 
 if (APPLE)
   execute_process(
@@ -108,10 +109,10 @@ else ()
   set(GENERATE_HTML)
 endif ()
 
-function(add_benchmark_target name num_trials)
+function(add_benchmark_target name)
   add_custom_target(
     ${name}
-    COMMAND dtoa-benchmark ${COMMIT_HASH} ${num_trials}
+    COMMAND dtoa-benchmark --commit-hash=${COMMIT_HASH} ${ARGN}
     ${GENERATE_HTML}
     # Run in the source directory because we want results to be in the source
     # results directory.
@@ -120,8 +121,8 @@ function(add_benchmark_target name num_trials)
   )
 endfunction()
 
-add_benchmark_target(run-benchmark 10)
-add_benchmark_target(run-benchmark-fast 3)
+add_benchmark_target(run-benchmark)
+add_benchmark_target(run-benchmark-fast --benchmark_min_time=0.5s)
 
 # Cache pressure measurement tool -- shares all dtoa implementations
 # but uses a different main() that measures L1 cache pollution.

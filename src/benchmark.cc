@@ -4,13 +4,18 @@
 
 #include "benchmark.h"
 
+#include <benchmark/benchmark.h>
 #include <math.h>    // isnan
 #include <stdint.h>  // uint64_t
 #include <stdio.h>   // snprintf
 
-#include <algorithm>  // std::sort
-#include <chrono>
+#include <algorithm>  // std::sort, std::shuffle
+#include <cmath>      // std::abs
+#include <fstream>
+#include <optional>
+#include <random>  // std::mt19937
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "double-conversion/double-conversion.h"
@@ -191,51 +196,147 @@ auto get_random_digit_data(int digit) -> const double* {
   return random_digit_data.data() + (digit - 1) * num_doubles_per_digit;
 }
 
-using duration = std::chrono::steady_clock::duration;
-
-struct digit_result {
-  double duration_ns = std::numeric_limits<double>::min();
-};
-
-struct benchmark_result {
-  double min_ns = std::numeric_limits<double>::max();
-  double max_ns = std::numeric_limits<double>::min();
-  digit_result per_digit[max_digits + 1];
-};
-
-auto bench_random_digit(dtoa_fun dtoa, const std::string& name, int num_trials)
-    -> benchmark_result {
-  int num_iterations_per_digit = num_trials;
-
-  char buffer[256] = {};
-  benchmark_result result;
-  for (int digit = 1; digit <= max_digits; ++digit) {
-    const double* data = get_random_digit_data(digit);
-
-    duration run_duration = duration::max();
-    for (int trial = 0; trial < num_trials; ++trial) {
-      auto start = std::chrono::steady_clock::now();
-      for (int iter = 0; iter < num_iterations_per_digit; ++iter) {
-        for (int i = 0; i < num_doubles_per_digit; ++i) dtoa(data[i], buffer);
-      }
-      auto finish = std::chrono::steady_clock::now();
-
-      // Pick the smallest of trial runs.
-      auto d = finish - start;
-      if (d < run_duration) run_duration = d;
+auto get_mixed_pool() -> const std::vector<double>& {
+  static const std::vector<double> pool = [] {
+    std::vector<double> v;
+    v.reserve(num_doubles_per_digit * max_digits);
+    for (int d = 1; d <= max_digits; ++d) {
+      const double* p = get_random_digit_data(d);
+      v.insert(v.end(), p, p + num_doubles_per_digit);
     }
-
-    double ns =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(run_duration)
-            .count();
-    ns /= num_iterations_per_digit * num_doubles_per_digit;
-
-    result.per_digit[digit].duration_ns = ns;
-    if (ns < result.min_ns) result.min_ns = ns;
-    if (ns > result.max_ns) result.max_ns = ns;
-  }
-  return result;
+    std::shuffle(v.begin(), v.end(), std::mt19937(0));
+    return v;
+  }();
+  return pool;
 }
+
+void run_random_digit(benchmark::State& state, dtoa_fun dtoa, int digit) {
+  const double* data = get_random_digit_data(digit);
+  char buffer[256];
+  for (auto _ : state) {
+    for (int i = 0; i < num_doubles_per_digit; ++i) {
+      char* end = dtoa(data[i], buffer);
+      benchmark::DoNotOptimize(end);
+      benchmark::ClobberMemory();
+    }
+  }
+  state.counters["Throughput"] = benchmark::Counter(
+      double(num_doubles_per_digit), benchmark::Counter::kIsIterationInvariantRate);
+  state.counters["Time/double"] = benchmark::Counter(
+      double(num_doubles_per_digit), benchmark::Counter::kIsIterationInvariantRate |
+                                 benchmark::Counter::kInvert);
+}
+
+void run_mixed(benchmark::State& state, dtoa_fun dtoa) {
+  const auto& pool = get_mixed_pool();
+  char buffer[256];
+  for (auto _ : state) {
+    for (double x : pool) {
+      char* end = dtoa(x, buffer);
+      benchmark::DoNotOptimize(end);
+      benchmark::ClobberMemory();
+    }
+  }
+  state.counters["Throughput"] = benchmark::Counter(
+      double(pool.size()), benchmark::Counter::kIsIterationInvariantRate);
+  state.counters["Time/double"] = benchmark::Counter(
+      double(pool.size()), benchmark::Counter::kIsIterationInvariantRate |
+                               benchmark::Counter::kInvert);
+}
+
+void register_all(bool per_digit) {
+  for (const auto& m : methods) {
+    if (per_digit) {
+      for (int d = 1; d <= max_digits; ++d) {
+        std::string name = m.name + "/d" + std::to_string(d);
+        benchmark::RegisterBenchmark(name.c_str(), run_random_digit, m.dtoa, d);
+      }
+    }
+    benchmark::RegisterBenchmark(m.name.c_str(), run_mixed, m.dtoa);
+  }
+}
+
+// Formats a counter value with 2 fractional digits, applying SI auto-scaling
+// so the mantissa always sits in [1, 1000) (or in [0.01, 1) for tiny values).
+auto format_counter(double n) -> std::string {
+  static const char* const big[] = {"k", "M", "G", "T", "P", "E", "Z", "Y"};
+  static const char* const small[] = {"m", "u", "n", "p", "f", "a", "z", "y"};
+  double v = n;
+  const char* prefix = "";
+  double a = std::abs(v);
+  if (a > 999) {
+    for (int i = 0; i < 8 && std::abs(v) > 999; ++i) {
+      v /= 1000;
+      prefix = big[i];
+    }
+  } else if (a > 0 && a < 0.01) {
+    for (int i = 0; i < 8 && std::abs(v) < 1.0; ++i) {
+      v *= 1000;
+      prefix = small[i];
+    }
+  }
+  return fmt::format("{:.2f}{}", v, prefix);
+}
+
+// Console reporter that formats counter cells with 2 fractional digits while
+// reusing google benchmark's tabular column layout for everything else.
+class pretty_reporter : public benchmark::ConsoleReporter {
+ public:
+  pretty_reporter() : benchmark::ConsoleReporter(OO_Tabular) {}
+
+ protected:
+  void PrintRunData(const Run& report) override {
+    Run copy = report;
+    std::string cells;
+    for (const auto& kv : copy.counters) {
+      const auto& c = kv.second;
+      const char* unit = "";
+      if (c.flags & benchmark::Counter::kIsRate)
+        unit = (c.flags & benchmark::Counter::kInvert) ? "s" : "/s";
+      auto cell = format_counter(c.value) + unit;
+      std::size_t w = std::max<std::size_t>(10, kv.first.length());
+      if (!cells.empty()) cells += ' ';
+      cells += fmt::format("{:>{}}", cell, w);
+    }
+    if (!copy.report_label.empty()) {
+      if (!cells.empty()) cells += ' ';
+      cells += copy.report_label;
+    }
+    copy.counters.clear();
+    copy.report_label = std::move(cells);
+    benchmark::ConsoleReporter::PrintRunData(copy);
+  }
+};
+
+// CSV reporter that emits one row per per-digit benchmark in the legacy
+// `Type,Method,Digit,Time(ns)` format consumed by generate-html.py.
+class csv_reporter : public benchmark::BenchmarkReporter {
+ public:
+  explicit csv_reporter(std::ostream& os) : os_(os) {
+    os_ << "Type,Method,Digit,Time(ns)\n";
+  }
+  bool ReportContext(const Context&) override { return true; }
+  void ReportRuns(const std::vector<Run>& runs) override {
+    for (const auto& r : runs) {
+      const std::string& name = r.run_name.function_name;
+      auto pos = name.rfind("/d");
+      if (pos == std::string::npos) continue;
+      std::string method = name.substr(0, pos);
+      int digit = 0;
+      try {
+        digit = std::stoi(name.substr(pos + 2));
+      } catch (...) {
+        continue;
+      }
+      double ns_per_double = r.GetAdjustedRealTime() / num_doubles_per_digit;
+      os_ << fmt::format("randomdigit,{},{},{:f}\n", method, digit,
+                         ns_per_double);
+    }
+  }
+
+ private:
+  std::ostream& os_;
+};
 
 }  // namespace
 
@@ -244,34 +345,92 @@ register_method::register_method(const char* name, dtoa_fun dtoa) {
 }
 
 auto main(int argc, char** argv) -> int {
+  bool per_digit = true;
+  bool skip_verify = false;
   std::string commit_hash;
-  if (argc > 1) commit_hash = std::string("_") + argv[1];
-  int num_trials = 10;
-  if (argc > 2) num_trials = std::stoi(argv[2]);
+  std::string csv_out;
+  std::string json_out;
+  int out = 1;
+  for (int i = 1; i < argc; ++i) {
+    auto arg = std::string_view(argv[i]);
+    if (arg == "--per-digit") {
+      per_digit = true;
+    } else if (arg == "--no-per-digit") {
+      per_digit = false;
+    } else if (arg == "--skip-verify") {
+      skip_verify = true;
+    } else if (arg.substr(0, 14) == "--commit-hash=") {
+      commit_hash = std::string(arg.substr(14));
+    } else if (arg.substr(0, 10) == "--csv-out=") {
+      csv_out = std::string(arg.substr(10));
+    } else if (arg.substr(0, 11) == "--json-out=") {
+      json_out = std::string(arg.substr(11));
+    } else {
+      argv[out++] = argv[i];
+    }
+  }
+  argc = out;
 
   std::sort(
       methods.begin(), methods.end(),
       [](const method& lhs, const method& rhs) { return lhs.name < rhs.name; });
 
-  for (const method& m : methods) verify(m);
+  if (!skip_verify) {
+    for (const method& m : methods) verify(m);
+  }
 
-  std::string filename = fmt::format("results/{}_{}_{}{}.csv", MACHINE,
-                                     os_name(), compiler_name(), commit_hash);
-  FILE* f = fopen(filename.c_str(), "w");
-  if (!f) {
-    fmt::print("error: cannot open '{}' for writing\n", filename);
+  // Default CSV output path matches the pre-google-benchmark layout so that
+  // generate-html.py keeps working unchanged.
+  if (csv_out.empty() && json_out.empty() && per_digit) {
+    std::string suffix = commit_hash.empty() ? "" : "_" + commit_hash;
+    csv_out = fmt::format("results/{}_{}_{}{}.csv", MACHINE, os_name(),
+                          compiler_name(), suffix);
+  }
+
+  register_all(per_digit);
+
+  // Google Benchmark requires --benchmark_out=<path> to be set whenever a
+  // custom file reporter is supplied, even though the reporter writes to its
+  // own stream. Synthesize the flag from --csv-out / --json-out.
+  std::vector<char*> extra_argv(argv, argv + argc);
+  std::string benchmark_out_arg;
+  const std::string& out_path = !json_out.empty() ? json_out : csv_out;
+  if (!out_path.empty()) {
+    benchmark_out_arg = "--benchmark_out=" + out_path;
+    extra_argv.push_back(benchmark_out_arg.data());
+  }
+  int extra_argc = static_cast<int>(extra_argv.size());
+  benchmark::Initialize(&extra_argc, extra_argv.data());
+  if (benchmark::ReportUnrecognizedArguments(extra_argc, extra_argv.data()))
     return 1;
-  }
-  fmt::print(f, "Type,Method,Digit,Time(ns)\n");
-  for (const method& m : methods) {
-    fmt::print("Benchmarking randomdigit {:20} ... ", m.name);
-    fflush(stdout);
-    benchmark_result result = bench_random_digit(m.dtoa, m.name, num_trials);
-    for (int digit = 1; digit <= max_digits; ++digit) {
-      fmt::print(f, "randomdigit,{},{},{:f}\n", m.name, digit,
-                 result.per_digit[digit].duration_ns);
+
+  pretty_reporter console;
+  std::ofstream file_out;
+  std::optional<csv_reporter> csv_rep;
+  std::optional<benchmark::JSONReporter> json_rep;
+  benchmark::BenchmarkReporter* file_reporter = nullptr;
+  if (!json_out.empty()) {
+    file_out.open(json_out);
+    if (!file_out) {
+      fmt::print("error: cannot open '{}' for writing\n", json_out);
+      return 1;
     }
-    fmt::print("[{:8.3f}ns, {:8.3f}ns]\n", result.min_ns, result.max_ns);
+    json_rep.emplace();
+    json_rep->SetOutputStream(&file_out);
+    file_reporter = &*json_rep;
+  } else if (!csv_out.empty()) {
+    file_out.open(csv_out);
+    if (!file_out) {
+      fmt::print("error: cannot open '{}' for writing\n", csv_out);
+      return 1;
+    }
+    csv_rep.emplace(file_out);
+    file_reporter = &*csv_rep;
   }
-  fclose(f);
+
+  if (file_reporter)
+    benchmark::RunSpecifiedBenchmarks(&console, file_reporter);
+  else
+    benchmark::RunSpecifiedBenchmarks(&console);
+  benchmark::Shutdown();
 }

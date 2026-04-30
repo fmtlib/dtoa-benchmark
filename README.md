@@ -105,8 +105,8 @@ Additional benchmark results are available in the
 [`results`](https://github.com/fmtlib/dtoa-benchmark/tree/main/results)
 directory and viewable online:
 
-* [apple-m1-pro_macos_clang21.0_d8ebcba](
-  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang21.0_d8ebcba.html)
+* [apple-m1-pro_macos_clang21.0_45ff4d4](
+  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang21.0_45ff4d4.html)
 
 ## Methods
 

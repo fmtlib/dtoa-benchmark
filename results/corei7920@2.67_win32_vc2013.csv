@@ -1,4 +1,4 @@
-doubleype,Function,Digit,doubleime(ms)
+doubleype,Method,Digit,doubleime(ms)
 randomdigit,doubleconv,1,296.024842
 randomdigit,doubleconv,2,320.759669
 randomdigit,doubleconv,3,326.475958

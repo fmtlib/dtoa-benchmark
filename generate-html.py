@@ -27,7 +27,12 @@ from typing import Iterable
 # to flatten everyone else against the axis.
 BAR_CHART_EXCLUDED = frozenset({"ostringstream", "sprintf"})
 
-# Color palette for function series. Matches Google Charts' default
+# Pseudo-method that does nothing; its time is the cost of the benchmark
+# loop itself (data load, indirect call, buffer write). It's surfaced as a
+# baseline footnote and a dashed reference line, not as a competing method.
+BASELINE_METHOD = "null"
+
+# Color palette for method series. Matches Google Charts' default
 # palette (also what Google Sheets and the old chart used) so that
 # previously published screenshots stay color-consistent.
 PALETTE = [
@@ -44,7 +49,7 @@ PALETTE = [
 # ---------------------------------------------------------------------------
 
 def load_csv(path: Path) -> tuple[list[str], list[tuple[str, str, int, float]]]:
-    """Returns (header, rows). Rows are (type, func, digit, time_ns)."""
+    """Returns (header, rows). Rows are (type, method, digit, time_ns)."""
     with path.open(newline="") as f:
         reader = csv.reader(f)
         header = next(reader)
@@ -52,49 +57,49 @@ def load_csv(path: Path) -> tuple[list[str], list[tuple[str, str, int, float]]]:
         for row in reader:
             if len(row) < 4:
                 continue
-            type_, func, digit, time = row[0], row[1], row[2], row[3]
+            type_, method, digit, time = row[0], row[1], row[2], row[3]
             try:
-                rows.append((type_, func, int(digit), float(time)))
+                rows.append((type_, method, int(digit), float(time)))
             except ValueError:
                 continue
     return header, rows
 
 
 def aggregate(rows: Iterable[tuple[str, str, int, float]]) -> dict:
-    """Group rows by Type. For each type compute per-function digit timings
+    """Group rows by Type. For each type compute per-method digit timings
     and a mean time matching the original PHP behaviour:
 
-    - if a function has a row with digit==0, that single value is its time;
+    - if a method has a row with digit==0, that single value is its time;
     - otherwise the mean is sum(time for digit>0) / max_digit_global.
     """
     by_type: dict[str, dict] = {}
     max_digit = 0
-    for type_, _func, digit, _time in rows:
+    for type_, _method, digit, _time in rows:
         if digit > max_digit:
             max_digit = digit
-        by_type.setdefault(type_, {"funcs": [], "times": defaultdict(dict),
+        by_type.setdefault(type_, {"methods": [], "times": defaultdict(dict),
                                    "fixed": {}, "digits": set()})
 
-    for type_, func, digit, time in rows:
+    for type_, method, digit, time in rows:
         bucket = by_type[type_]
-        if func not in bucket["times"] and func not in bucket["fixed"]:
-            bucket["funcs"].append(func)
+        if method not in bucket["times"] and method not in bucket["fixed"]:
+            bucket["methods"].append(method)
         if digit == 0:
-            bucket["fixed"][func] = time
+            bucket["fixed"][method] = time
         else:
-            bucket["times"][func][digit] = time
+            bucket["times"][method][digit] = time
             bucket["digits"].add(digit)
 
     for bucket in by_type.values():
         bucket["digits"] = sorted(bucket["digits"])
         bucket["mean"] = {}
         denom = max_digit if max_digit > 0 else 1
-        for func in bucket["funcs"]:
-            if func in bucket["fixed"]:
-                bucket["mean"][func] = bucket["fixed"][func]
+        for method in bucket["methods"]:
+            if method in bucket["fixed"]:
+                bucket["mean"][method] = bucket["fixed"][method]
             else:
-                vals = bucket["times"][func].values()
-                bucket["mean"][func] = sum(vals) / denom if vals else 0.0
+                vals = bucket["times"][method].values()
+                bucket["mean"][method] = sum(vals) / denom if vals else 0.0
     return by_type
 
 
@@ -106,13 +111,13 @@ def _esc(s: str) -> str:
     return html.escape(str(s), quote=True)
 
 
-def _color_for(func: str, all_funcs: list[str]) -> str:
-    return PALETTE[all_funcs.index(func) % len(PALETTE)]
+def _color_for(method: str, all_methods: list[str]) -> str:
+    return PALETTE[all_methods.index(method) % len(PALETTE)]
 
 
-def render_bar_chart(funcs: list[str], means: dict[str, float],
-                     all_funcs: list[str]) -> str:
-    items = [(f, means[f]) for f in funcs if f not in BAR_CHART_EXCLUDED]
+def render_bar_chart(methods: list[str], means: dict[str, float],
+                     all_methods: list[str]) -> str:
+    items = [(m, means[m]) for m in methods if m not in BAR_CHART_EXCLUDED]
     items.sort(key=lambda x: x[1])
     n = len(items)
 
@@ -126,21 +131,21 @@ def render_bar_chart(funcs: list[str], means: dict[str, float],
     plot_w = width - label_w - value_w - 16
     height = pad_t + pad_b + n * bar_h + max(0, n - 1) * gap
 
-    max_v = max((m for _, m in items), default=1.0)
+    max_v = max((v for _, v in items), default=1.0)
 
     parts: list[str] = []
     parts.append(
         f'<svg viewBox="0 0 {width} {height}" '
         f'class="chart bar-chart" role="img" '
-        f'aria-label="Mean conversion time per function">'
+        f'aria-label="Mean conversion time per method">'
     )
     parts.append('<g class="bars">')
-    for i, (func, m) in enumerate(items):
+    for i, (method, v) in enumerate(items):
         y = pad_t + i * (bar_h + gap)
-        bw = (m / max_v) * plot_w if max_v > 0 else 0
-        color = _color_for(func, all_funcs)
+        bw = (v / max_v) * plot_w if max_v > 0 else 0
+        color = _color_for(method, all_methods)
         parts.append(
-            f'<g class="bar" data-func="{_esc(func)}" data-value="{m:.4f}">'
+            f'<g class="bar" data-method="{_esc(method)}" data-value="{v:.4f}">'
         )
         # Transparent hit rect spanning the full row so the tooltip fires
         # anywhere in the row, not only over the visible bar.
@@ -153,7 +158,7 @@ def render_bar_chart(funcs: list[str], means: dict[str, float],
         parts.append(
             f'<text x="{label_w - 10}" y="{y + bar_h / 2:.2f}" '
             f'dominant-baseline="middle" text-anchor="end" class="lbl">'
-            f'{_esc(func)}</text>'
+            f'{_esc(method)}</text>'
         )
         parts.append(
             f'<rect class="fill" x="{label_w}" y="{y}" '
@@ -162,7 +167,7 @@ def render_bar_chart(funcs: list[str], means: dict[str, float],
         )
         parts.append(
             f'<text x="{label_w + bw + 8:.2f}" y="{y + bar_h / 2:.2f}" '
-            f'dominant-baseline="middle" class="val">{m:,.2f} ns</text>'
+            f'dominant-baseline="middle" class="val">{v:,.2f} ns</text>'
         )
         parts.append('</g>')
     parts.append('</g>')
@@ -203,9 +208,10 @@ def _nice_log_ticks(vmin: float, vmax: float) -> tuple[float, float, list[float]
     return log_lo, log_hi, majors, minors
 
 
-def render_line_chart(funcs: list[str], digits: list[int],
+def render_line_chart(methods: list[str], digits: list[int],
                       times: dict[str, dict[int, float]],
-                      all_funcs: list[str]) -> str:
+                      all_methods: list[str],
+                      baseline_method: str | None = None) -> str:
     width, height = 820, 560
     margin = {"l": 64, "r": 24, "t": 16, "b": 56}
     plot_w = width - margin["l"] - margin["r"]
@@ -215,7 +221,11 @@ def render_line_chart(funcs: list[str], digits: list[int],
     zero_pad = 22
     data_h = plot_h - zero_pad
 
-    all_vals = [v for f in funcs for v in times[f].values() if v > 0]
+    all_vals = [v for m in methods for v in times[m].values() if v > 0]
+    # Include the loop-overhead baseline in the y-axis range so that its
+    # dashed reference line stays visible at the bottom of the plot.
+    if baseline_method and baseline_method in times:
+        all_vals += [v for v in times[baseline_method].values() if v > 0]
     if not all_vals or not digits:
         return '<svg viewBox="0 0 100 20" class="chart"></svg>'
     vmin, vmax = min(all_vals), max(all_vals)
@@ -309,22 +319,22 @@ def render_line_chart(funcs: list[str], digits: list[int],
     # Series. Also collect per-point coordinates for JS hit-testing.
     series_meta: list[dict] = []
     parts.append('<g class="series">')
-    for func in funcs:
-        pts = [(d, times[func].get(d, 0.0)) for d in digits
-               if times[func].get(d, 0.0) > 0]
+    for method in methods:
+        pts = [(d, times[method].get(d, 0.0)) for d in digits
+               if times[method].get(d, 0.0) > 0]
         if not pts:
             continue
-        color = _color_for(func, all_funcs)
+        color = _color_for(method, all_methods)
         path = " ".join(f"{x_of(d):.2f},{y_of(t):.2f}" for d, t in pts)
         parts.append(
-            f'<g class="ln" data-func="{_esc(func)}">'
+            f'<g class="ln" data-method="{_esc(method)}">'
             f'<polyline points="{path}" fill="none" '
             f'stroke="{color}" stroke-width="2" '
             f'stroke-linejoin="round" stroke-linecap="round"/>'
             f'</g>'
         )
         series_meta.append({
-            "func": func,
+            "method": method,
             "color": color,
             "points": [
                 {"d": d, "x": round(x_of(d), 2),
@@ -333,6 +343,23 @@ def render_line_chart(funcs: list[str], digits: list[int],
             ],
         })
     parts.append('</g>')
+
+    # Loop-overhead baseline as a dashed gray reference line. Not part of
+    # `series_meta`, so it's invisible to the tooltip / legend hit-testing.
+    if baseline_method and baseline_method in times:
+        bpts = [(d, times[baseline_method].get(d, 0.0)) for d in digits
+                if times[baseline_method].get(d, 0.0) > 0]
+        if bpts:
+            bpath = " ".join(f"{x_of(d):.2f},{y_of(t):.2f}" for d, t in bpts)
+            avg = sum(t for _, t in bpts) / len(bpts)
+            parts.append(
+                f'<g class="baseline">'
+                f'<polyline points="{bpath}" fill="none"/>'
+                f'<text x="{plot_right - 6}" y="{y_of(avg) - 6:.2f}" '
+                f'text-anchor="end" class="baseline-lbl">'
+                f'loop overhead ({avg:,.2f} ns)</text>'
+                f'</g>'
+            )
 
     # Focus elements, revealed by JS on hover.
     parts.append(
@@ -372,26 +399,26 @@ def render_line_chart(funcs: list[str], digits: list[int],
     )
 
 
-def render_legend(funcs: list[str], all_funcs: list[str]) -> str:
+def render_legend(methods: list[str], all_methods: list[str]) -> str:
     items = []
-    for f in funcs:
-        c = _color_for(f, all_funcs)
+    for m in methods:
+        c = _color_for(m, all_methods)
         items.append(
-            f'<button type="button" class="lg" data-func="{_esc(f)}">'
-            f'<span class="sw" style="background:{c}"></span>{_esc(f)}'
+            f'<button type="button" class="lg" data-method="{_esc(m)}">'
+            f'<span class="sw" style="background:{c}"></span>{_esc(m)}'
             f'</button>'
         )
     return f'<div class="legend">{"".join(items)}</div>'
 
 
-def render_table(funcs: list[str], means: dict[str, float]) -> str:
-    items = sorted(funcs, key=lambda f: means[f])
+def render_table(methods: list[str], means: dict[str, float]) -> str:
+    items = sorted(methods, key=lambda m: means[m])
     body_rows = []
-    for f in items:
+    for m in items:
         body_rows.append(
-            f'<tr data-func="{_esc(f)}" data-mean="{means[f]}" tabindex="0">'
-            f'<td class="f">{_esc(f)}</td>'
-            f'<td class="t num">{means[f]:,.2f}</td>'
+            f'<tr data-method="{_esc(m)}" data-mean="{means[m]}" tabindex="0">'
+            f'<td class="f">{_esc(m)}</td>'
+            f'<td class="t num">{means[m]:,.2f}</td>'
             f'<td class="s num"></td>'
             f'</tr>'
         )
@@ -666,6 +693,20 @@ table.results tbody tr:focus-visible {
   stroke-width: 1;
   stroke-dasharray: 2 3;
 }
+.line-chart .baseline polyline {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.25;
+  stroke-dasharray: 6 4;
+  opacity: 0.55;
+}
+.line-chart .baseline-lbl {
+  fill: var(--fg-muted);
+  font-size: 11px;
+  font-style: italic;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  opacity: 0.85;
+}
 .tt {
   position: absolute;
   pointer-events: none;
@@ -748,31 +789,33 @@ footer a { color: inherit; }
 
 PAGE_JS = r"""
 (function () {
-  // Table: click a row to make it the speedup baseline.
+  // Table: click a row to make it the speedup baseline. The initial
+  // baseline is `sprintf` (or the first row), but we don't highlight it
+  // until the user actually picks one.
   document.querySelectorAll("table.results").forEach(function (tbl) {
     var rows = Array.prototype.slice.call(tbl.querySelectorAll("tbody tr"));
-    function recompute(baseRow) {
+    function recompute(baseRow, highlight) {
       var base = parseFloat(baseRow.dataset.mean);
       rows.forEach(function (r) {
         var t = parseFloat(r.dataset.mean);
         var ratio = t > 0 ? base / t : 0;
         r.querySelector(".s").textContent = ratio.toFixed(3) + "x";
-        r.classList.toggle("selected", r === baseRow);
+        r.classList.toggle("selected", highlight && r === baseRow);
       });
     }
     rows.forEach(function (r) {
-      r.addEventListener("click", function () { recompute(r); });
+      r.addEventListener("click", function () { recompute(r, true); });
       r.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          recompute(r);
+          recompute(r, true);
         }
       });
     });
     var defaultRow = rows.find(function (r) {
-      return r.dataset.func === "sprintf";
+      return r.dataset.method === "sprintf";
     }) || rows[0];
-    if (defaultRow) recompute(defaultRow);
+    if (defaultRow) recompute(defaultRow, false);
   });
 
   // Line chart: legend hover/click highlights a series; pointer movement
@@ -790,25 +833,25 @@ PAGE_JS = r"""
     var crosshair = focus.querySelector(".crosshair");
     var dot = focus.querySelector(".dot");
     var lines = chart.querySelectorAll(".ln");
-    var pinnedFunc = null;
-    var hoveredFunc = null;
+    var pinnedMethod = null;
+    var hoveredMethod = null;
 
     function applyHighlight() {
-      var f = hoveredFunc || pinnedFunc;
-      chart.classList.toggle("has-focus", !!f);
+      var m = hoveredMethod || pinnedMethod;
+      chart.classList.toggle("has-focus", !!m);
       lines.forEach(function (l) {
-        l.classList.toggle("focused", l.dataset.func === f);
+        l.classList.toggle("focused", l.dataset.method === m);
       });
       if (legend) {
         legend.querySelectorAll(".lg").forEach(function (b) {
-          b.classList.toggle("active", b.dataset.func === f);
-          b.classList.toggle("dim", !!f && b.dataset.func !== f);
+          b.classList.toggle("active", b.dataset.method === m);
+          b.classList.toggle("dim", !!m && b.dataset.method !== m);
         });
       }
     }
 
     function hideTooltip() {
-      hoveredFunc = null;
+      hoveredMethod = null;
       focus.style.display = "none";
       tooltip.hidden = true;
       applyHighlight();
@@ -859,7 +902,7 @@ PAGE_JS = r"""
       dot.setAttribute("fill", best.series.color);
       focus.style.display = "";
 
-      hoveredFunc = best.series.func;
+      hoveredMethod = best.series.method;
       applyHighlight();
 
       // Render tooltip content + position.
@@ -867,7 +910,7 @@ PAGE_JS = r"""
         '<div class="d">' + best.point.d + ' digits</div>' +
         '<div class="r"><span class="sw" style="background:' +
         best.series.color + '"></span><span class="f">' +
-        escapeHtml(best.series.func) + '</span>:&nbsp;<span class="v">' +
+        escapeHtml(best.series.method) + '</span>:&nbsp;<span class="v">' +
         formatNs(best.point.v) + ' ns</span></div>';
       tooltip.hidden = false;
 
@@ -896,20 +939,20 @@ PAGE_JS = r"""
     if (legend) {
       legend.querySelectorAll(".lg").forEach(function (btn) {
         btn.addEventListener("mouseenter", function () {
-          if (!pinnedFunc && !hoveredFunc) {
-            hoveredFunc = btn.dataset.func;
+          if (!pinnedMethod && !hoveredMethod) {
+            hoveredMethod = btn.dataset.method;
             applyHighlight();
           }
         });
         btn.addEventListener("mouseleave", function () {
-          if (hoveredFunc === btn.dataset.func) {
-            hoveredFunc = null;
+          if (hoveredMethod === btn.dataset.method) {
+            hoveredMethod = null;
             applyHighlight();
           }
         });
         btn.addEventListener("click", function () {
-          pinnedFunc = pinnedFunc === btn.dataset.func
-            ? null : btn.dataset.func;
+          pinnedMethod = pinnedMethod === btn.dataset.method
+            ? null : btn.dataset.method;
           applyHighlight();
         });
       });
@@ -944,33 +987,45 @@ PAGE_JS = r"""
 
 
 def render_section(type_name: str, bucket: dict) -> str:
-    funcs = bucket["funcs"]
+    methods = bucket["methods"]
     means = bucket["mean"]
     digits = bucket["digits"]
     times = bucket["times"]
     anchor = type_name.lower().replace(" ", "-")
 
+    # `null` is a no-op pseudo-method that measures the benchmark loop's
+    # overhead. Hide it from the table, bar chart and legend, and show it
+    # as a footnote + dashed reference line in the line chart.
+    has_baseline = BASELINE_METHOD in methods
+    display_methods = [m for m in methods if m != BASELINE_METHOD]
+
     section = [
         f'<section data-type="{_esc(type_name)}" id="{_esc(anchor)}">',
         '<div class="card">',
         '<h3>Time per double (lower is better)</h3>',
-        render_table(funcs, means),
+        render_table(display_methods, means),
         '<p class="hint">Click any row to use it as the speedup baseline.</p>',
     ]
+    if has_baseline:
+        section.append(
+            f'<p class="hint">Times include a fixed loop-overhead floor of '
+            f'<strong>{means[BASELINE_METHOD]:,.2f} ns</strong> '
+            f'(measured with a no-op stand-in for <code>dtoa</code>).</p>'
+        )
 
-    bar_funcs = [f for f in funcs if f not in BAR_CHART_EXCLUDED]
-    if bar_funcs:
-        excluded_present = sorted(BAR_CHART_EXCLUDED & set(funcs))
+    bar_methods = [m for m in display_methods if m not in BAR_CHART_EXCLUDED]
+    if bar_methods:
+        excluded_present = sorted(BAR_CHART_EXCLUDED & set(display_methods))
         if excluded_present:
             names = " and ".join(f"<code>{_esc(n)}</code>"
                                  for n in excluded_present)
             hint = (f'<p class="hint">{names} omitted; they are an order '
                     f'of magnitude slower than the rest.</p>')
         else:
-            hint = '<p class="hint">All measured functions shown.</p>'
+            hint = '<p class="hint">All measured methods shown.</p>'
         section += [
             '<div class="card-divider"></div>',
-            render_bar_chart(funcs, means, funcs),
+            render_bar_chart(display_methods, means, methods),
             hint,
         ]
     section.append('</div>')
@@ -979,9 +1034,11 @@ def render_section(type_name: str, bucket: dict) -> str:
         section += [
             '<div class="card">',
             '<h3>Time vs. digit count (log scale)</h3>',
-            render_line_chart(funcs, digits, times, funcs),
-            render_legend(funcs, funcs),
-            '<p class="hint">Hover or click a function to highlight its '
+            render_line_chart(display_methods, digits, times, methods,
+                              baseline_method=(BASELINE_METHOD if has_baseline
+                                               else None)),
+            render_legend(display_methods, methods),
+            '<p class="hint">Hover or click a method to highlight its '
             'series.</p>',
             '</div>',
         ]

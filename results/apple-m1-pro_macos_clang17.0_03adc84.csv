@@ -1,4 +1,4 @@
-Type,Function,Digit,Time(ns)
+Type,Method,Digit,Time(ns)
 randomdigit,double-conversion,1,58.874167
 randomdigit,double-conversion,2,71.269000
 randomdigit,double-conversion,3,75.902208

@@ -263,7 +263,7 @@ auto main(int argc, char** argv) -> int {
     fmt::print("error: cannot open '{}' for writing\n", filename);
     return 1;
   }
-  fmt::print(f, "Type,Function,Digit,Time(ns)\n");
+  fmt::print(f, "Type,Method,Digit,Time(ns)\n");
   for (const method& m : methods) {
     fmt::print("Benchmarking randomdigit {:20} ... ", m.name);
     fflush(stdout);

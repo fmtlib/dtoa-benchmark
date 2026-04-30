@@ -347,7 +347,6 @@ register_method::register_method(const char* name, dtoa_fun dtoa) {
 
 auto main(int argc, char** argv) -> int {
   bool per_digit = true;
-  bool skip_verify = false;
   std::string commit_hash;
   std::string csv_out;
   std::string json_out;
@@ -358,8 +357,6 @@ auto main(int argc, char** argv) -> int {
       per_digit = true;
     } else if (arg == "--no-per-digit") {
       per_digit = false;
-    } else if (arg == "--skip-verify") {
-      skip_verify = true;
     } else if (arg.substr(0, 14) == "--commit-hash=") {
       commit_hash = std::string(arg.substr(14));
     } else if (arg.substr(0, 10) == "--csv-out=") {
@@ -376,9 +373,7 @@ auto main(int argc, char** argv) -> int {
       methods.begin(), methods.end(),
       [](const method& lhs, const method& rhs) { return lhs.name < rhs.name; });
 
-  if (!skip_verify) {
-    for (const method& m : methods) verify(m);
-  }
+  for (const method& m : methods) verify(m);
 
   // Default CSV output path matches the pre-google-benchmark layout so that
   // generate-html.py keeps working unchanged.

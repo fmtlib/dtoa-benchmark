@@ -1,44 +1,41 @@
 # dtoa benchmark
 
-This project is a complete rewrite of Milo Yip’s
-[dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark), featuring an
-updated set of algorithms that reflect the current state of the art and a
-simplified workflow.
+This project is a rewrite of Milo Yip’s
+[dtoa-benchmark](https://github.com/miloyip/dtoa-benchmark) with an updated
+set of algorithms reflecting the current state of the art and a simplified
+workflow.
 
 ## Introduction
 
-This benchmark evaluates the performance of converting double-precision
-IEEE-754 floating-point values (`double`) to ASCII strings. The function
-signature is:
+This benchmark measures the performance of converting double-precision
+IEEE-754 floating-point values (`double`) to ASCII strings. Each
+implementation exposes a function with the signature:
 
 ```cpp
-void dtoa(double value, char* buffer);
+char* dtoa(double value, char* buffer);
 ```
 
-The resulting string **must** be round-trip convertible: it should parse back
-to the original value **exactly** via a correct implementation of `strtod`.
+that writes a textual representation of `value` into `buffer` and returns a
+pointer to one past the last written character. The resulting string **must**
+round-trip: parsing it back through a correct `strtod` must yield exactly the
+original `double`.
 
 Note: `dtoa` is *not* a standard C or C++ function.
 
 ## Procedure
 
-The benchmark consists of two phases:
+The benchmark runs in two phases:
 
-1. **Correctness verification**  
-   All implementations are first validated to ensure round-trip correctness.
+1. **Correctness verification.** Every implementation is validated against a
+   set of edge cases and 100,000 random `double` values (excluding `±inf` and
+   `NaN`) to confirm round-trip correctness.
 
-2. **Performance measurement**
-
-   The benchmark case is:
-
-   * **RandomDigit**  
-     * Generate 100,000 random `double` values (excluding `±inf` and `NaN`).
-     * Reduce precision to 1–17 decimal digits in the significand.
-     * Convert each value to an ASCII string.
-
-   Each digit group is executed 10 times.  
-   For each configuration, 10 trials are run and the **minimum** elapsed time
-   is recorded.
+2. **Performance measurement.** For each implementation, the benchmark runs
+   17 sub-benchmarks corresponding to inputs with 1–17 significant decimal
+   digits. Each sub-benchmark converts a pool of 100,000 `double` values and
+   reports the mean time per conversion. Iteration counts and statistical
+   stabilization are handled by [Google Benchmark](
+   https://github.com/google/benchmark).
 
 ## Build and Run
 
@@ -53,7 +50,8 @@ Results are written in CSV format to:
 results/<cpu>_<os>_<compiler>_<commit>.csv
 ```
 
-They are also automatically converted to HTML with the same base name.
+and automatically converted to a self-contained HTML report with the same
+base name.
 
 ## Results
 
@@ -95,11 +93,10 @@ The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 
 Additional benchmark results are available in the
 [`results`](https://github.com/fmtlib/dtoa-benchmark/tree/main/results)
-directory and viewable online using
-[Google Charts](https://developers.google.com/chart/):
+directory and viewable online:
 
-* [apple-m1-pro_macos_clang17.0_e0a03f7](
-  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang17.0_f0f753f.html)
+* [apple-m1-pro_macos_clang21.0_d8ebcba](
+  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang21.0_d8ebcba.html)
 
 ## Methods
 
@@ -108,14 +105,15 @@ directory and viewable online using
 | [asteria](https://github.com/lhmouse/asteria) | `rocket::ascii_numput::put_DD` |
 | [double-conversion](https://github.com/google/double-conversion) | `EcmaScriptConverter::ToShortest` which implements Grisu3 with bignum fallback |
 | [dragonbox](https://github.com/jk-jeon/dragonbox) | `jkj::dragonbox::to_chars` with full tables |
-| [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (uses Dragonbox). |
-| null | no-op implementation |
+| [fmt](https://github.com/fmtlib/fmt) | `fmt::format_to` with compile-time format strings (uses Dragonbox) |
+| null | no-op implementation; measures benchmark loop overhead |
 | [ostringstream](https://en.cppreference.com/w/cpp/io/basic_ostringstream.html) | `std::ostringstream` with `setprecision(17)` |
 | [ryu](https://github.com/ulfjack/ryu) | `d2s_buffered` |
 | [schubfach](https://github.com/vitaut/schubfach) | C++ Schubfach implementation |
 | [sprintf](https://en.cppreference.com/w/c/io/fprintf.html) | C `sprintf("%.17g", value)` |
 | [to_chars](https://en.cppreference.com/w/cpp/utility/to_chars.html) | `std::to_chars` |
-| [zmij](https://github.com/vitaut/zmij) | `zmij::write`. |
+| [yy](https://github.com/ibireme/yyjson) | `yy_double_to_string` from yyjson |
+| [zmij](https://github.com/vitaut/zmij) | `zmij::write` |
 
 ### Notes
 

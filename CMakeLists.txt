@@ -64,7 +64,7 @@ add_executable(
   src/xjb/xjb64.cpp # 12 Feb 2026: f7481b8
   src/uscale/uscale.c # 19 Jan 2026: 6255750
   src/yy/yy_double.c
-  src/zmij/zmij.cc # 30 Apr 2026: d07ed49
+  src/zmij/zmij.cc # 1 May 2026: 4a28cf4
 )
 
 target_compile_options(dtoa-benchmark PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)

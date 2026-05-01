@@ -43,7 +43,7 @@ struct dec_fp {
 // Use the provided definition.
 #elif defined(__SSE2__)
 #  define ZMIJ_USE_SSE ZMIJ_USE_SIMD
-#elif defined(_M_AMD64)
+#elif defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)
 #  define ZMIJ_USE_SSE ZMIJ_USE_SIMD
 #else
 #  define ZMIJ_USE_SSE 0
@@ -467,16 +467,15 @@ struct pow10_significand_table {
     constexpr int dec_exp_min = -293;
     int i = dec_exp - dec_exp_min;
     if (compress) return compute(i);
-    if (!split_tables) return {data[i * 2], data[i * 2 + 1]};
-
-    // The caller passes `-e - 1` for its own dec_exp `e`, so `~dec_exp`
-    // (i.e. `-dec_exp - 1`) recovers `e` directly. Picking the base so that
-    // `e` itself is the right index avoids an extra add in the load.
-    const uint64_t* hi = data + num_pow10s + dec_exp_min;
-
-    // Force indexed loads.
-    if (!is_constant_evaluated()) ZMIJ_ASM(volatile("" : "+r"(hi)));
-    return {hi[~dec_exp], hi[~dec_exp + num_pow10s]};
+    if (!split_tables) {
+      const uint64_t* p = data + i * 2;
+      return {p[0], p[1]};
+    }
+    // The caller passes -e - 1 as dec_exp, so ~dec_exp recovers e. Picking the
+    // base so that e itself is the index lets both loads share sxtw addressing.
+    const uint64_t* p = data + num_pow10s + dec_exp_min;
+    if (!is_constant_evaluated()) ZMIJ_ASM(("" : "+r"(p)));
+    return {p[~dec_exp], p[~dec_exp + num_pow10s]};
   }
 };
 
@@ -657,7 +656,7 @@ struct data {
   ZMIJ_CONST_DECL uint64_t biased_half = (uint64_t(1) << 63) + 6;
 
 #if ZMIJ_USE_NEON
-  static constexpr int32_t neg10k = -10000 + 0x10000;
+  static constexpr int32_t neg10k = 0x10000 - 10000;
 
   using int32x4 = std::conditional_t<ZMIJ_MSC_VER != 0, int32_t[4], int32x4_t>;
   using int16x8 = std::conditional_t<ZMIJ_MSC_VER != 0, int16_t[8], int16x8_t>;
@@ -824,8 +823,13 @@ auto to_bcd8(uint64_t abcdefgh) noexcept -> bcd_result {
   uint64_t abcd_efgh =
       (abcdefgh << 32) -
       uint64_t((10000ull << 32) - 1) * ((abcdefgh * div10k_sig) >> div10k_exp);
-  uint64_t bcd =
-      _mm_cvtsi128_si64(to_bcd_4x4(_mm_set_epi64x(0, abcd_efgh), *d));
+  __m128i v = to_bcd_4x4(_mm_set_epi64x(0, abcd_efgh), *d);
+#  if defined(__x86_64__) || defined(_M_X64)
+  uint64_t bcd = _mm_cvtsi128_si64(v);
+#  else
+  uint64_t bcd = uint64_t(_mm_cvtsi128_si32(_mm_srli_si128(v, 4))) << 32 |
+                 uint32_t(_mm_cvtsi128_si32(v));
+#  endif
   return {bcd, count_trailing_nonzeros(bcd)};
 #endif  // ZMIJ_USE_SSE
 }

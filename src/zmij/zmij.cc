@@ -161,7 +161,7 @@ namespace {
 using std::is_constant_evaluated;
 #  define ZMIJ_CONSTEXPR constexpr
 #else
-inline auto is_constant_evaluated() -> bool { return false; }
+constexpr auto is_constant_evaluated() -> bool { return false; }
 #  define ZMIJ_CONSTEXPR
 #endif
 
@@ -282,15 +282,15 @@ constexpr auto umul128(uint64_t x, uint64_t y) noexcept -> uint128_t {
 #if ZMIJ_USE_INT128
   return uint128_t(x) * y;
 #else
-#  if defined(_M_AMD64)
-  if (!__builtin_is_constant_evaluated()) {
+  if (!is_constant_evaluated()) {
+#  if defined(_M_AMD64) && defined(__cpp_lib_is_constant_evaluated)
     uint64_t hi = 0;
     uint64_t lo = _umul128(x, y, &hi);
     return {hi, lo};
-  }
-#  elif defined(_M_ARM64)
-  if (!__builtin_is_constant_evaluated()) return {__umulh(x, y), x * y};
+#  elif defined(_M_ARM64) && defined(__cpp_lib_is_constant_evaluated)
+    return {__umulh(x, y), x * y};
 #  endif
+  }
   uint64_t a = x >> 32;
   uint64_t b = uint32_t(x);
   uint64_t c = y >> 32;
@@ -517,7 +517,7 @@ struct exp_shift_table {
   }
 };
 
-// An optional table of precomputed exponent strings for scientific notation.
+// An optional table of precomputed exponent strings for exponential notation.
 // Each entry packs "e+dd" or "e+ddd" into a uint64_t with the length in byte 7.
 struct exp_string_table {
   static constexpr bool enable = ZMIJ_USE_EXP_STRING_TABLE;
@@ -540,6 +540,73 @@ struct exp_string_table {
   }
 };
 
+// Shuffle vectors to build strings for exponential notation.
+//
+// Byte positions in the source register assembled by write_exp_float_simd:
+//   bytes [0, exp_pos):              BCD ASCII digits (reversed)
+//   bytes [exp_pos, exp_pos + 4):    exponent string "e±NN"
+//   byte  last_digit_pos:            rounded last digit
+//   byte  point_pos:                 '.'
+//
+// The shuffle length (max 14) is stored in byte 15; the corresponding output
+// byte is past the string and ignored by the caller.
+struct exp_float_shuffle_table {
+  static constexpr bool enable =
+      (ZMIJ_USE_SSE4_1 || ZMIJ_USE_NEON) && exp_string_table::enable;
+  static constexpr unsigned char exp_pos = 8;
+  static constexpr unsigned char last_digit_pos = 12;
+  static constexpr unsigned char point_pos = 13;
+  alignas(16) unsigned char data[enable ? 32 * 16 : 1] = {};
+
+  struct entry {
+    const unsigned char* shuffle;
+    unsigned char length;
+  };
+
+  constexpr auto get_entry(int num_digits, bool has_last_digit,
+                           bool has_extra_digit) const noexcept {
+    int idx = (num_digits - 1) * 4 + has_last_digit * 2 + has_extra_digit;
+    return entry{&data[idx * 16], data[idx * 16 + 15]};
+  }
+
+  constexpr exp_float_shuffle_table() {
+    for (int idx = 0; idx < 32 && enable; ++idx) {
+      int num_digits = (idx >> 2) + 1;
+      bool has_last_digit = ((idx >> 1) & 1) != 0;
+      bool has_extra_digit = (idx & 1) != 0;
+
+      unsigned char* out = &data[idx * 16];
+      for (int i = 0; i < 16; ++i) out[i] = 0x80;  // shuffle high bit: output 0
+      unsigned char leading_digit_pos = has_extra_digit ? 7 : 6;
+      unsigned char length = 0;
+      if (has_last_digit) {
+        // Always 8 BCD chars in the significand plus a last-digit char;
+        // for !has_extra_digit the leading '0' of the 8-digit padded BCD is
+        // shown.
+        out[length++] = leading_digit_pos;
+        out[length++] = point_pos;
+        for (int i = leading_digit_pos - 1; i >= 0; --i) out[length++] = i;
+        out[length++] = last_digit_pos;
+      } else {
+        length = num_digits + has_extra_digit;
+        // Drop the '.' for single-digit output: "5e+02", not "5.0e+02".
+        if (length == 2) length = 1;
+        out[0] = leading_digit_pos;
+        out[1] = point_pos;
+        for (int i = 2; i < length; ++i) out[i] = leading_digit_pos + 1 - i;
+      }
+      for (unsigned char i = 0; i < 4; ++i) out[length++] = exp_pos + i;
+      out[15] = length;
+    }
+  }
+};
+
+constexpr auto fixed_entry_align() noexcept -> int {
+  if (ZMIJ_USE_SSE4_1) return 64;  // Align to a cache line.
+  // Align entry to 32 bytes so indexing uses `lsl #5` not `umaddl`.
+  return ZMIJ_AARCH64 && !ZMIJ_OPTIMIZE_SIZE ? 32 : 1;
+}
+
 // Per-decimal-exponent buffer layout for branchless fixed-notation output.
 // Each entry holds the byte positions of the leading zeros, decimal point,
 // and end of output, indexed by the decimal exponent (dec_exp).
@@ -548,13 +615,23 @@ struct fixed_layout_table {
   static constexpr int num_entries =
       traits::max_fixed_dec_exp - traits::min_fixed_dec_exp + 1;
 
-  // On AArch64, align entry to 32 bytes so indexing uses `lsl #5` not `umaddl`.
-  struct alignas(ZMIJ_AARCH64 && !ZMIJ_OPTIMIZE_SIZE ? 32 : 1) entry {
+  struct alignas(fixed_entry_align()) entry {
+#if ZMIJ_USE_SSE4_1
+    // pshufb table mapping BCD bytes to their output slots; the decimal-point
+    // slot (if any) holds a zero-marker (high bit set). Indexed by extra_digit.
+    // Read via aligned load (_mm_load_si128), so must be 16-byte aligned.
+    alignas(16) unsigned char shuffle[2][16];
+#endif
     // Byte offset past leading "0.00..." before first significant digit.
     unsigned char start_pos;
     unsigned char point_pos;
     // Start position for shifting digits right by one to insert the point.
     unsigned char shift_pos;
+#if ZMIJ_USE_SSE4_1
+    // Buffer-relative position of the last_digit byte, indexed by
+    // has_extra_digit. Only used for bcd_size == 16 (doubles).
+    unsigned char last_digit_pos[2];
+#endif
     // Offset past the end of fixed-notation output, indexed by sig length - 1.
     unsigned char end_pos[traits::max_digits10];
   };
@@ -568,6 +645,24 @@ struct fixed_layout_table {
       e.start_pos = dec_exp < -0 ? 1 - dec_exp : 0;
       e.point_pos = dec_exp >= 0 ? 1 + dec_exp : 1;
       e.shift_pos = e.point_pos + (dec_exp >= 0);
+
+#if ZMIJ_USE_SSE4_1
+      constexpr int bcd_size = 16;
+      for (int extra = 0; extra < 2; ++extra) {
+        int len = bcd_size + extra - 1;
+        e.last_digit_pos[extra] = len + (0 <= dec_exp && dec_exp < len);
+      }
+
+      // Build the shuffle tables from natural-order BCD (to_digits puts BCD[k]
+      // at byte k). extra_digit == 0 drops the leading zero, so digits start at
+      // BCD[!extra]; point_slot gets a pshufb zero-marker (0xFF) for the point.
+      int point_slot = (dec_exp >= 0 && dec_exp <= 14) ? 1 + dec_exp : 128;
+      for (int extra = 0; extra < 2; ++extra) {
+        unsigned char bcd_idx = !extra;
+        for (int i = 0; i < bcd_size; ++i)
+          e.shuffle[extra][i] = i == point_slot ? 0xFF : bcd_idx++;
+      }
+#endif  // ZMIJ_USE_SSE4_1
 
       for (int n = 1; n <= traits::max_digits10; ++n) {
         int end_pos = n;
@@ -688,6 +783,7 @@ struct data {
   exp_string_table exp_strings;
   alignas(64) pow10_significand_table pow10_significands;
   fixed_layout_table fixed_layouts;
+  exp_float_shuffle_table exp_float_shuffles;
 
   // Shuffle indices for SIMD digit shift. Offset 0 = identity, offset 1 =
   // shift left by 1 (drops the leading '0' of a 16-digit significand).
@@ -836,6 +932,12 @@ auto to_bcd8(uint64_t abcdefgh) noexcept -> bcd_result {
 
 template <int num_bits> struct dec_digits {
   uint64_t digits;
+  // `unshuffled` is the byte-reversed BCD vector used by write_exp_float_simd.
+#if ZMIJ_USE_NEON
+  uint8x16_t unshuffled;
+#elif ZMIJ_USE_SSE4_1
+  __m128i unshuffled;
+#endif
   int num_digits;
 };
 
@@ -904,10 +1006,33 @@ ZMIJ_INLINE auto to_digits(uint64_t value, const data& d) noexcept
 }
 
 template <>
-ZMIJ_INLINE auto to_digits<32>(uint64_t value, const data&) noexcept
+ZMIJ_INLINE auto to_digits<32>(uint64_t value,
+                               [[ZMIJ_MAYBE_UNUSED]] const data& d) noexcept
     -> dec_digits<32> {
+#if ZMIJ_USE_SSE4_1
+  // Inline to_bcd8's SSE4.1 body so we can return the unshuffled xmm too;
+  // the exponential-notation path uses it to skip the bswap-via-gpr.
+  uint64_t abcd_efgh = value + neg10k * ((value * div10k_sig) >> div10k_exp);
+  __m128i bcd_xmm = to_bcd_4x4(_mm_set_epi64x(0, abcd_efgh), d);
+  uint64_t unshuffled_bcd = _mm_cvtsi128_si64(bcd_xmm);
+  int len = unshuffled_bcd ? 8 - ctz(unshuffled_bcd) / 8 : 0;
+  return {bswap64(unshuffled_bcd) + zeros, bcd_xmm, len};
+#elif ZMIJ_USE_NEON
+  // Inline to_bcd8's NEON body so we can return the unshuffled vector too;
+  // the exponential-notation path uses it to skip the simd->gpr->bswap->simd
+  // roundtrip needed to materialize `digits`.
+  uint64_t abcd_efgh = value + neg10k * ((value * div10k_sig) >> div10k_exp);
+  int32x4_t input =
+      vcombine_s32(vreinterpret_s32_u64(vcreate_u64(abcd_efgh)), vdup_n_s32(0));
+  uint8x16_t unshuffled = to_bcd_4x4(input, d);
+  uint64_t unshuffled_bcd =
+      vget_lane_u64(vreinterpret_u64_u8(vget_low_u8(unshuffled)), 0);
+  int len = unshuffled_bcd ? 8 - ctz(unshuffled_bcd) / 8 : 0;
+  return {bswap64(unshuffled_bcd) + zeros, unshuffled, len};
+#else
   auto result = to_bcd8(value);
   return {result.bcd + zeros, result.len};
+#endif
 }
 
 // Writes `digits` to `buffer`, dropping the leading '0' when drop_leading_zero
@@ -936,6 +1061,42 @@ ZMIJ_INLINE void write_digits(char* buffer, uint64_t digits,
                               bool drop_leading_zero, const data&) noexcept {
   memcpy(buffer, &digits, sizeof(digits));
   memmove(buffer, buffer + drop_leading_zero, sizeof(digits));
+}
+
+ZMIJ_INLINE auto write_exp_float_simd(char* buffer, const dec_digits<32>& dig,
+                                      int last_digit, bool has_last_digit,
+                                      bool has_extra_digit, uint64_t exp_data,
+                                      const data& d) noexcept -> char* {
+  // Packed for insertion into lane 1: byte 0 of `tail` lands at register
+  // byte exp_pos (8), so the exp string fills exp_pos..exp_pos+3; the prefix
+  // shifts place '0'+last_digit at last_digit_pos (12) and '.' at point_pos
+  // (13).
+  uint32_t prefix = (uint32_t('.') << 8) + uint32_t('0') + last_digit;
+  uint64_t tail = exp_data | (uint64_t(prefix) << 32);
+  auto entry = d.exp_float_shuffles.get_entry(dig.num_digits, has_last_digit,
+                                              has_extra_digit);
+#if ZMIJ_USE_SSE4_1
+  __m128i ascii =
+      _mm_or_si128(dig.unshuffled, _mm_load_si128(m128ptr(&d.zeros)));
+  __m128i src = _mm_insert_epi64(ascii, int64_t(tail), 1);
+  __m128i shuffle = _mm_load_si128(m128ptr(entry.shuffle));
+  __m128i out = _mm_shuffle_epi8(src, shuffle);
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), out);
+#elif ZMIJ_USE_NEON
+  uint8x16_t ascii = vorrq_u8(dig.unshuffled, vdupq_n_u8('0'));
+  uint8x16_t src = vreinterpretq_u8_u64(
+      vsetq_lane_u64(tail, vreinterpretq_u64_u8(ascii), 1));
+  uint8x16_t shuffle = vld1q_u8(entry.shuffle);
+  uint8x16_t out = vqtbl1q_u8(src, shuffle);
+  vst1q_u8(reinterpret_cast<uint8_t*>(buffer), out);
+#endif
+  return buffer + entry.length;
+}
+
+ZMIJ_INLINE auto write_exp_float_simd(char*, const dec_digits<64>&, int, bool,
+                                      bool, uint64_t, const data&) noexcept
+    -> char* {
+  return nullptr;
 }
 
 struct to_decimal_result {
@@ -1117,8 +1278,8 @@ auto write(Float value, char* buffer) noexcept -> char* {
                               bin_sig != 0, *d);
   }
   bool has_last_digit = dec.has_last_digit;
-  bool extra_digit = dec.sig >= threshold;
-  int dec_exp = dec.exp + traits::max_digits10 - 2 + extra_digit;
+  bool has_extra_digit = dec.sig >= threshold;
+  int dec_exp = dec.exp + traits::max_digits10 - 2 + has_extra_digit;
   if (traits::num_bits == 32 && dec.sig < uint32_t(1e6)) [[ZMIJ_UNLIKELY]] {
     dec.sig = 10 * dec.sig + (-has_last_digit & dec.last_digit);
     has_last_digit = false;
@@ -1133,7 +1294,7 @@ auto write(Float value, char* buffer) noexcept -> char* {
       dec_exp <= traits::max_fixed_dec_exp) {
     memcpy(start, &zeros, 8);  // For dec_exp < 0.
     char last_digit = '0' + (-has_last_digit & dec.last_digit);
-    int num_digits = has_last_digit ? bcd_size : dig.num_digits - 1;
+    int num_digits = select(has_last_digit, bcd_size, dig.num_digits - 1);
 
     // Materialize the base early so the entry address is `base + idx*32`;
     // otherwise Clang folds the offset in and adds a cycle to the idx chain.
@@ -1142,14 +1303,34 @@ auto write(Float value, char* buffer) noexcept -> char* {
 
     const auto& layout = fixed_layouts->get(dec_exp);
     buffer += layout.start_pos;
-    write_digits(buffer, dig.digits, !extra_digit, *d);
-    buffer[bcd_size + extra_digit - 1] = last_digit;
+#if ZMIJ_USE_SSE4_1
+    if (bcd_size == 16) {
+      auto& digits = reinterpret_cast<const __m128i&>(dig.digits);
+      __m128i tbl = _mm_load_si128(m128ptr(&layout.shuffle[has_extra_digit]));
+      __m128i out = _mm_shuffle_epi8(digits, tbl);
+      memcpy(buffer, &out, bcd_size);  // Store the assembled digits in one go.
+      // The point can push BCD[15] outside the vector to buffer[16], so write
+      // it unconditionally (otherwise it's in-vector or overwritten below).
+      buffer[bcd_size] = char(_mm_extract_epi8(digits, 15));
+      start[layout.point_pos] = '.';
+      buffer[layout.last_digit_pos[has_extra_digit]] = last_digit;
+      return buffer + layout.end_pos[num_digits + has_extra_digit - 1];
+    }
+#endif  // ZMIJ_USE_SSE4_1
+    write_digits(buffer, dig.digits, !has_extra_digit, *d);
+    buffer[bcd_size + has_extra_digit - 1] = last_digit;
     unsigned point_pos = layout.point_pos;
     memmove(start + layout.shift_pos, start + point_pos, bcd_size);
     start[point_pos] = '.';
-    return buffer + layout.end_pos[num_digits + extra_digit - 1];
+    return buffer + layout.end_pos[num_digits + has_extra_digit - 1];
   }
-  buffer += extra_digit;
+  if (traits::num_bits == 32 && exp_float_shuffle_table::enable) {
+    uint64_t exp_data = d->exp_strings.data[dec_exp + exp_string_table::offset];
+    return write_exp_float_simd(buffer, dig, dec.last_digit, has_last_digit,
+                                has_extra_digit, exp_data, *d);
+  }
+
+  buffer += has_extra_digit;
   memcpy(buffer, &dig.digits, bcd_size);
   buffer[bcd_size] = '0' + dec.last_digit;
   buffer += select(has_last_digit, bcd_size + 1, dig.num_digits);

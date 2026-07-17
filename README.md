@@ -101,12 +101,8 @@ The following results were measured on a **MacBook Pro (Apple M1 Pro)** using:
 * `ryu`, `dragonbox`, and `schubfach` always emit exponential notation
   (e.g. `0.1` → `1E-1`).
 
-Additional benchmark results are available in the
-[`results`](https://github.com/fmtlib/dtoa-benchmark/tree/main/results)
-directory and viewable online:
-
-* [apple-m1-pro_macos_clang21.0_45ff4d4](
-  https://fmtlib.github.io/dtoa-benchmark/results/apple-m1-pro_macos_clang21.0_45ff4d4.html)
+Additional benchmark results are available in the `results` directory and
+[viewable online](https://fmtlib.github.io/dtoa-benchmark/results/).
 
 ## Methods
 

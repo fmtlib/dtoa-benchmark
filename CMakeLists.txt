@@ -61,7 +61,7 @@ add_executable(
   src/fmt/src/format.cc # 2 Aug 2025: 35dcc582
   src/ryu/d2s.c
   src/schubfach/schubfach.cc
-  src/xjb/xjb64.cpp # 12 Feb 2026: f7481b8
+  src/xjb/xjb64.cpp # 28 Jul 2026: 7e6e7c4
   src/uscale/uscale.c # 19 Jan 2026: 6255750
   src/yy/yy_double.c
   src/zmij/zmij.cc # 1 May 2026: 4a28cf4
